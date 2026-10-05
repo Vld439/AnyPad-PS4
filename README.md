@@ -15,12 +15,15 @@
 Use other Bluetooth controllers on a jailbroken PS5 (DualShock 4, 8BitDo, Switch Pro and more), with no
 dongle. They show up in the console and in games as a DualSense.
 
-**Version 0.5.28-beta (6 October 2026).** Tested on a PS5 fat, firmware 10.01, with a DualShock 4 and an
+**Version 0.5.29-beta (6 October 2026).** Tested on a PS5 fat, firmware 10.01, with a DualShock 4 and an
 8BitDo SF30 Pro (Switch mode).
+
+This is the **most stable version so far**, and the **menu and notices now follow the console language**
+(English, or Spanish on a Spanish console).
 
 ### How to use it
 
-1. Download `AnyPad-PS5-0.5.28-beta.elf` from [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
+1. Download `AnyPad-PS5-0.5.29-beta.elf` from [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
    and run it with your payload loader.
 2. Open **AnyPad** in the console's *Media* row (or `http://<console-ip>:8095` from a phone or PC).
 3. Press **Pair**, then put the controller in pairing mode (DualShock 4: Share + PS).
@@ -50,12 +53,15 @@ X / Twitter: [@elmonomalvad0](https://x.com/elmonomalvad0) · Contact: exposed.c
 Usa otros mandos Bluetooth en una PS5 con jailbreak (DualShock 4, 8BitDo, Switch Pro y más), sin
 adaptadores. La consola y los juegos los ven como un DualSense.
 
-**Versión 0.5.28-beta (6 de octubre de 2026).** Probada en una PS5 fat, firmware 10.01, con un DualShock 4 y
+**Versión 0.5.29-beta (6 de octubre de 2026).** Probada en una PS5 fat, firmware 10.01, con un DualShock 4 y
 un 8BitDo SF30 Pro (modo Switch).
+
+Es la **versión más estable hasta ahora**, y el **menú y los avisos siguen el idioma de la consola**
+(castellano en una consola en español; inglés en cualquier otro idioma).
 
 ### Cómo usarlo
 
-1. Descarga `AnyPad-PS5-0.5.28-beta.elf` desde [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
+1. Descarga `AnyPad-PS5-0.5.29-beta.elf` desde [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
    y ejecútalo con tu cargador de payloads.
 2. Abre **AnyPad** en *Contenido multimedia* de la consola (o `http://<ip-de-la-consola>:8095` desde el móvil o el PC).
 3. Pulsa **Emparejar** y pon el mando en modo emparejamiento (DualShock 4: Share + PS).
