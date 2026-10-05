@@ -29,17 +29,13 @@ This is the **most stable version so far**, and the **menu and notices now follo
 3. Press **Pair**, then put the controller in pairing mode (DualShock 4: Share + PS).
 4. When the console asks who uses the controller, choose **Quick play / Guest** (a temporary user).
 
-Use **Stop AnyPad** on that page before running it again.
+When you finish, **always exit with the *Stop AnyPad PS5* button** on that page (also before running it again).
 
 ### Known issues
 
 - **DualShock 4:** pair it again each time you switch it on. Other controllers reconnect by themselves.
-- **Keep your DualSense on the USB cable** while AnyPad runs (*Settings → Accessories → Controllers →
-  Communication method → Use USB cable*). Otherwise, if it reconnects over Bluetooth, it can stay blinking blue.
 - **If no controller is found:** with the DualSense on the cable, turn Bluetooth off and on again in the
   console settings (the console restarts), then run AnyPad again.
-- If one controller is no longer found: remove it from *Settings → Accessories → Bluetooth accessories*,
-  reset it (DualShock 4: the hole on the back, 5 s) and pair it again.
 
 Controllers: see [COMPATIBILITY.md](COMPATIBILITY.md). Licence: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Author: **elmonomalvad0**, the same author as *sinfiltros* (the original AnyPad PS5 on GitHub).
@@ -67,17 +63,13 @@ Es la **versión más estable hasta ahora**, y el **menú y los avisos siguen el
 3. Pulsa **Emparejar** y pon el mando en modo emparejamiento (DualShock 4: Share + PS).
 4. Cuando la consola pregunte quién usa el mando, elige **Juego rápido / Invitado** (un usuario temporal).
 
-Usa **Apagar AnyPad** en esa página antes de volver a ejecutarlo.
+Al terminar, **sal siempre con el botón *Apagar AnyPad PS5*** de esa página (también antes de volver a ejecutarlo).
 
 ### Problemas conocidos
 
 - **DualShock 4:** hay que emparejarlo cada vez que lo enciendes. Los demás mandos se reconectan solos.
-- **Deja el DualSense por cable USB** mientras uses AnyPad (*Ajustes → Accesorios → Mandos → Método de
-  comunicación → Usar cable USB*). Si no, al reconectarse por Bluetooth puede quedarse parpadeando en azul.
 - **Si no detecta ningún mando:** con el DualSense por cable, desactiva y vuelve a activar el Bluetooth en los
   Ajustes de la consola (se reinicia) y ejecuta AnyPad de nuevo.
-- Si un mando concreto deja de aparecer: quítalo de *Ajustes → Accesorios → Accesorios Bluetooth*, resetéalo
-  (DualShock 4: agujero trasero, 5 s) y vuelve a emparejarlo.
 
 Mandos: ver [COMPATIBILITY.md](COMPATIBILITY.md). Licencia: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Autor: **elmonomalvad0**, el mismo autor que *sinfiltros* (el AnyPad PS5 original en GitHub).
