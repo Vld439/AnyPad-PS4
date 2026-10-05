@@ -1,6 +1,9 @@
-<p align="center"><img src="assets/logo.png" width="180" alt="AnyPad PS5"></p>
+<p align="center"><img src="assets/icon0.png" width="200" alt="AnyPad PS5"></p>
 
 # AnyPad PS5
+
+**Connect your Bluetooth controllers to your PS5 console.**
+**Conecta tus mandos Bluetooth a tu consola PS5.**
 
 **[English](#english) · [Español](#español)**
 
