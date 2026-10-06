@@ -8,8 +8,8 @@ Cada mando de abajo tiene su propia entrada en el código, uno por uno.
 | ✅ | **Verified** on a real PS5 by a person / **Verificado** en una PS5 real por una persona |
 | 🧪 | **Supported, not yet tested**: you can use this controller on the PS5; the support is written and passes the simulator tests, but nobody has tried it on a console yet / **Soportado, aún sin probar**: puedes usar este mando en la PS5; el soporte está escrito y pasa las pruebas con simulador, pero nadie lo ha probado todavía en una consola |
 
-**Today: 1 verified controller, 48 more supported ids, plus the generic profile for any other Bluetooth HID gamepad.**
-**Hoy: 1 mando verificado, 48 ids más soportados, más el perfil genérico para cualquier otro mando HID Bluetooth.**
+**Today: 2 verified controllers (DualShock 4 v2 and 8BitDo SF30 Pro in Switch mode), plus the other supported ids listed below, plus the generic profile for any other Bluetooth HID gamepad.**
+**Hoy: 2 mandos verificados (DualShock 4 v2 y 8BitDo SF30 Pro en modo Switch), más los demás ids soportados de la lista, más el perfil genérico para cualquier otro mando HID Bluetooth.**
 
 Verified on a PS5 fat, firmware 10.01, with the latest ShadowMountPlus and kstuff-lite.
 Verificado en una PS5 fat, firmware 10.01, con el último ShadowMountPlus y kstuff-lite.
@@ -54,6 +54,7 @@ Los modelos Bluetooth LE necesitan emparejado con Secure Connections; si el chip
 | USB id | Controller / Mando | Status |
 |---|---|---|
 | `057e:2009` | Nintendo Switch Pro Controller (and pads that emulate it) | 🧪 |
+| — | 8BitDo SF30 Pro (Switch mode / modo Switch) | ✅ Verified / Verificado |
 | `057e:2017` | Nintendo Switch Online SNES controller | 🧪 |
 | `057e:2019` | Nintendo Switch Online N64 controller | 🧪 |
 | `057e:201a` | Nintendo Switch Online Mega Drive / Genesis controller | 🧪 |
