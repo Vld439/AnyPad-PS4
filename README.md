@@ -43,6 +43,22 @@ When you finish, **always exit with the *Stop AnyPad PS5* button** on that page 
 
 If you can confirm that AnyPad PS5 works with any of the compatible controllers **that have not yet been tested**, please send us the log at [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). This will help us a lot!
 
+### Credits
+
+AnyPad PS5 is original code: no code was copied from other projects. These projects were studied to
+understand how things work, and their ideas were reinterpreted and written anew. Thanks to their authors:
+
+- **[FGG-PlayPods](https://github.com/FGGstore/FGG-PlayPods)** (FGGstore): the idea behind the Bluetooth
+  part, sharing the PS5's own Bluetooth chip with the system instead of taking it over.
+- **[MissionControl](https://github.com/ndeadly/MissionControl)** (ndeadly): controller profiles by vendor
+  and model, and the report layouts of many controllers.
+- **Ghostcontrol** (StonedModder): how to create a virtual DualSense on the PS5 and assign it to a user
+  (Ghostcontrol does it for USB controllers; AnyPad does it for Bluetooth ones).
+- **[SplashDown](https://github.com/seregonwar/SplashDown)** (seregonwar) and
+  **[shadPS4](https://github.com/shadps4-emu/shadPS4)**: the virtual pad sequence and the pad data layout.
+- **[ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk)** (John Törnblom): the toolchain everything
+  is built with.
+
 Controllers: see [COMPATIBILITY.md](COMPATIBILITY.md). Licence: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Author: **elmonomalvad0**, the same author as *sinfiltros* (the original AnyPad PS5 on GitHub).
 X / Twitter: [@elmonomalvad0](https://x.com/elmonomalvad0) · Contact: exposed.ct.ws@gmail.com
@@ -82,6 +98,23 @@ Al terminar, **sal siempre con el botón *Apagar AnyPad PS5*** de esa página (t
 ### Ayúdanos a confirmar la compatibilidad
 
 Si puedes confirmar que AnyPad PS5 funciona con alguno de los mandos compatibles **que aún no se han comprobado**, mándanos el log a [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). ¡Esto nos ayudará mucho!
+
+### Agradecimientos
+
+AnyPad PS5 es código propio: no se ha copiado código de otros proyectos. Estos proyectos se estudiaron para
+entender cómo funcionan las cosas, y sus ideas se reinterpretaron y se escribieron de nuevo. Gracias a sus autores:
+
+- **[FGG-PlayPods](https://github.com/FGGstore/FGG-PlayPods)** (FGGstore): la idea de la parte Bluetooth,
+  compartir el propio chip Bluetooth de la PS5 con el sistema en lugar de quitárselo.
+- **[MissionControl](https://github.com/ndeadly/MissionControl)** (ndeadly): los perfiles de mandos por
+  fabricante y modelo, y el formato de los informes de muchos mandos.
+- **Ghostcontrol** (StonedModder): cómo crear un DualSense virtual en la PS5 y asignarlo a un usuario
+  (Ghostcontrol lo hace con mandos USB; AnyPad, con mandos Bluetooth).
+- **[SplashDown](https://github.com/seregonwar/SplashDown)** (seregonwar) y
+  **[shadPS4](https://github.com/shadps4-emu/shadPS4)**: la secuencia del mando virtual y el formato de los
+  datos del mando.
+- **[ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk)** (John Törnblom): las herramientas con las que
+  se compila todo.
 
 Mandos: ver [COMPATIBILITY.md](COMPATIBILITY.md). Licencia: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Autor: **elmonomalvad0**, el mismo autor que *sinfiltros* (el AnyPad PS5 original en GitHub).
