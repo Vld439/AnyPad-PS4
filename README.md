@@ -41,7 +41,7 @@ When you finish, **always exit with the *Stop AnyPad PS5* button** on that page 
 
 ### Help us confirm compatibility
 
-If you can confirm that AnyPad PS5 works with any of the compatible controllers, please send us the log at [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). This will help us a lot!
+If you can confirm that AnyPad PS5 works with any of the compatible controllers **that have not yet been tested**, please send us the log at [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). This will help us a lot!
 
 Controllers: see [COMPATIBILITY.md](COMPATIBILITY.md). Licence: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Author: **elmonomalvad0**, the same author as *sinfiltros* (the original AnyPad PS5 on GitHub).
@@ -81,7 +81,7 @@ Al terminar, **sal siempre con el botón *Apagar AnyPad PS5*** de esa página (t
 
 ### Ayúdanos a confirmar la compatibilidad
 
-Si puedes confirmar que AnyPad PS5 funciona con alguno de los mandos compatibles, mándanos el log a [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). ¡Esto nos ayudará mucho!
+Si puedes confirmar que AnyPad PS5 funciona con alguno de los mandos compatibles **que aún no se han comprobado**, mándanos el log a [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). ¡Esto nos ayudará mucho!
 
 Mandos: ver [COMPATIBILITY.md](COMPATIBILITY.md). Licencia: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Autor: **elmonomalvad0**, el mismo autor que *sinfiltros* (el AnyPad PS5 original en GitHub).
