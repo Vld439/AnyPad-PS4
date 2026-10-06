@@ -39,6 +39,10 @@ When you finish, **always exit with the *Stop AnyPad PS5* button** on that page 
 - **If no controller is found:** with the DualSense on the cable, turn Bluetooth off and on again in the
   console settings (the console restarts), then run AnyPad again.
 
+### Help us confirm compatibility
+
+If you can confirm that AnyPad PS5 works with any of the compatible controllers, please send us the log at [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). This will help us a lot!
+
 Controllers: see [COMPATIBILITY.md](COMPATIBILITY.md). Licence: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Author: **elmonomalvad0**, the same author as *sinfiltros* (the original AnyPad PS5 on GitHub).
 X / Twitter: [@elmonomalvad0](https://x.com/elmonomalvad0) · Contact: exposed.ct.ws@gmail.com
@@ -74,6 +78,10 @@ Al terminar, **sal siempre con el botón *Apagar AnyPad PS5*** de esa página (t
   puede quedarse parpadeando en azul hasta que se detenga AnyPad. Lo estamos arreglando para la **0.6.1**.
 - **Si no detecta ningún mando:** con el DualSense por cable, desactiva y vuelve a activar el Bluetooth en los
   Ajustes de la consola (se reinicia) y ejecuta AnyPad de nuevo.
+
+### Ayúdanos a confirmar la compatibilidad
+
+Si puedes confirmar que AnyPad PS5 funciona con alguno de los mandos compatibles, mándanos el log a [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com). ¡Esto nos ayudará mucho!
 
 Mandos: ver [COMPATIBILITY.md](COMPATIBILITY.md). Licencia: GPL-3.0-or-later ([LICENSE](LICENSE)).
 Autor: **elmonomalvad0**, el mismo autor que *sinfiltros* (el AnyPad PS5 original en GitHub).
