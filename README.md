@@ -15,15 +15,19 @@
 Use other Bluetooth controllers on a jailbroken PS5 (DualShock 4, 8BitDo, Switch Pro and more), with no
 dongle. They show up in the console and in games as a DualSense.
 
-**Version 0.6.0-beta (6 October 2026).** Tested on a PS5 fat, firmware 10.01, with a DualShock 4 and an
-8BitDo SF30 Pro (Switch mode).
+**Version 0.7.0-beta (7 October 2026).** Tested on a PS5 fat, firmware 10.01, with a DualShock 4 and an
+8BitDo SF30 Pro (Switch mode). **Tested in the console menus, in games and in emulators: you can use it with
+confidence.**
 
-What's new: **works with more firmwares and more controllers**, the **menu and notices follow the console
-language** (English or Spanish), and **better stability with 8BitDo controllers** (D-pad and sticks).
+What's new: **the system has been reinforced.** Pairing is much faster and more reliable (the DualShock 4 pairs
+in seconds), and AnyPad no longer sends the controller chip a wrong command on every run. If a controller you
+switched on earlier has called the console, the **Pair** button is disabled and **tells you in its own text how
+many seconds are left** before the 60-second search starts; the message disappears when the search begins.
+Every run starts clean: nothing about your controllers is kept, so you pair them each time.
 
 ### How to use it
 
-1. Download `AnyPad-PS5-0.6.0-beta.elf` from [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
+1. Download `AnyPad-PS5-0.7.0-beta.elf` from [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
    and run it with your payload loader.
 2. Open **AnyPad** in the console's *Media* row (or `http://<console-ip>:8095` from a phone or PC).
 3. Press **Pair**, then put the controller in pairing mode (DualShock 4: Share + PS).
@@ -31,13 +35,31 @@ language** (English or Spanish), and **better stability with 8BitDo controllers*
 
 When you finish, **always exit with the *Stop AnyPad PS5* button** on that page (also before running it again).
 
+### If no controller is found
+
+1. **Turn Bluetooth off and on again** in the console settings (the console restarts), then run AnyPad again.
+2. **Reset the controller if it has been paired before.** A controller that remembers a previous pairing may
+   not show up. Examples:
+   - **DualShock 4:** with a paper clip, press the tiny reset button inside the small hole on the back of the
+     controller, next to the L2 button, for about 5 seconds. Then put it in pairing mode (Share + PS).
+   - **8BitDo (Pro 2 and similar):** hold the **Pair** button for about 5 seconds until the light goes out
+     (this restores factory settings and clears its pairings). Then hold **Pair** for about 3 seconds, until the
+     lights blink fast, to put it in pairing mode. Some 8BitDo models have a reset hole instead.
+   - **Any other controller:** search for how to reset *your* model.
+3. Press **Pair** first and put the controller in pairing mode afterwards, close to the console.
+
 ### Known issues
 
-- **DualShock 4:** pair it again each time you switch it on. Other controllers reconnect by themselves.
-- **DualSense blinking blue:** if a DualSense turns off and tries to reconnect while AnyPad is running, it
-  may stay blinking blue until AnyPad is stopped. We are working on it for **0.6.1**.
-- **If no controller is found:** with the DualSense on the cable, turn Bluetooth off and on again in the
-  console settings (the console restarts), then run AnyPad again.
+- **DualSense: do not switch it off while AnyPad is running.** If the DualSense is forced off, it enters the
+  blinking blue mode and does not work until AnyPad is stopped. We will improve this in a future version. If you
+  do not switch it off, everything works great.
+- **Pair your controllers each time you run AnyPad.** Nothing is kept between runs.
+
+### Support the project
+
+Many people ask me to test other controllers and other console versions. In the near future I will add a
+**Throne** page for donations, here and on Twitter. I would love to have a console on firmware 13.60 as well as
+my 10.01. It is not mandatory, but anyone who wants to help the project will be able to.
 
 ### Help us confirm compatibility
 
@@ -71,15 +93,19 @@ X / Twitter: [@elmonomalvad0](https://x.com/elmonomalvad0) · Contact: exposed.c
 Usa otros mandos Bluetooth en una PS5 con jailbreak (DualShock 4, 8BitDo, Switch Pro y más), sin
 adaptadores. La consola y los juegos los ven como un DualSense.
 
-**Versión 0.6.0-beta (6 de octubre de 2026).** Probada en una PS5 fat, firmware 10.01, con un DualShock 4 y
-un 8BitDo SF30 Pro (modo Switch).
+**Versión 0.7.0-beta (7 de octubre de 2026).** Probada en una PS5 fat, firmware 10.01, con un DualShock 4 y
+un 8BitDo SF30 Pro (modo Switch). **Probada en los menús de la consola, en juegos y en emuladores: puedes usarla
+con confianza.**
 
-Novedades: **funciona con más firmwares y más mandos**, el **menú y los avisos siguen el idioma de la
-consola** (castellano o inglés) y **más estabilidad con los mandos 8BitDo** (cruceta y sticks).
+Novedades: **el sistema se ha reforzado.** El emparejado es mucho más rápido y fiable (el DualShock 4 se empareja
+en segundos), y AnyPad ya no envía una orden errónea al chip de los mandos en cada ejecución. Si un mando que has
+encendido antes ha llamado a la consola, el botón **Emparejar** queda deshabilitado y **te dice en su propio texto
+cuántos segundos faltan** para que empiece la búsqueda de 60 segundos; el mensaje desaparece cuando empieza la
+búsqueda. Cada ejecución empieza limpia: no se guarda nada de tus mandos, así que los emparejas cada vez.
 
 ### Cómo usarlo
 
-1. Descarga `AnyPad-PS5-0.6.0-beta.elf` desde [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
+1. Descarga `AnyPad-PS5-0.7.0-beta.elf` desde [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)
    y ejecútalo con tu cargador de payloads.
 2. Abre **AnyPad** en *Contenido multimedia* de la consola (o `http://<ip-de-la-consola>:8095` desde el móvil o el PC).
 3. Pulsa **Emparejar** y pon el mando en modo emparejamiento (DualShock 4: Share + PS).
@@ -87,13 +113,32 @@ consola** (castellano o inglés) y **más estabilidad con los mandos 8BitDo** (c
 
 Al terminar, **sal siempre con el botón *Apagar AnyPad PS5*** de esa página (también antes de volver a ejecutarlo).
 
+### Si no detecta ningún mando
+
+1. **Desactiva y vuelve a activar el Bluetooth** en los Ajustes de la consola (se reinicia) y ejecuta AnyPad de nuevo.
+2. **Haz un reset del mando si ya ha estado emparejado.** Un mando que recuerda un emparejado anterior puede no
+   aparecer. Ejemplos:
+   - **DualShock 4:** con un clip, pulsa el pequeño botón de reset del agujero de la parte trasera del mando,
+     junto al botón L2, durante unos 5 segundos. Después ponlo en modo emparejamiento (Share + PS).
+   - **8BitDo (Pro 2 y parecidos):** mantén el botón **Pair** unos 5 segundos hasta que se apague la luz (restaura
+     los ajustes de fábrica y borra sus emparejamientos). Después mantén **Pair** unos 3 segundos, hasta que las
+     luces parpadeen rápido, para ponerlo en modo emparejamiento. Algunos modelos de 8BitDo tienen un agujero de
+     reset en su lugar.
+   - **Cualquier otro mando:** busca cómo se hace el reset de *tu* modelo.
+3. Pulsa **Emparejar** primero y pon el mando en modo emparejamiento después, cerca de la consola.
+
 ### Problemas conocidos
 
-- **DualShock 4:** hay que emparejarlo cada vez que lo enciendes. Los demás mandos se reconectan solos.
-- **DualSense parpadeando en azul:** si un DualSense se apaga e intenta reconectarse con AnyPad en marcha,
-  puede quedarse parpadeando en azul hasta que se detenga AnyPad. Lo estamos arreglando para la **0.6.1**.
-- **Si no detecta ningún mando:** con el DualSense por cable, desactiva y vuelve a activar el Bluetooth en los
-  Ajustes de la consola (se reinicia) y ejecuta AnyPad de nuevo.
+- **DualSense: no lo apagues mientras AnyPad está en marcha.** Si se fuerza el apagado del DualSense, entra en el
+  modo azul parpadeante y no funciona hasta que se detenga AnyPad. Lo mejoraremos en una próxima versión. Si no lo
+  apagas, todo funciona estupendamente.
+- **Empareja tus mandos cada vez que ejecutes AnyPad.** No se guarda nada entre ejecuciones.
+
+### Apoya el proyecto
+
+Mucha gente me pide que pruebe otros mandos y otras versiones de la consola. En breve añadiré una página de
+**Throne** para donaciones, aquí y en Twitter. Me encantaría tener una consola con el firmware 13.60 además de la
+mía, con el 10.01. No es obligatorio, pero quien quiera ayudar al proyecto podrá hacerlo.
 
 ### Ayúdanos a confirmar la compatibilidad
 
