@@ -57,9 +57,9 @@ When you finish, **always exit with the *Stop AnyPad PS5* button** on that page 
 
 ### Support the project
 
-Many people ask me to test other controllers and other console versions. In the near future I will add a
-**Throne** page for donations, here and on Twitter. I would love to have a console on firmware 13.60 as well as
-my 10.01. It is not mandatory, but anyone who wants to help the project will be able to.
+Many people ask me to test other controllers and other console versions. Any help is very welcome to **port this project to PS4** and to **PS5 firmware 13.60**, and to support **more controllers**. I would love to have a console on firmware 13.60 as well as my 10.01. It is not mandatory, but anyone who wants to help the project can do so on my Throne page:
+
+👉 **[https://throne.com/elmonomalvad0](https://throne.com/elmonomalvad0)**
 
 ### Help us confirm compatibility
 
@@ -136,9 +136,9 @@ Al terminar, **sal siempre con el botón *Apagar AnyPad PS5*** de esa página (t
 
 ### Apoya el proyecto
 
-Mucha gente me pide que pruebe otros mandos y otras versiones de la consola. En breve añadiré una página de
-**Throne** para donaciones, aquí y en Twitter. Me encantaría tener una consola con el firmware 13.60 además de la
-mía, con el 10.01. No es obligatorio, pero quien quiera ayudar al proyecto podrá hacerlo.
+Mucha gente me pide que pruebe otros mandos y otras versiones de la consola. Agradecemos cualquier ayuda para poder **portar este proyecto a PS4**, a las versiones **13.60 de PS5** y a **diferentes mandos**. Me encantaría tener una consola con el firmware 13.60 además de la mía, con el 10.01. No es obligatorio, pero quien quiera ayudar al proyecto puede hacerlo desde mi página de Throne:
+
+👉 **[https://throne.com/elmonomalvad0](https://throne.com/elmonomalvad0)**
 
 ### Ayúdanos a confirmar la compatibilidad
 
