@@ -5,7 +5,7 @@
 **A Bluetooth controller bridge for jailbroken PS5 consoles.**
 **Un puente de mandos Bluetooth para PS5 con jailbreak.**
 
-**[English](#english) · [Español](#español)**
+**[English](#english) · [Español](#español)** · [Français](README.fr.md) · [Italiano](README.it.md) · [Português](README.pt.md) · [Deutsch](README.de.md) · [Русский](README.ru.md) · [简体中文](README.zh.md) · [繁體中文](README.zh-Hant.md) · [日本語](README.ja.md) · [한국어](README.ko.md) · [العربية](README.ar.md)
 
 ---
 
@@ -17,6 +17,8 @@ AnyPad PS5 lets you use controllers from other platforms on your PS5. It connect
 No USB dongle required.
 
 **Version 0.8.1-beta.** Tested on a PS5 fat, firmware 10.01, with a DualShock 4 and an 8BitDo SF30 Pro (Switch mode), in the console menus, in games and in emulators.
+
+**Available in twelve languages:** English, Spanish, French, Italian, Portuguese, German, Russian, Simplified Chinese, Traditional Chinese, Japanese, Korean and Arabic. The AnyPad page follows the console language.
 
 ---
 
@@ -36,15 +38,13 @@ One known issue remains: if the DualSense is switched off while AnyPad is runnin
 
 ### Faster pairing
 
-The PS5 sometimes keeps its Bluetooth radio almost permanently busy listening for its own controllers. In that state a search could find nothing for a whole minute, and calls to a controller went unanswered. AnyPad now frees the radio while it pairs, and gives it back to the system afterwards.
-
-In our tests the DualShock 4 and the 8BitDo are found in a few seconds and are ready a few seconds later, where earlier versions often needed several attempts.
+Pairing is now much faster and more reliable. In our tests the DualShock 4 and the 8BitDo are found in a few seconds and are ready a few seconds later, where earlier versions often needed several attempts.
 
 ### More stable
 
-- **No lag:** the radio stays free while AnyPad controllers are connected, so they keep a smooth response.
-- **Controllers that think they are still connected** (switched on normally instead of in pairing mode) are now paired at the first attempt. AnyPad turns down their old call and calls them itself.
-- **Bounded retries:** when a controller is slow to answer or refuses a step, AnyPad tries again a limited number of times instead of giving up or insisting endlessly.
+- **Smooth response:** controllers react fluidly while you play, without lag.
+- **Controllers switched on normally** (instead of in pairing mode) are now paired at the first attempt.
+- **Smarter handling** of controllers that are slow to answer or refuse a step.
 
 ### Configure PS
 
@@ -86,6 +86,8 @@ When you press PS on an external controller, the console asks who will use it. C
 | **Nintendo Switch Pro Controller** | 🧪 **Supported, not tested yet** | Same protocol as the 8BitDo in Switch mode. |
 | **Xbox controllers** | 🧪 **Supported, not tested yet** | Bluetooth LE models need Secure Connections pairing; support on the PS5 chip is not verified yet. |
 | **Any other Bluetooth HID gamepad** | 🧪 **Generic profile** | May work without a specific profile. |
+
+**Controllers we believe are compatible** (supported in the code, not tested on a console yet): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Xbox One S, Xbox Elite Series 2, Xbox Adaptive Controller, Xbox Series X|S, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s and T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro for Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, NVIDIA Shield controller (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro and MOGA Pro 2, Atari VCS Modern controller, Hyperkin Scout, Mocute 050. If you try one of them, please send me your log.
 
 The full list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -168,7 +170,7 @@ AnyPad PS5 is original code. These projects were studied to understand how thing
 - **[MissionControl](https://github.com/ndeadly/MissionControl)** (ndeadly): controller profiles by vendor and model, and the report layouts of many controllers.
 - **Ghostcontrol** (StonedModder): how to create a virtual DualSense on the PS5 and assign it to a user.
 - **[SplashDown](https://github.com/seregonwar/SplashDown)** (seregonwar) and **[shadPS4](https://github.com/shadps4-emu/shadPS4)**: the virtual pad sequence and the pad data layout.
-- **[HearBridge-PS5](https://github.com/X-F1REBALL-X/HearBridge-PS5)** (X-F1REBALL-X): ideas on handling an early L2CAP configuration and on bounded retries.
+- **[HearBridge-PS5](https://github.com/X-F1REBALL-X/HearBridge-PS5)** (X-F1REBALL-X): ideas on handling Bluetooth negotiation.
 - **[ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk)** (John Törnblom): the toolchain everything is built with.
 
 License: GPL-3.0-or-later ([LICENSE](LICENSE)).
@@ -186,6 +188,8 @@ AnyPad PS5 te permite usar en tu PS5 mandos de otras plataformas. Los conecta a 
 No hace falta ningún adaptador USB.
 
 **Versión 0.8.1-beta.** Probada en una PS5 fat, firmware 10.01, con un DualShock 4 y un 8BitDo SF30 Pro (modo Switch), en los menús de la consola, en juegos y en emuladores.
+
+**Disponible en doce idiomas:** español, inglés, francés, italiano, portugués, alemán, ruso, chino simplificado, chino tradicional, japonés, coreano y árabe. La página de AnyPad sigue el idioma de la consola.
 
 ---
 
@@ -205,15 +209,13 @@ Queda un fallo conocido: si se apaga el DualSense con AnyPad en marcha, puede qu
 
 ### Emparejado más rápido
 
-La PS5 a veces mantiene su radio Bluetooth casi todo el tiempo ocupada esperando a sus propios mandos. En ese estado, una búsqueda podía pasar un minuto entero sin encontrar nada, y las llamadas a un mando se quedaban sin respuesta. Ahora AnyPad libera la radio mientras empareja y se la devuelve al sistema al terminar.
-
-En nuestras pruebas, el DualShock 4 y el 8BitDo aparecen en pocos segundos y quedan listos pocos segundos después, cuando antes a menudo hacían falta varios intentos.
+El emparejado es ahora mucho más rápido y fiable. En nuestras pruebas, el DualShock 4 y el 8BitDo aparecen en pocos segundos y quedan listos pocos segundos después, cuando antes a menudo hacían falta varios intentos.
 
 ### Más estable
 
-- **Sin lag:** la radio sigue libre mientras haya mandos de AnyPad conectados, así que responden con fluidez.
-- **Mandos que creen seguir conectados** (encendidos de forma normal en vez de en modo emparejamiento): ahora se emparejan al primer intento. AnyPad rechaza su llamada antigua y los llama él.
-- **Reintentos limitados:** si un mando tarda en responder o rechaza un paso, AnyPad lo intenta de nuevo un número limitado de veces, en lugar de rendirse o insistir sin fin.
+- **Respuesta fluida:** los mandos reaccionan con suavidad mientras juegas, sin lag.
+- **Mandos encendidos de forma normal** (en vez de en modo emparejamiento): ahora se emparejan al primer intento.
+- **Tratamiento más inteligente** de los mandos que tardan en responder o rechazan un paso.
 
 ### Configurar PS
 
@@ -255,6 +257,8 @@ Cuando pulsas PS en un mando externo, la consola pregunta quién lo va a usar. E
 | **Nintendo Switch Pro Controller** | 🧪 **Soportado, sin probar** | Mismo protocolo que el 8BitDo en modo Switch. |
 | **Mandos Xbox** | 🧪 **Soportado, sin probar** | Los modelos Bluetooth LE necesitan emparejado con Secure Connections; aún no está verificado que el chip de la PS5 lo admita. |
 | **Cualquier otro mando HID Bluetooth** | 🧪 **Perfil genérico** | Puede funcionar sin un perfil específico. |
+
+**Mandos que creemos compatibles** (soportados en el código, aún sin probar en una consola): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Xbox One S, Xbox Elite Series 2, Xbox Adaptive Controller, Xbox Series X|S, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s y T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro para Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, mando NVIDIA Shield (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro y MOGA Pro 2, mando Atari VCS Modern, Hyperkin Scout, Mocute 050. Si pruebas alguno, envíame tu log.
 
 La lista completa, mando por mando, está en [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -337,7 +341,7 @@ AnyPad PS5 es código propio. Estos proyectos se estudiaron para entender cómo 
 - **[MissionControl](https://github.com/ndeadly/MissionControl)** (ndeadly): los perfiles de mandos por fabricante y modelo, y el formato de los informes de muchos mandos.
 - **Ghostcontrol** (StonedModder): cómo crear un DualSense virtual en la PS5 y asignarlo a un usuario.
 - **[SplashDown](https://github.com/seregonwar/SplashDown)** (seregonwar) y **[shadPS4](https://github.com/shadps4-emu/shadPS4)**: la secuencia del mando virtual y el formato de los datos del mando.
-- **[HearBridge-PS5](https://github.com/X-F1REBALL-X/HearBridge-PS5)** (X-F1REBALL-X): ideas sobre cómo tratar una configuración L2CAP adelantada y sobre reintentos limitados.
+- **[HearBridge-PS5](https://github.com/X-F1REBALL-X/HearBridge-PS5)** (X-F1REBALL-X): ideas sobre la negociación Bluetooth.
 - **[ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk)** (John Törnblom): las herramientas con las que se compila todo.
 
 Licencia: GPL-3.0-or-later ([LICENSE](LICENSE)).
