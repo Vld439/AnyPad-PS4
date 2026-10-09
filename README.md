@@ -24,7 +24,9 @@ No USB dongle required.
 
 AnyPad PS5 started on 3 October 2026 at about 14:20 (Spanish time), the day I published its first version. The idea came from MissionControl, which lets the Nintendo Switch use controllers from other consoles. AnyPad may not have been the first project to use other controllers on the PS5: there were already projects that connected them by USB. But none connected them by Bluetooth, and AnyPad was the first to do it. I had an idea and I carried it out.
 
-I am leaving the project here: version 0.8.1 is the last AnyPad PS5 release.
+The goal now is to make AnyPad work with more controllers. If you try it, please send me your log (see "Help us confirm compatibility" below): every log helps.
+
+If you develop an emulator and would like to integrate AnyPad, I am willing to share the code with you. Write to me at [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com).
 
 One known issue remains: if the DualSense is switched off while AnyPad is running, it can stay blinking blue. I hope future projects do not have it. Projects forked from AnyPad, from the code I published, will very probably inherit this issue. It is part of AnyPad's legacy, and a sign that, at least in their Bluetooth part, they are forks of AnyPad.
 
@@ -148,7 +150,13 @@ Check that AnyPad is running, that your phone or computer is on the same network
 
 ---
 
-If AnyPad has been useful to you and you want to thank it, you can do so on my Throne page: **[throne.com/elmonomalvad0](https://throne.com/elmonomalvad0)**
+# Help us confirm compatibility
+
+If you can confirm that AnyPad PS5 works (or does not work) with a controller, please send the log (`/data/anypad/anypad.log`) to [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com), with the controller model, the console firmware, the jailbreak and the AnyPad version. This helps a lot.
+
+### Support the project
+
+Many people ask me to test other controllers and other console versions. Any help is very welcome to **port this project to PS4** and to **PS5 firmware 13.60**, and to support **more controllers**. I would love to have a console on firmware 13.60 as well as my 10.01. It is not mandatory, but anyone who wants to help the project can do so on my Throne page: **[throne.com/elmonomalvad0](https://throne.com/elmonomalvad0)**
 
 ---
 
@@ -185,7 +193,9 @@ No hace falta ningún adaptador USB.
 
 AnyPad PS5 empezó el 3 de octubre de 2026, hacia las 14:20 (hora de España), el día que publiqué su primera versión. La idea partió de MissionControl, que permite usar en la Nintendo Switch mandos de otras consolas. Quizá AnyPad no fue el primer proyecto para usar otros mandos en la PS5: ya había proyectos que los conectaban por USB. Pero ninguno los conectaba por Bluetooth, y AnyPad fue el primero en hacerlo. Tuve una idea y la llevé a cabo.
 
-Dejo aquí el proyecto: la versión 0.8.1 es el último ELF de AnyPad PS5.
+El objetivo ahora es que AnyPad funcione con más mandos. Si lo pruebas, por favor envíame tu log (mira «Ayúdanos a confirmar la compatibilidad» más abajo): cada log ayuda.
+
+Si desarrollas un emulador y quieres integrar AnyPad, estoy dispuesto a compartir el código contigo. Escríbeme a [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com).
 
 Queda un fallo conocido: si se apaga el DualSense con AnyPad en marcha, puede quedarse en azul parpadeante. Espero que los próximos proyectos no lo tengan. Los que sean forks de AnyPad, del código que publiqué, muy probablemente heredarán ese fallo. Es parte del legado de AnyPad, y una muestra de que, al menos en su parte Bluetooth, son un fork de AnyPad.
 
@@ -309,7 +319,13 @@ Comprueba que AnyPad está en marcha, que tu móvil o PC está en la misma red q
 
 ---
 
-Si AnyPad te ha sido útil y quieres agradecerlo, puedes hacerlo en mi página de Throne: **[throne.com/elmonomalvad0](https://throne.com/elmonomalvad0)**
+# Ayúdanos a confirmar la compatibilidad
+
+Si puedes confirmar que AnyPad PS5 funciona (o no funciona) con un mando, envía el log (`/data/anypad/anypad.log`) a [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com), con el modelo del mando, el firmware de la consola, el jailbreak y la versión de AnyPad. Esto ayuda mucho.
+
+### Apoya el proyecto
+
+Mucha gente me pide que pruebe otros mandos y otras versiones de la consola. Agradecemos cualquier ayuda para poder **portar este proyecto a PS4**, a las versiones **13.60 de PS5** y a **diferentes mandos**. Me encantaría tener una consola con el firmware 13.60 además de la mía, con el 10.01. No es obligatorio, pero quien quiera ayudar al proyecto puede hacerlo desde mi página de Throne: **[throne.com/elmonomalvad0](https://throne.com/elmonomalvad0)**
 
 ---
 
