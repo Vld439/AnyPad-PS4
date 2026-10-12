@@ -14,7 +14,7 @@
 
 لا حاجة إلى محوّل USB.
 
-**الإصدار 0.8.1-beta.** تم اختباره على PS5 fat بنظام 10.01 مع DualShock 4 وجهاز 8BitDo SF30 Pro (وضع Switch)، في قوائم الجهاز وفي الألعاب وفي المحاكيات.
+**الإصدار 0.9.1-beta.** تم اختباره على PS5 fat بنظام 10.01 مع DualShock 4 وجهاز 8BitDo SF30 Pro (وضع Switch)، في قوائم الجهاز وفي الألعاب وفي المحاكيات.
 
 **متوفر باثنتي عشرة لغة:** الإنجليزية والإسبانية والفرنسية والإيطالية والبرتغالية والألمانية والروسية والصينية المبسطة والصينية التقليدية واليابانية والكورية والعربية. تتبع صفحة AnyPad لغة الجهاز.
 
@@ -31,6 +31,12 @@
 تبقى مشكلة معروفة واحدة: إذا أُطفئ DualSense أثناء تشغيل AnyPad، فقد يبقى يومض باللون الأزرق. آمل ألا تحدث هذه المشكلة في المشاريع القادمة. المشاريع المتفرعة من AnyPad، من الكود الذي نشرته، سترث هذه المشكلة على الأرجح. إنها جزء من إرث AnyPad، ودليل على أنها، على الأقل في جزء البلوتوث، نسخ متفرعة من AnyPad.
 
 ---
+
+## الجديد في 0.9
+
+- **توافق أكبر:** دعم المزيد من وحدات التحكم، والتوافق مع شريحتَي Bluetooth المستخدمتين في أجهزة PS5.
+- **إصلاح أخطاء.**
+- **واجهة رسومية جديدة** لصفحة AnyPad.
 
 ## الجديد في 0.8
 
@@ -82,10 +88,10 @@
 | **8BitDo SF30 Pro (وضع Switch)** | ✅ **مُتحقَّق منها** | تظهر كوحدة Switch Pro Controller. استخدم «إعداد PS» لزر PS. |
 | **GameSir G7 SE** | ✅ **مُتحقَّق منها** | |
 | **Nintendo Switch Pro Controller** | 🧪 **مدعومة، لم تُختبر بعد** | البروتوكول نفسه الذي يستخدمه 8BitDo في وضع Switch. |
-| **وحدات تحكم Xbox** | 🧪 **مدعومة، لم تُختبر بعد** | تحتاج طرازات Bluetooth LE إلى إقران Secure Connections؛ ولم يُتحقق بعد من دعم شريحة PS5 لذلك. |
+| **وحدات تحكم Xbox** | ✅ **تعمل (حسب المستخدمين)** | أكد عدد من المستخدمين أنها تعمل منذ الإصدار 0.8. إذا لم تتصل وحدتك، فأرسل لي سجلّك وطرازها. |
 | **أي وحدة تحكم HID أخرى عبر البلوتوث** | 🧪 **ملف عام** | قد تعمل دون ملف مخصص. |
 
-**وحدات التحكم التي نعتقد أنها متوافقة** (مدعومة في الكود، ولم تُختبر بعد على جهاز): DualShock 4 v1 وHori Onyx وRazer Raiju Ultimate وRazer Raiju Tournament Edition وSCUF Vantage 2 وXbox One S وXbox Elite Series 2 وXbox Adaptive Controller وXbox Series X|S وNintendo Switch Pro Controller وNintendo Switch Online (SNES وN64 وMega Drive / Genesis) وGameSir G3s وG4s وG7 Pro وT1s وT2a وBetop 2585N2 وBionik Vulkan وLanShen X1Pro وXiaomi Mi Controller وAmazon Fire / iPega وiPega 9-series و8BitDo SN30 Pro (لـ Xbox Cloud Gaming) و8BitDo Ultimate 2.4G وSteelSeries ووحدة تحكم NVIDIA Shield (2017) وRazer Serval وPowerA MOGA Hero وMOGA Pro وMOGA Pro 2 ووحدة تحكم Atari VCS Modern وHyperkin Scout وMocute 050. إذا جرّبت إحداها، فأرسل لي سجلّك.
+**وحدات التحكم التي نعتقد أنها متوافقة** (مدعومة في الكود، ولم تُختبر بعد على جهاز): DualShock 4 v1 وHori Onyx وRazer Raiju Ultimate وRazer Raiju Tournament Edition وSCUF Vantage 2 وNintendo Switch Pro Controller وNintendo Switch Online (SNES وN64 وMega Drive / Genesis) وGameSir G3s وG4s وG7 Pro وT1s وT2a وBetop 2585N2 وBionik Vulkan وLanShen X1Pro وXiaomi Mi Controller وAmazon Fire / iPega وiPega 9-series و8BitDo SN30 Pro (لـ Xbox Cloud Gaming) و8BitDo Ultimate 2.4G وSteelSeries ووحدة تحكم NVIDIA Shield (2017) وRazer Serval وPowerA MOGA Hero وMOGA Pro وMOGA Pro 2 ووحدة تحكم Atari VCS Modern وHyperkin Scout وMocute 050. إذا جرّبت إحداها، فأرسل لي سجلّك.
 
 القائمة الكاملة، وحدة تلو الأخرى، في [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -101,7 +107,7 @@
 
 # طريقة الاستخدام
 
-1. **حمّل AnyPad.** نزّل `AnyPad-PS5-0.8.1-beta.elf` من [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) وحمّله بأداة تحميل payload التي تستخدمها عادة.
+1. **حمّل AnyPad.** نزّل `AnyPad-PS5-0.9.1-beta.elf` من [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) وحمّله بأداة تحميل payload التي تستخدمها عادة.
 2. **افتح الصفحة.** افتح **AnyPad** من صف «الوسائط» في الجهاز، أو افتح `http://<عنوان-IP-للجهاز>:8095` من هاتف أو حاسوب على الشبكة نفسها.
 3. **أقرِن.** اضغط **الإقران**، ثم ضع وحدة التحكم في وضع الإقران بالقرب من الجهاز.
 

@@ -34,6 +34,9 @@ Verificado en una PS5 fat, firmware 10.01, con el último ShadowMountPlus y kstu
 
 ## Xbox
 
+**Users report Xbox controllers working since 0.8; the exact models are not identified yet. If you use one, please send me your log and the model.**
+**Varios usuarios confirman que los mandos Xbox funcionan desde la 0.8; aún no están identificados los modelos exactos. Si usas uno, envíame tu log y el modelo.**
+
 | USB id | Controller / Mando | Status |
 |---|---|---|
 | `045e:02e0` | Xbox One S (Bluetooth Classic firmware) | 🧪 |
