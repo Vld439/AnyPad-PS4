@@ -12,7 +12,7 @@ AnyPad PS5 让你在 PS5 上使用其他平台的手柄。它通过主机自带�
 
 无需 USB 适配器。
 
-**版本 0.8.1-beta。** 已在 PS5 fat、固件 10.01 上，使用 DualShock 4 和 8BitDo SF30 Pro（Switch 模式）测试，涵盖主机菜单、游戏和模拟器。
+**版本 0.9.1-beta。** 已在 PS5 fat、固件 10.01 上，使用 DualShock 4 和 8BitDo SF30 Pro（Switch 模式）测试，涵盖主机菜单、游戏和模拟器。
 
 **提供十二种语言：** 英语、西班牙语、法语、意大利语、葡萄牙语、德语、俄语、简体中文、繁体中文、日语、韩语和阿拉伯语。AnyPad 页面会跟随主机的语言。
 
@@ -29,6 +29,12 @@ AnyPad PS5 开始于 2026 年 10 月 3 日 14:20 左右（西班牙时间），�
 仍有一个已知问题：如果在 AnyPad 运行时关闭 DualSense，它可能会一直蓝灯闪烁。我希望今后的项目不会有这个问题。基于我发布的 AnyPad 代码的分支（fork）很可能会继承这个问题。这是 AnyPad 留下的印记，也说明至少在蓝牙部分，它们是 AnyPad 的分支。
 
 ---
+
+## 0.9 的新内容
+
+- **兼容性更好：** 支持更多手柄，并兼容 PS5 中使用的两种蓝牙芯片。
+- **修复了若干错误。**
+- AnyPad 页面采用**全新的图形界面**。
 
 ## 0.8 的新内容
 
@@ -80,10 +86,10 @@ AnyPad 页面跟随主机语言：英语、西班牙语、法语、意大利语�
 | **8BitDo SF30 Pro（Switch 模式）** | ✅ **已验证** | 显示为 Switch Pro Controller。PS 键请使用“设置 PS”。 |
 | **GameSir G7 SE** | ✅ **已验证** | |
 | **Nintendo Switch Pro Controller** | 🧪 **已支持，尚未测试** | 与 Switch 模式下的 8BitDo 协议相同。 |
-| **Xbox 手柄** | 🧪 **已支持，尚未测试** | 蓝牙 LE 型号需要 Secure Connections 配对；PS5 芯片是否支持尚未验证。 |
+| **Xbox 手柄** | ✅ **可用（用户反馈）** | 多位用户确认从 0.8 起可以使用。如果你的手柄无法连接，请把日志和型号发给我。 |
 | **任何其他蓝牙 HID 手柄** | 🧪 **通用配置** | 没有专用配置也可能可用。 |
 
-**我们认为可能兼容的手柄**（代码中已支持，尚未在主机上测试）：DualShock 4 v1、Hori Onyx、Razer Raiju Ultimate、Razer Raiju Tournament Edition、SCUF Vantage 2、Xbox One S、Xbox Elite Series 2、Xbox Adaptive Controller、Xbox Series X|S、Nintendo Switch Pro Controller、Nintendo Switch Online（SNES、N64、Mega Drive / Genesis）、GameSir G3s、G4s、G7 Pro、T1s 和 T2a、Betop 2585N2、Bionik Vulkan、LanShen X1Pro、Xiaomi Mi Controller、Amazon Fire / iPega、iPega 9-series、8BitDo SN30 Pro（Xbox Cloud Gaming 版）、8BitDo Ultimate 2.4G、SteelSeries、NVIDIA Shield 手柄（2017）、Razer Serval、PowerA MOGA Hero、MOGA Pro 和 MOGA Pro 2、Atari VCS Modern 手柄、Hyperkin Scout、Mocute 050。如果你试用了其中任何一款，请把日志发给我。
+**我们认为可能兼容的手柄**（代码中已支持，尚未在主机上测试）：DualShock 4 v1、Hori Onyx、Razer Raiju Ultimate、Razer Raiju Tournament Edition、SCUF Vantage 2、Nintendo Switch Pro Controller、Nintendo Switch Online（SNES、N64、Mega Drive / Genesis）、GameSir G3s、G4s、G7 Pro、T1s 和 T2a、Betop 2585N2、Bionik Vulkan、LanShen X1Pro、Xiaomi Mi Controller、Amazon Fire / iPega、iPega 9-series、8BitDo SN30 Pro（Xbox Cloud Gaming 版）、8BitDo Ultimate 2.4G、SteelSeries、NVIDIA Shield 手柄（2017）、Razer Serval、PowerA MOGA Hero、MOGA Pro 和 MOGA Pro 2、Atari VCS Modern 手柄、Hyperkin Scout、Mocute 050。如果你试用了其中任何一款，请把日志发给我。
 
 完整的逐款列表见 [COMPATIBILITY.md](COMPATIBILITY.md)。
 
@@ -99,7 +105,7 @@ AnyPad PS5 以常驻 payload 的形式运行在已越狱的 PS5 上。它使用�
 
 # 使用方法
 
-1. **加载 AnyPad。** 从 [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) 下载 `AnyPad-PS5-0.8.1-beta.elf`，用你平时使用的 payload 加载器加载。
+1. **加载 AnyPad。** 从 [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) 下载 `AnyPad-PS5-0.9.1-beta.elf`，用你平时使用的 payload 加载器加载。
 2. **打开页面。** 在主机的“媒体”一行打开 **AnyPad**，或在同一网络的手机或电脑上打开 `http://<主机IP>:8095`。
 3. **配对。** 按下**配对**，然后在靠近主机的地方让手柄进入配对模式。
 

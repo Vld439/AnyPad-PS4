@@ -12,7 +12,7 @@ AnyPad PS5 を使うと、ほかのプラットフォームのコントローラ
 
 USB アダプターは不要です。
 
-**バージョン 0.8.1-beta。** PS5 fat、ファームウェア 10.01 で、DualShock 4 と 8BitDo SF30 Pro（Switch モード）を使い、本体メニュー、ゲーム、エミュレーターで動作確認しています。
+**バージョン 0.9.1-beta。** PS5 fat、ファームウェア 10.01 で、DualShock 4 と 8BitDo SF30 Pro（Switch モード）を使い、本体メニュー、ゲーム、エミュレーターで動作確認しています。
 
 **12 言語に対応：** 英語、スペイン語、フランス語、イタリア語、ポルトガル語、ドイツ語、ロシア語、簡体字中国語、繁体字中国語、日本語、韓国語、アラビア語。AnyPad のページは本体の言語に従います。
 
@@ -29,6 +29,12 @@ AnyPad PS5 は、最初のバージョンを公開した 2026 年 10 月 3 日�
 既知の問題が 1 つ残っています。AnyPad の実行中に DualSense の電源を切ると、青く点滅したままになることがあります。今後のプロジェクトにはこの問題がないことを願います。私が公開したコードから作られた AnyPad のフォークは、ほぼ間違いなくこの問題を引き継ぎます。これは AnyPad の遺産であり、少なくとも Bluetooth の部分では AnyPad のフォークであることの印です。
 
 ---
+
+## 0.9 の新機能
+
+- **互換性の向上：** 対応コントローラーが増え、PS5 に使われている 2 種類の Bluetooth チップの両方に対応しました。
+- **不具合の修正。**
+- AnyPad ページの**新しいグラフィカルインターフェース**。
 
 ## 0.8 の新機能
 
@@ -80,10 +86,10 @@ AnyPad の実行中に DualSense の電源を切ると、青く点滅するモ�
 | **8BitDo SF30 Pro（Switch モード）** | ✅ **動作確認済み** | Switch Pro Controller として認識されます。PS ボタンには「PS を設定」を使ってください。 |
 | **GameSir G7 SE** | ✅ **動作確認済み** | |
 | **Nintendo Switch Pro Controller** | 🧪 **対応済み、未テスト** | Switch モードの 8BitDo と同じプロトコルです。 |
-| **Xbox コントローラー** | 🧪 **対応済み、未テスト** | Bluetooth LE のモデルは Secure Connections のペアリングが必要で、PS5 のチップが対応しているかは未確認です。 |
+| **Xbox コントローラー** | ✅ **動作（ユーザー報告）** | 0.8 以降で動作するとユーザーから報告があります。接続できない場合は、ログとモデル名を送ってください。 |
 | **その他の Bluetooth HID ゲームパッド** | 🧪 **汎用プロファイル** | 専用プロファイルがなくても動く場合があります。 |
 
-**互換性があると考えているコントローラー**（コードでは対応済み、実機では未テスト）：DualShock 4 v1、Hori Onyx、Razer Raiju Ultimate、Razer Raiju Tournament Edition、SCUF Vantage 2、Xbox One S、Xbox Elite Series 2、Xbox Adaptive Controller、Xbox Series X|S、Nintendo Switch Pro Controller、Nintendo Switch Online（SNES、N64、Mega Drive / Genesis）、GameSir G3s・G4s・G7 Pro・T1s・T2a、Betop 2585N2、Bionik Vulkan、LanShen X1Pro、Xiaomi Mi Controller、Amazon Fire / iPega、iPega 9-series、8BitDo SN30 Pro（Xbox Cloud Gaming 版）、8BitDo Ultimate 2.4G、SteelSeries、NVIDIA Shield コントローラー（2017）、Razer Serval、PowerA MOGA Hero・MOGA Pro・MOGA Pro 2、Atari VCS Modern コントローラー、Hyperkin Scout、Mocute 050。試した場合は、ログを送ってください。
+**互換性があると考えているコントローラー**（コードでは対応済み、実機では未テスト）：DualShock 4 v1、Hori Onyx、Razer Raiju Ultimate、Razer Raiju Tournament Edition、SCUF Vantage 2、Nintendo Switch Pro Controller、Nintendo Switch Online（SNES、N64、Mega Drive / Genesis）、GameSir G3s・G4s・G7 Pro・T1s・T2a、Betop 2585N2、Bionik Vulkan、LanShen X1Pro、Xiaomi Mi Controller、Amazon Fire / iPega、iPega 9-series、8BitDo SN30 Pro（Xbox Cloud Gaming 版）、8BitDo Ultimate 2.4G、SteelSeries、NVIDIA Shield コントローラー（2017）、Razer Serval、PowerA MOGA Hero・MOGA Pro・MOGA Pro 2、Atari VCS Modern コントローラー、Hyperkin Scout、Mocute 050。試した場合は、ログを送ってください。
 
 機種ごとの完全な一覧は [COMPATIBILITY.md](COMPATIBILITY.md) にあります。
 
@@ -99,7 +105,7 @@ AnyPad PS5 は、ジェイルブレイク済み PS5 上で常駐 payload とし�
 
 # 使い方
 
-1. **AnyPad を読み込む。** [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) から `AnyPad-PS5-0.8.1-beta.elf` をダウンロードし、いつも使っている payload ローダーで読み込みます。
+1. **AnyPad を読み込む。** [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) から `AnyPad-PS5-0.9.1-beta.elf` をダウンロードし、いつも使っている payload ローダーで読み込みます。
 2. **ページを開く。** 本体の「メディア」の行で **AnyPad** を開くか、同じネットワークのスマートフォンやパソコンで `http://<本体のIP>:8095` を開きます。
 3. **ペアリング。** **ペアリング**を押し、本体の近くでコントローラーをペアリングモードにします。
 

@@ -12,7 +12,7 @@ AnyPad PS5를 사용하면 다른 플랫폼의 컨트롤러를 PS5에서 쓸 수
 
 USB 어댑터가 필요 없습니다.
 
-**버전 0.8.1-beta.** PS5 fat, 펌웨어 10.01에서 DualShock 4와 8BitDo SF30 Pro(Switch 모드)로 본체 메뉴, 게임, 에뮬레이터에서 테스트했습니다.
+**버전 0.9.1-beta.** PS5 fat, 펌웨어 10.01에서 DualShock 4와 8BitDo SF30 Pro(Switch 모드)로 본체 메뉴, 게임, 에뮬레이터에서 테스트했습니다.
 
 **12개 언어 지원:** 영어, 스페인어, 프랑스어, 이탈리아어, 포르투갈어, 독일어, 러시아어, 중국어 간체, 중국어 번체, 일본어, 한국어, 아랍어. AnyPad 페이지는 본체의 언어를 따릅니다.
 
@@ -29,6 +29,12 @@ AnyPad PS5는 첫 버전을 공개한 2026년 10월 3일 14시 20분경(스페�
 알려진 문제가 하나 남아 있습니다. AnyPad가 실행 중일 때 DualSense를 끄면 파란색으로 깜빡이는 상태로 남을 수 있습니다. 앞으로의 프로젝트에는 이 문제가 없기를 바랍니다. 제가 공개한 코드를 바탕으로 만든 AnyPad의 포크는 이 문제를 그대로 물려받을 가능성이 매우 큽니다. 이는 AnyPad가 남긴 유산이며, 적어도 블루투스 부분에서는 AnyPad의 포크라는 표시입니다.
 
 ---
+
+## 0.9의 새로운 점
+
+- **호환성 향상:** 더 많은 컨트롤러를 지원하며, PS5에 쓰이는 두 가지 블루투스 칩 모두와 호환됩니다.
+- **버그 수정.**
+- AnyPad 페이지의 **새로운 그래픽 인터페이스**.
 
 ## 0.8의 새로운 점
 
@@ -80,10 +86,10 @@ AnyPad가 실행 중일 때 DualSense를 끄면 파란색 깜빡임 모드로 �
 | **8BitDo SF30 Pro(Switch 모드)** | ✅ **검증됨** | Switch Pro Controller로 인식됩니다. PS 버튼은 'PS 설정'을 사용하세요. |
 | **GameSir G7 SE** | ✅ **검증됨** | |
 | **Nintendo Switch Pro Controller** | 🧪 **지원, 아직 테스트 전** | Switch 모드의 8BitDo와 같은 프로토콜입니다. |
-| **Xbox 컨트롤러** | 🧪 **지원, 아직 테스트 전** | 블루투스 LE 모델은 Secure Connections 페어링이 필요하며, PS5 칩의 지원 여부는 아직 확인되지 않았습니다. |
+| **Xbox 컨트롤러** | ✅ **작동 (사용자 보고)** | 0.8부터 작동한다는 사용자 보고가 있습니다. 연결되지 않으면 로그와 모델명을 보내 주세요. |
 | **그 밖의 블루투스 HID 게임패드** | 🧪 **범용 프로필** | 전용 프로필 없이도 작동할 수 있습니다. |
 
-**호환될 것으로 보는 컨트롤러**(코드에서는 지원, 실제 본체에서는 아직 테스트 전): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Xbox One S, Xbox Elite Series 2, Xbox Adaptive Controller, Xbox Series X|S, Nintendo Switch Pro Controller, Nintendo Switch Online(SNES, N64, Mega Drive / Genesis), GameSir G3s·G4s·G7 Pro·T1s·T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro(Xbox Cloud Gaming용), 8BitDo Ultimate 2.4G, SteelSeries, NVIDIA Shield 컨트롤러(2017), Razer Serval, PowerA MOGA Hero·MOGA Pro·MOGA Pro 2, Atari VCS Modern 컨트롤러, Hyperkin Scout, Mocute 050. 이 중 하나를 써 보셨다면 로그를 보내 주세요.
+**호환될 것으로 보는 컨트롤러**(코드에서는 지원, 실제 본체에서는 아직 테스트 전): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Nintendo Switch Pro Controller, Nintendo Switch Online(SNES, N64, Mega Drive / Genesis), GameSir G3s·G4s·G7 Pro·T1s·T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro(Xbox Cloud Gaming용), 8BitDo Ultimate 2.4G, SteelSeries, NVIDIA Shield 컨트롤러(2017), Razer Serval, PowerA MOGA Hero·MOGA Pro·MOGA Pro 2, Atari VCS Modern 컨트롤러, Hyperkin Scout, Mocute 050. 이 중 하나를 써 보셨다면 로그를 보내 주세요.
 
 모델별 전체 목록은 [COMPATIBILITY.md](COMPATIBILITY.md)에 있습니다.
 
@@ -99,7 +105,7 @@ AnyPad PS5는 탈옥된 PS5에서 상주 payload로 실행됩니다. 본체의 �
 
 # 사용 방법
 
-1. **AnyPad 불러오기.** [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)에서 `AnyPad-PS5-0.8.1-beta.elf`를 내려받아 평소 쓰는 payload 로더로 불러옵니다.
+1. **AnyPad 불러오기.** [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases)에서 `AnyPad-PS5-0.9.1-beta.elf`를 내려받아 평소 쓰는 payload 로더로 불러옵니다.
 2. **페이지 열기.** 본체의 '미디어' 줄에서 **AnyPad**를 열거나, 같은 네트워크의 휴대폰이나 컴퓨터에서 `http://<본체-IP>:8095`를 엽니다.
 3. **페어링.** **페어링**을 누른 뒤, 본체 가까이에서 컨트롤러를 페어링 모드로 만듭니다.
 

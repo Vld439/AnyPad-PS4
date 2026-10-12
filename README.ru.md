@@ -12,7 +12,7 @@ AnyPad PS5 позволяет использовать на вашей PS5 ко�
 
 USB-адаптер не нужен.
 
-**Версия 0.8.1-beta.** Проверена на PS5 fat, прошивка 10.01, с DualShock 4 и 8BitDo SF30 Pro (режим Switch), в меню консоли, в играх и в эмуляторах.
+**Версия 0.9.1-beta.** Проверена на PS5 fat, прошивка 10.01, с DualShock 4 и 8BitDo SF30 Pro (режим Switch), в меню консоли, в играх и в эмуляторах.
 
 **Доступна на двенадцати языках:** английский, испанский, французский, итальянский, португальский, немецкий, русский, упрощённый китайский, традиционный китайский, японский, корейский и арабский. Страница AnyPad следует языку консоли.
 
@@ -29,6 +29,12 @@ AnyPad PS5 начался 3 октября 2026 года около 14:20 (по 
 Остаётся известная проблема: если DualSense выключить, пока работает AnyPad, он может остаться мигать синим. Надеюсь, в будущих проектах её не будет. Проекты, основанные на опубликованном мной коде AnyPad (форки), очень вероятно унаследуют эту проблему. Это часть наследия AnyPad и признак того, что, по крайней мере в части Bluetooth, они являются форками AnyPad.
 
 ---
+
+## Что нового в 0.9
+
+- **Больше совместимости:** поддерживается больше контроллеров, а также оба Bluetooth-чипа, которые встречаются в PS5.
+- **Исправлены ошибки.**
+- **Новый графический интерфейс** страницы AnyPad.
 
 ## Что нового в 0.8
 
@@ -80,10 +86,10 @@ AnyPad PS5 начался 3 октября 2026 года около 14:20 (по 
 | **8BitDo SF30 Pro (режим Switch)** | ✅ **Проверен** | Определяется как Switch Pro Controller. Для кнопки PS используйте «Настроить PS». |
 | **GameSir G7 SE** | ✅ **Проверен** | |
 | **Nintendo Switch Pro Controller** | 🧪 **Поддерживается, ещё не проверен** | Тот же протокол, что у 8BitDo в режиме Switch. |
-| **Контроллеры Xbox** | 🧪 **Поддерживаются, ещё не проверены** | Модели Bluetooth LE требуют сопряжения Secure Connections; поддержка чипом PS5 пока не подтверждена. |
+| **Контроллеры Xbox** | ✅ **Работают (по отзывам пользователей)** | Пользователи подтверждают, что они работают начиная с 0.8. Если ваш не подключается, пришлите мне свой журнал и модель. |
 | **Любой другой Bluetooth HID-геймпад** | 🧪 **Универсальный профиль** | Может работать без отдельного профиля. |
 
-**Контроллеры, которые, по нашему мнению, совместимы** (поддерживаются в коде, ещё не проверены на консоли): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Xbox One S, Xbox Elite Series 2, Xbox Adaptive Controller, Xbox Series X|S, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s и T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro для Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, контроллер NVIDIA Shield (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro и MOGA Pro 2, контроллер Atari VCS Modern, Hyperkin Scout, Mocute 050. Если вы попробуете один из них, пришлите мне свой журнал.
+**Контроллеры, которые, по нашему мнению, совместимы** (поддерживаются в коде, ещё не проверены на консоли): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s и T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro для Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, контроллер NVIDIA Shield (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro и MOGA Pro 2, контроллер Atari VCS Modern, Hyperkin Scout, Mocute 050. Если вы попробуете один из них, пришлите мне свой журнал.
 
 Полный список по каждому контроллеру находится в [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -99,7 +105,7 @@ AnyPad PS5 работает как резидентный payload на PS5 с д
 
 # Как пользоваться
 
-1. **Загрузите AnyPad.** Скачайте `AnyPad-PS5-0.8.1-beta.elf` в разделе [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) и загрузите его привычным загрузчиком payload'ов.
+1. **Загрузите AnyPad.** Скачайте `AnyPad-PS5-0.9.1-beta.elf` в разделе [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) и загрузите его привычным загрузчиком payload'ов.
 2. **Откройте страницу.** Откройте **AnyPad** в ряду «Медиа» консоли или `http://<ip-консоли>:8095` с телефона либо компьютера в той же сети.
 3. **Сопрягите.** Нажмите **Сопряжение**, затем переведите контроллер в режим сопряжения рядом с консолью.
 

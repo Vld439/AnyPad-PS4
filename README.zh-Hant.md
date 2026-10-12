@@ -12,7 +12,7 @@ AnyPad PS5 讓你在 PS5 上使用其他平台的控制器。它透過主機內�
 
 不需要 USB 轉接器。
 
-**版本 0.8.1-beta。** 已在 PS5 fat、韌體 10.01 上，使用 DualShock 4 和 8BitDo SF30 Pro（Switch 模式）測試，涵蓋主機選單、遊戲和模擬器。
+**版本 0.9.1-beta。** 已在 PS5 fat、韌體 10.01 上，使用 DualShock 4 和 8BitDo SF30 Pro（Switch 模式）測試，涵蓋主機選單、遊戲和模擬器。
 
 **提供十二種語言：** 英語、西班牙語、法語、義大利語、葡萄牙語、德語、俄語、簡體中文、繁體中文、日語、韓語和阿拉伯語。AnyPad 頁面會跟隨主機的語言。
 
@@ -29,6 +29,12 @@ AnyPad PS5 開始於 2026 年 10 月 3 日 14:20 左右（西班牙時間），�
 仍有一個已知問題：如果在 AnyPad 執行時關閉 DualSense，它可能會一直藍燈閃爍。我希望今後的專案不會有這個問題。以我發布的 AnyPad 程式碼為基礎的分支（fork）很可能會繼承這個問題。這是 AnyPad 留下的印記，也說明至少在藍牙部分，它們是 AnyPad 的分支。
 
 ---
+
+## 0.9 的新內容
+
+- **相容性更好：** 支援更多控制器，並相容 PS5 中使用的兩種藍牙晶片。
+- **修正了若干錯誤。**
+- AnyPad 頁面採用**全新的圖形介面**。
 
 ## 0.8 的新內容
 
@@ -80,10 +86,10 @@ AnyPad 頁面跟隨主機語言：英語、西班牙語、法語、義大利語�
 | **8BitDo SF30 Pro（Switch 模式）** | ✅ **已驗證** | 顯示為 Switch Pro Controller。PS 鍵請使用「設定 PS」。 |
 | **GameSir G7 SE** | ✅ **已驗證** | |
 | **Nintendo Switch Pro Controller** | 🧪 **已支援，尚未測試** | 與 Switch 模式下的 8BitDo 協定相同。 |
-| **Xbox 控制器** | 🧪 **已支援，尚未測試** | 藍牙 LE 型號需要 Secure Connections 配對；PS5 晶片是否支援尚未驗證。 |
+| **Xbox 控制器** | ✅ **可用（使用者回報）** | 多位使用者確認從 0.8 起可以使用。如果你的控制器無法連線，請把記錄檔和型號寄給我。 |
 | **任何其他藍牙 HID 控制器** | 🧪 **通用設定檔** | 沒有專用設定檔也可能可用。 |
 
-**我們認為可能相容的控制器**（程式碼中已支援，尚未在主機上測試）：DualShock 4 v1、Hori Onyx、Razer Raiju Ultimate、Razer Raiju Tournament Edition、SCUF Vantage 2、Xbox One S、Xbox Elite Series 2、Xbox Adaptive Controller、Xbox Series X|S、Nintendo Switch Pro Controller、Nintendo Switch Online（SNES、N64、Mega Drive / Genesis）、GameSir G3s、G4s、G7 Pro、T1s 和 T2a、Betop 2585N2、Bionik Vulkan、LanShen X1Pro、Xiaomi Mi Controller、Amazon Fire / iPega、iPega 9-series、8BitDo SN30 Pro（Xbox Cloud Gaming 版）、8BitDo Ultimate 2.4G、SteelSeries、NVIDIA Shield 控制器（2017）、Razer Serval、PowerA MOGA Hero、MOGA Pro 和 MOGA Pro 2、Atari VCS Modern 控制器、Hyperkin Scout、Mocute 050。如果你試用了其中任何一款，請把記錄檔寄給我。
+**我們認為可能相容的控制器**（程式碼中已支援，尚未在主機上測試）：DualShock 4 v1、Hori Onyx、Razer Raiju Ultimate、Razer Raiju Tournament Edition、SCUF Vantage 2、Nintendo Switch Pro Controller、Nintendo Switch Online（SNES、N64、Mega Drive / Genesis）、GameSir G3s、G4s、G7 Pro、T1s 和 T2a、Betop 2585N2、Bionik Vulkan、LanShen X1Pro、Xiaomi Mi Controller、Amazon Fire / iPega、iPega 9-series、8BitDo SN30 Pro（Xbox Cloud Gaming 版）、8BitDo Ultimate 2.4G、SteelSeries、NVIDIA Shield 控制器（2017）、Razer Serval、PowerA MOGA Hero、MOGA Pro 和 MOGA Pro 2、Atari VCS Modern 控制器、Hyperkin Scout、Mocute 050。如果你試用了其中任何一款，請把記錄檔寄給我。
 
 完整的逐款清單請見 [COMPATIBILITY.md](COMPATIBILITY.md)。
 
@@ -99,7 +105,7 @@ AnyPad PS5 以常駐 payload 的形式執行在已越獄的 PS5 上。它使用�
 
 # 使用方法
 
-1. **載入 AnyPad。** 從 [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) 下載 `AnyPad-PS5-0.8.1-beta.elf`，用你平常使用的 payload 載入器載入。
+1. **載入 AnyPad。** 從 [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) 下載 `AnyPad-PS5-0.9.1-beta.elf`，用你平常使用的 payload 載入器載入。
 2. **開啟頁面。** 在主機的「媒體」列開啟 **AnyPad**，或在同一網路的手機或電腦上開啟 `http://<主機IP>:8095`。
 3. **配對。** 按下**配對**，然後在靠近主機的地方讓控制器進入配對模式。
 
