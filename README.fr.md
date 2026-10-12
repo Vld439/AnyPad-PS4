@@ -12,7 +12,7 @@ AnyPad PS5 vous permet d'utiliser sur votre PS5 des manettes d'autres plateforme
 
 Aucun adaptateur USB n'est nécessaire.
 
-**Version 0.8.1-beta.** Testée sur une PS5 fat, firmware 10.01, avec une DualShock 4 et une 8BitDo SF30 Pro (mode Switch), dans les menus de la console, dans les jeux et dans les émulateurs.
+**Version 0.9.1-beta.** Testée sur une PS5 fat, firmware 10.01, avec une DualShock 4 et une 8BitDo SF30 Pro (mode Switch), dans les menus de la console, dans les jeux et dans les émulateurs.
 
 **Disponible en douze langues :** anglais, espagnol, français, italien, portugais, allemand, russe, chinois simplifié, chinois traditionnel, japonais, coréen et arabe. La page d'AnyPad suit la langue de la console.
 
@@ -29,6 +29,12 @@ Si vous développez un émulateur et souhaitez intégrer AnyPad, je suis prêt �
 Il reste un problème connu : si la DualSense est éteinte pendant que AnyPad fonctionne, elle peut rester en bleu clignotant. J'espère que les futurs projets ne l'auront pas. Les projets dérivés d'AnyPad, à partir du code que j'ai publié, hériteront très probablement de ce problème. Cela fait partie de l'héritage d'AnyPad, et c'est un signe qu'au moins pour leur partie Bluetooth, ce sont des forks d'AnyPad.
 
 ---
+
+## Nouveautés de la 0.9
+
+- **Plus compatible :** davantage de manettes prises en charge, et compatibilité avec les deux puces Bluetooth présentes dans les PS5.
+- **Corrections de bugs.**
+- **Nouvelle interface graphique** pour la page d'AnyPad.
 
 ## Nouveautés de la 0.8
 
@@ -80,10 +86,10 @@ Quand vous appuyez sur PS sur une manette externe, la console demande qui va l'u
 | **8BitDo SF30 Pro (mode Switch)** | ✅ **Vérifiée** | Elle apparaît comme une Switch Pro Controller. Utilisez Configurer PS pour la touche PS. |
 | **GameSir G7 SE** | ✅ **Vérifiée** | |
 | **Manette Nintendo Switch Pro** | 🧪 **Prise en charge, pas encore testée** | Même protocole que la 8BitDo en mode Switch. |
-| **Manettes Xbox** | 🧪 **Prise en charge, pas encore testée** | Les modèles Bluetooth LE nécessitent une association Secure Connections ; leur prise en charge par la puce de la PS5 n'est pas encore vérifiée. |
+| **Manettes Xbox** | ✅ **Fonctionnent (selon les utilisateurs)** | Des utilisateurs confirment qu'elles fonctionnent depuis la 0.8. Si la vôtre ne se connecte pas, envoyez-moi votre journal et son modèle. |
 | **Toute autre manette HID Bluetooth** | 🧪 **Profil générique** | Peut fonctionner sans profil spécifique. |
 
-**Manettes que nous pensons compatibles** (prises en charge dans le code, pas encore testées sur une console) : DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Xbox One S, Xbox Elite Series 2, Xbox Adaptive Controller, Xbox Series X|S, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s et T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro pour Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, manette NVIDIA Shield (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro et MOGA Pro 2, manette Atari VCS Modern, Hyperkin Scout, Mocute 050. Si vous en essayez une, envoyez-moi votre journal.
+**Manettes que nous pensons compatibles** (prises en charge dans le code, pas encore testées sur une console) : DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s et T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro pour Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, manette NVIDIA Shield (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro et MOGA Pro 2, manette Atari VCS Modern, Hyperkin Scout, Mocute 050. Si vous en essayez une, envoyez-moi votre journal.
 
 La liste complète, manette par manette, se trouve dans [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -99,7 +105,7 @@ Il **ne** modifie **ni** les jeux, **ni** le firmware de la PS5, **ni** le jailb
 
 # Utilisation
 
-1. **Chargez AnyPad.** Téléchargez `AnyPad-PS5-0.8.1-beta.elf` depuis les [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) et chargez-le avec votre chargeur de payloads habituel.
+1. **Chargez AnyPad.** Téléchargez `AnyPad-PS5-0.9.1-beta.elf` depuis les [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) et chargez-le avec votre chargeur de payloads habituel.
 2. **Ouvrez la page.** Ouvrez **AnyPad** dans la rangée Médias de la console, ou `http://<ip-de-la-console>:8095` depuis un téléphone ou un ordinateur du même réseau.
 3. **Associez.** Appuyez sur **Associer**, puis mettez la manette en mode association, près de la console.
 

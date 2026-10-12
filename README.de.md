@@ -12,7 +12,7 @@ Mit AnyPad PS5 kannst du Controller anderer Plattformen an deiner PS5 verwenden.
 
 Kein USB-Adapter nötig.
 
-**Version 0.8.1-beta.** Getestet auf einer PS5 fat, Firmware 10.01, mit einem DualShock 4 und einem 8BitDo SF30 Pro (Switch-Modus), in den Konsolenmenüs, in Spielen und in Emulatoren.
+**Version 0.9.1-beta.** Getestet auf einer PS5 fat, Firmware 10.01, mit einem DualShock 4 und einem 8BitDo SF30 Pro (Switch-Modus), in den Konsolenmenüs, in Spielen und in Emulatoren.
 
 **In zwölf Sprachen verfügbar:** Englisch, Spanisch, Französisch, Italienisch, Portugiesisch, Deutsch, Russisch, vereinfachtes Chinesisch, traditionelles Chinesisch, Japanisch, Koreanisch und Arabisch. Die AnyPad-Seite folgt der Sprache der Konsole.
 
@@ -29,6 +29,12 @@ Wenn du einen Emulator entwickelst und AnyPad integrieren möchtest, bin ich ber
 Ein bekanntes Problem bleibt: Wird der DualSense ausgeschaltet, während AnyPad läuft, kann er blau blinkend hängen bleiben. Ich hoffe, dass künftige Projekte es nicht haben. Projekte, die auf dem von mir veröffentlichten Code von AnyPad aufbauen (Forks), werden dieses Problem sehr wahrscheinlich erben. Es gehört zum Vermächtnis von AnyPad und ist ein Zeichen dafür, dass sie zumindest in ihrem Bluetooth-Teil Forks von AnyPad sind.
 
 ---
+
+## Neu in 0.9
+
+- **Kompatibler:** mehr unterstützte Controller und Unterstützung für die beiden Bluetooth-Chips, die in PS5-Konsolen verbaut sind.
+- **Fehlerbehebungen.**
+- **Neue grafische Oberfläche** für die AnyPad-Seite.
 
 ## Neu in 0.8
 
@@ -80,10 +86,10 @@ Wenn du PS an einem externen Controller drückst, fragt die Konsole, wer ihn ben
 | **8BitDo SF30 Pro (Switch-Modus)** | ✅ **Geprüft** | Erscheint als Switch Pro Controller. Nutze PS einrichten für die PS-Taste. |
 | **GameSir G7 SE** | ✅ **Geprüft** | |
 | **Nintendo Switch Pro Controller** | 🧪 **Unterstützt, noch nicht getestet** | Gleiches Protokoll wie der 8BitDo im Switch-Modus. |
-| **Xbox-Controller** | 🧪 **Unterstützt, noch nicht getestet** | Bluetooth-LE-Modelle brauchen Secure-Connections-Kopplung; die Unterstützung durch den PS5-Chip ist noch nicht geprüft. |
+| **Xbox-Controller** | ✅ **Funktionieren (laut Nutzern)** | Mehrere Nutzer bestätigen, dass sie seit 0.8 funktionieren. Wenn deiner sich nicht verbindet, schick mir bitte dein Log und das Modell. |
 | **Jedes andere Bluetooth-HID-Gamepad** | 🧪 **Generisches Profil** | Kann ohne spezielles Profil funktionieren. |
 
-**Controller, die wir für kompatibel halten** (im Code unterstützt, noch nicht an einer Konsole getestet): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Xbox One S, Xbox Elite Series 2, Xbox Adaptive Controller, Xbox Series X|S, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s und T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro für Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, NVIDIA-Shield-Controller (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro und MOGA Pro 2, Atari-VCS-Modern-Controller, Hyperkin Scout, Mocute 050. Wenn du einen davon ausprobierst, schick mir bitte dein Log.
+**Controller, die wir für kompatibel halten** (im Code unterstützt, noch nicht an einer Konsole getestet): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s und T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro für Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, NVIDIA-Shield-Controller (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro und MOGA Pro 2, Atari-VCS-Modern-Controller, Hyperkin Scout, Mocute 050. Wenn du einen davon ausprobierst, schick mir bitte dein Log.
 
 Die vollständige Liste, Controller für Controller, steht in [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -99,7 +105,7 @@ Es verändert **weder** Spiele, **noch** die Firmware der PS5, **noch** den Jail
 
 # Verwendung
 
-1. **AnyPad laden.** Lade `AnyPad-PS5-0.8.1-beta.elf` von den [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) herunter und lade es mit dem Payload-Loader, den du üblicherweise nutzt.
+1. **AnyPad laden.** Lade `AnyPad-PS5-0.9.1-beta.elf` von den [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) herunter und lade es mit dem Payload-Loader, den du üblicherweise nutzt.
 2. **Seite öffnen.** Öffne **AnyPad** in der Medien-Zeile der Konsole oder `http://<Konsolen-IP>:8095` von einem Handy oder Computer im selben Netzwerk.
 3. **Koppeln.** Drücke **Koppeln** und versetze den Controller dann in den Kopplungsmodus, nahe an der Konsole.
 

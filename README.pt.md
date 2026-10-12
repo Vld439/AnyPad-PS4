@@ -12,7 +12,7 @@ O AnyPad PS5 permite-lhe usar na sua PS5 comandos de outras plataformas. Liga-os
 
 Não é preciso nenhum adaptador USB.
 
-**Versão 0.8.1-beta.** Testada numa PS5 fat, firmware 10.01, com um DualShock 4 e um 8BitDo SF30 Pro (modo Switch), nos menus da consola, em jogos e em emuladores.
+**Versão 0.9.1-beta.** Testada numa PS5 fat, firmware 10.01, com um DualShock 4 e um 8BitDo SF30 Pro (modo Switch), nos menus da consola, em jogos e em emuladores.
 
 **Disponível em doze idiomas:** inglês, espanhol, francês, italiano, português, alemão, russo, chinês simplificado, chinês tradicional, japonês, coreano e árabe. A página do AnyPad segue o idioma da consola.
 
@@ -29,6 +29,12 @@ Se desenvolve um emulador e quer integrar o AnyPad, estou disposto a partilhar o
 Resta um problema conhecido: se o DualSense for desligado enquanto o AnyPad está a funcionar, pode ficar a piscar a azul. Espero que os projetos futuros não o tenham. Os projetos derivados do AnyPad, do código que publiquei, muito provavelmente herdarão este problema. Faz parte do legado do AnyPad, e é um sinal de que, pelo menos na parte Bluetooth, são forks do AnyPad.
 
 ---
+
+## Novidades da 0.9
+
+- **Mais compatível:** suporta mais comandos e é compatível com os dois chips Bluetooth usados nas PS5.
+- **Correção de erros.**
+- **Nova interface gráfica** na página do AnyPad.
 
 ## Novidades da 0.8
 
@@ -80,10 +86,10 @@ Quando prime PS num comando externo, a consola pergunta quem o vai usar. Escolha
 | **8BitDo SF30 Pro (modo Switch)** | ✅ **Verificado** | Aparece como Switch Pro Controller. Use Configurar PS para o botão PS. |
 | **GameSir G7 SE** | ✅ **Verificado** | |
 | **Nintendo Switch Pro Controller** | 🧪 **Suportado, ainda não testado** | Mesmo protocolo que o 8BitDo em modo Switch. |
-| **Comandos Xbox** | 🧪 **Suportado, ainda não testado** | Os modelos Bluetooth LE precisam de emparelhamento Secure Connections; o suporte do chip da PS5 ainda não está verificado. |
+| **Comandos Xbox** | ✅ **Funcionam (segundo os utilizadores)** | Vários utilizadores confirmam que funcionam desde a 0.8. Se o seu não ligar, envie-me o seu registo e o modelo. |
 | **Qualquer outro comando HID Bluetooth** | 🧪 **Perfil genérico** | Pode funcionar sem um perfil específico. |
 
-**Comandos que acreditamos ser compatíveis** (suportados no código, ainda não testados numa consola): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Xbox One S, Xbox Elite Series 2, Xbox Adaptive Controller, Xbox Series X|S, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s e T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro para Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, comando NVIDIA Shield (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro e MOGA Pro 2, comando Atari VCS Modern, Hyperkin Scout, Mocute 050. Se experimentar algum, envie-me o seu registo.
+**Comandos que acreditamos ser compatíveis** (suportados no código, ainda não testados numa consola): DualShock 4 v1, Hori Onyx, Razer Raiju Ultimate, Razer Raiju Tournament Edition, SCUF Vantage 2, Nintendo Switch Pro Controller, Nintendo Switch Online (SNES, N64, Mega Drive / Genesis), GameSir G3s, G4s, G7 Pro, T1s e T2a, Betop 2585N2, Bionik Vulkan, LanShen X1Pro, Xiaomi Mi Controller, Amazon Fire / iPega, iPega 9-series, 8BitDo SN30 Pro para Xbox Cloud Gaming, 8BitDo Ultimate 2.4G, SteelSeries, comando NVIDIA Shield (2017), Razer Serval, PowerA MOGA Hero, MOGA Pro e MOGA Pro 2, comando Atari VCS Modern, Hyperkin Scout, Mocute 050. Se experimentar algum, envie-me o seu registo.
 
 A lista completa, comando a comando, está em [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -99,7 +105,7 @@ O AnyPad PS5 corre como um payload residente numa PS5 com jailbreak. Usa o chip 
 
 # Como usar
 
-1. **Carregue o AnyPad.** Descarregue `AnyPad-PS5-0.8.1-beta.elf` em [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) e carregue-o com o carregador de payloads que usa habitualmente.
+1. **Carregue o AnyPad.** Descarregue `AnyPad-PS5-0.9.1-beta.elf` em [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) e carregue-o com o carregador de payloads que usa habitualmente.
 2. **Abra a página.** Abra o **AnyPad** na linha de Conteúdos multimédia da consola, ou `http://<ip-da-consola>:8095` a partir de um telemóvel ou computador da mesma rede.
 3. **Emparelhe.** Prima **Emparelhar** e depois coloque o comando em modo de emparelhamento, perto da consola.
 
