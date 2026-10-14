@@ -12,7 +12,7 @@ AnyPad PS5 讓你在 PS5 上使用其他平台的控制器。它透過主機內�
 
 不需要 USB 轉接器。
 
-**版本 0.9.1-beta。** 已在 PS5 fat、韌體 10.01 上，使用 DualShock 4 和 8BitDo SF30 Pro（Switch 模式）測試，涵蓋主機選單、遊戲和模擬器。
+**版本 0.9.5-beta。** 已在 PS5 fat、韌體 10.01 上，使用 DualShock 4 和 8BitDo SF30 Pro（Switch 模式）測試，涵蓋主機選單、遊戲和模擬器。
 
 **提供十二種語言：** 英語、西班牙語、法語、義大利語、葡萄牙語、德語、俄語、簡體中文、繁體中文、日語、韓語和阿拉伯語。AnyPad 頁面會跟隨主機的語言。
 
@@ -24,11 +24,71 @@ AnyPad PS5 開始於 2026 年 10 月 3 日 14:20 左右（西班牙時間），�
 
 現在的目標是讓 AnyPad 支援更多控制器。如果你試用了它，請把你的記錄檔寄給我（見下文「協助我們確認相容性」）：每一份記錄檔都有幫助。
 
-如果你開發模擬器並想整合 AnyPad，我願意與你分享程式碼。請來信至 [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com)。
+完整的原始碼已在本儲存庫中以 GPL-3.0-or-later 授權發布（見下文「開源，以及與 AI 協作」）。如果你開發模擬器並想整合 AnyPad，可以在該授權下進行。如需協助，請來信至 [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com)。
 
 仍有一個已知問題：如果在 AnyPad 執行時關閉 DualSense，它可能會一直藍燈閃爍。我希望今後的專案不會有這個問題。以我發布的 AnyPad 程式碼為基礎的分支（fork）很可能會繼承這個問題。這是 AnyPad 留下的印記，也說明至少在藍牙部分，它們是 AnyPad 的分支。
 
 ---
+
+## 開源，以及與 AI 協作
+
+從 0.9.5 版本起，AnyPad PS5 的全部原始碼都發布在這個儲存庫中，採用 GPL-3.0-or-later 授權：藍牙主機、控制器設定檔、AnyPad 頁面、測試和建置腳本。其中包含一個模擬器，因此無需主機也能在電腦上檢查控制器。
+
+我認為 AnyPad 真正的貢獻，比橋接本身更重要的是 **藉助 AI 整合新控制器的通訊系統**。AnyPad 執行時，它的頁面會在你的區域網路中提供：
+
+- 即時記錄檔；
+- 一些可以在執行中修改的藍牙連線設定，無需重新啟動，也無需重新編譯；
+- 配對按鈕。
+
+只要 AI 助理在同一網路的電腦上有終端機（例如 Claude Code、Codex CLI 或 Gemini CLI），就可以在你開啟控制器時追蹤 AnyPad 的行為，提出修改，重新編譯 ELF，上傳到主機，並在下一次執行時檢查結果。AnyPad 本身就是這樣改進的。
+
+檔案 **[AI-WORKFLOW.md](AI-WORKFLOW.md)**（英文）是為這類助理寫的指南：如何連線、可以更動什麼和不可以更動什麼、如何測試修改，以及如何新增控制器。你可以把它當作第一則指令交給助理。
+
+請注意：
+
+- 瀏覽器裡的聊天視窗無法連到你的主機。助理需要在與 PS5 處於同一區域網路的電腦上使用終端機。AnyPad 本身從不連接網際網路。
+- 與所有版本一樣，頁面沒有 PIN：你區域網路中的任何人都可以讀取記錄檔並向 AnyPad 傳送指令。請只在可信的網路中使用，用完後停止 AnyPad。
+- 記錄檔中包含你控制器的藍牙位址和主機使用者的 ID。分享前請先檢查。
+
+### 分享你（和你的 AI）的發現
+
+如果你讓 AnyPad 適配了某款控制器，無論是否藉助 AI，請提交一個 [issue](https://codeberg.org/elmonomalva0/Any-Pad-ps5/issues)，寫明控制器型號、主機韌體、越獄方式、AnyPad 版本、你改了什麼以及原因，並附上記錄檔。如果有 AI 幫助了你，請說明，並讓它來撰寫說明：控制器有什麼不同、改了什麼、如何測試。我會審閱每個提議，並在之後的版本中整合相容的部分。修改必須仍能通過 `make test`，並且不得改變 DualShock 4 和 8BitDo 的連線方式。
+
+### 從原始碼建置
+
+你需要 [ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk)。
+
+```
+make test                                               # 在電腦上執行測試，使用藍牙模擬器
+make ps5 PS5_PAYLOAD_SDK=/path/to/ps5-payload-sdk       # 在 dist/ 中產生 ELF
+tools/build-elf-docker.sh /path/to/ps5-payload-sdk      # 或者在容器中完成同樣的事
+```
+
+### 請提及我
+
+如果你製作了自己的 AnyPad 版本，或者把它（或其中一部分）放進模擬器、HEN、payload 或其他程式中，如果你能提及 **elmonomalvad0** 並連結到本專案，我會非常感激。GPL-3.0-or-later 授權本來就要求你保留版權聲明，並以相同授權發布你的修改。提及只是請求，不是條件，正是它讓繼續分享這項工作變得有意義。
+
+### 程式碼結構
+
+| 位置 | 作用 |
+| --- | --- |
+| `src/host.c` | 藍牙經典主機：搜尋、呼叫、配對、L2CAP 通道、SDP 和 HID |
+| `src/le.c` | 藍牙 LE：掃描、使用 Secure Connections 配對並交換身分、基於 GATT 的 HID |
+| `src/profiles.c` | 每個控制器系列一個設定檔：識別碼、如何讀取報告、喚醒序列、震動和燈光 |
+| `src/generic.c`, `maps/` | 其他任何 HID 控制器，透過其自身的描述元和可選的對應檔讀取 |
+| `src/hci_usb.c`, `src/usb_desc.c`, `src/evstream.c` | 透過 USB 使用主機藍牙晶片的 HCI，該晶片與系統共用 |
+| `src/ps5_vpad.c` | 建立虛擬 DualSense 並向其輸送資料 |
+| `src/web.c`, `web/index.html` | 頁面及其 API |
+| `src/ps5_main.c` | payload 的主迴圈 |
+| `tests/` | 藍牙模擬器（`sim.c`、`sim_le.c`）和所有測試 |
+
+新增一款控制器，大多數情況下就是在 `src/profiles.c` 中新增一個設定檔，並用模擬器寫一個測試。詳情見 [AI-WORKFLOW.md](AI-WORKFLOW.md)。
+
+---
+
+## 0.9.5 的新內容
+
+- **開源：** 全部程式碼已公開，並附有與 AI 助理協作的指南。
 
 ## 0.9 的新內容
 
@@ -105,7 +165,7 @@ AnyPad PS5 以常駐 payload 的形式執行在已越獄的 PS5 上。它使用�
 
 # 使用方法
 
-1. **載入 AnyPad。** 從 [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) 下載 `AnyPad-PS5-0.9.1-beta.elf`，用你平常使用的 payload 載入器載入。
+1. **載入 AnyPad。** 從 [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) 下載 `AnyPad-PS5-0.9.5-beta.elf`，用你平常使用的 payload 載入器載入。
 2. **開啟頁面。** 在主機的「媒體」列開啟 **AnyPad**，或在同一網路的手機或電腦上開啟 `http://<主機IP>:8095`。
 3. **配對。** 按下**配對**，然後在靠近主機的地方讓控制器進入配對模式。
 

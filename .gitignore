@@ -1,2 +1,8 @@
-*.elf
-*.elf.sha256
+# Build and test outputs (rebuilt by make / tools/build-elf-docker.sh).
+/build/
+*.o
+# Editor and system noise.
+.DS_Store
+*.swp
+# ELFs and their hashes (dist/) are published as release files, not kept in the repository.
+dist/

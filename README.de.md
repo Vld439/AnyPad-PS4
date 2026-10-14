@@ -12,7 +12,7 @@ Mit AnyPad PS5 kannst du Controller anderer Plattformen an deiner PS5 verwenden.
 
 Kein USB-Adapter nötig.
 
-**Version 0.9.1-beta.** Getestet auf einer PS5 fat, Firmware 10.01, mit einem DualShock 4 und einem 8BitDo SF30 Pro (Switch-Modus), in den Konsolenmenüs, in Spielen und in Emulatoren.
+**Version 0.9.5-beta.** Getestet auf einer PS5 fat, Firmware 10.01, mit einem DualShock 4 und einem 8BitDo SF30 Pro (Switch-Modus), in den Konsolenmenüs, in Spielen und in Emulatoren.
 
 **In zwölf Sprachen verfügbar:** Englisch, Spanisch, Französisch, Italienisch, Portugiesisch, Deutsch, Russisch, vereinfachtes Chinesisch, traditionelles Chinesisch, Japanisch, Koreanisch und Arabisch. Die AnyPad-Seite folgt der Sprache der Konsole.
 
@@ -24,11 +24,71 @@ AnyPad PS5 begann am 3. Oktober 2026 gegen 14:20 Uhr (spanische Zeit), an dem Ta
 
 Das Ziel ist jetzt, dass AnyPad mit mehr Controllern funktioniert. Wenn du es ausprobierst, schick mir bitte dein Log (siehe „Hilf uns, die Kompatibilität zu bestätigen“ weiter unten): Jedes Log hilft.
 
-Wenn du einen Emulator entwickelst und AnyPad integrieren möchtest, bin ich bereit, den Code mit dir zu teilen. Schreib mir an [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com).
+Der vollständige Quellcode ist in diesem Repository unter GPL-3.0-or-later veröffentlicht (siehe „Open Source und die Arbeit mit einer KI“ weiter unten). Wenn du einen Emulator entwickelst und AnyPad integrieren möchtest, kannst du das unter dieser Lizenz tun. Schreib mir an [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com), wenn du Hilfe brauchst.
 
 Ein bekanntes Problem bleibt: Wird der DualSense ausgeschaltet, während AnyPad läuft, kann er blau blinkend hängen bleiben. Ich hoffe, dass künftige Projekte es nicht haben. Projekte, die auf dem von mir veröffentlichten Code von AnyPad aufbauen (Forks), werden dieses Problem sehr wahrscheinlich erben. Es gehört zum Vermächtnis von AnyPad und ist ein Zeichen dafür, dass sie zumindest in ihrem Bluetooth-Teil Forks von AnyPad sind.
 
 ---
+
+## Open Source und die Arbeit mit einer KI
+
+Ab Version 0.9.5 ist der gesamte Quellcode von AnyPad PS5 in diesem Repository veröffentlicht, unter GPL-3.0-or-later: der Bluetooth-Host, die Controller-Profile, die AnyPad-Seite, die Tests und die Build-Skripte. Dazu gehört ein Simulator, sodass sich ein Controller ohne Konsole an einem Computer prüfen lässt.
+
+Was AnyPad meiner Meinung nach wirklich beiträgt, mehr als die Brücke selbst, ist **sein Kommunikationssystem, um neue Controller mit Hilfe einer KI einzubinden**. Solange AnyPad läuft, bietet seine Seite in deinem lokalen Netzwerk:
+
+- das Log in Echtzeit;
+- einige Einstellungen der Bluetooth-Verbindung, die sich im laufenden Betrieb ändern lassen, ohne Neustart und ohne Neukompilieren;
+- die Schaltfläche zum Koppeln.
+
+Ein KI-Assistent mit einem Terminal auf einem Computer im selben Netzwerk (zum Beispiel Claude Code, Codex CLI oder Gemini CLI) kann verfolgen, was AnyPad tut, während du einen Controller einschaltest, eine Änderung vorschlagen, die ELF neu bauen, sie auf die Konsole laden und das Ergebnis beim nächsten Lauf prüfen. So wurde AnyPad selbst verbessert.
+
+Die Datei **[AI-WORKFLOW.md](AI-WORKFLOW.md)** (auf Englisch) ist eine Anleitung für diesen Assistenten: wie man sich verbindet, was er anfassen darf und was nicht, wie man eine Änderung testet und wie man einen neuen Controller hinzufügt. Du kannst sie dem Assistenten als erste Anweisung geben.
+
+Bitte beachte:
+
+- Ein Chat im Browser erreicht deine Konsole nicht. Der Assistent braucht ein Terminal auf einem Computer, der im selben lokalen Netzwerk wie die PS5 ist. AnyPad selbst verbindet sich nie mit dem Internet.
+- Die Seite hat wie in jeder Version keine PIN: Jeder in deinem lokalen Netzwerk kann das Log lesen und Befehle an AnyPad senden. Benutze es nur in einem vertrauenswürdigen Netzwerk und beende AnyPad, wenn du fertig bist.
+- Das Log enthält die Bluetooth-Adressen deiner Controller und die ID deines Konsolen-Benutzers. Sieh es durch, bevor du es teilst.
+
+### Teile, was ihr (du und deine KI) lernt
+
+Wenn du AnyPad an einen Controller anpasst, mit oder ohne KI, eröffne bitte ein [Issue](https://codeberg.org/elmonomalva0/Any-Pad-ps5/issues) mit dem Controller-Modell, der Konsolen-Firmware, dem Jailbreak, der AnyPad-Version, was du geändert hast und warum, sowie dem Log. Wenn dir eine KI geholfen hat, sag es und lass sie die Erklärung schreiben: was der Controller anders macht, was geändert wurde und wie es getestet wurde. Ich prüfe jeden Vorschlag und übernehme die kompatiblen in spätere Versionen. Eine Änderung muss weiterhin `make test` bestehen und darf nicht verändern, wie sich der DualShock 4 und der 8BitDo verbinden.
+
+### Aus dem Quellcode bauen
+
+Du brauchst das [ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk).
+
+```
+make test                                               # Tests auf dem Computer, mit dem Bluetooth-Simulator
+make ps5 PS5_PAYLOAD_SDK=/path/to/ps5-payload-sdk       # die ELF in dist/
+tools/build-elf-docker.sh /path/to/ps5-payload-sdk      # oder dasselbe in einem Container
+```
+
+### Bitte erwähne mich
+
+Wenn du eine eigene Version von AnyPad erstellst oder es (oder einen Teil davon) in einen Emulator, ein HEN, einen Payload oder ein anderes Programm einbaust, wäre ich sehr dankbar, wenn du **elmonomalvad0** erwähnst und auf dieses Projekt verlinkst. Die Lizenz GPL-3.0-or-later verlangt bereits, die Copyright-Hinweise beizubehalten und deine Änderungen unter derselben Lizenz zu verbreiten. Die Erwähnung ist eine Bitte, keine Bedingung, und sie macht es lohnend, die Arbeit weiter zu teilen.
+
+### Im Code
+
+| Wo | Was es tut |
+| --- | --- |
+| `src/host.c` | Der Bluetooth-Classic-Host: Suche, Anrufe, Kopplung, L2CAP-Kanäle, SDP und HID |
+| `src/le.c` | Bluetooth LE: Suche, Kopplung mit Secure Connections und Identitätsaustausch, HID über GATT |
+| `src/profiles.c` | Ein Profil pro Controller-Familie: IDs, wie die Berichte gelesen werden, Aufweck-Sequenz, Vibration und Lichter |
+| `src/generic.c`, `maps/` | Jeder andere HID-Controller, gelesen über seinen eigenen Deskriptor und eine optionale Mapping-Datei |
+| `src/hci_usb.c`, `src/usb_desc.c`, `src/evstream.c` | Das HCI über USB mit dem Bluetooth-Chip der Konsole, den sich das System teilt |
+| `src/ps5_vpad.c` | Erzeugt den virtuellen DualSense und versorgt ihn |
+| `src/web.c`, `web/index.html` | Die Seite und ihre API |
+| `src/ps5_main.c` | Die Hauptschleife des Payloads |
+| `tests/` | Die Bluetooth-Simulatoren (`sim.c`, `sim_le.c`) und alle Tests |
+
+Einen Controller hinzuzufügen heißt meistens, ein Profil in `src/profiles.c` und einen Test mit dem Simulator hinzuzufügen. [AI-WORKFLOW.md](AI-WORKFLOW.md) erklärt die Einzelheiten.
+
+---
+
+## Neu in 0.9.5
+
+- **Open Source:** der gesamte Code ist veröffentlicht, mit einer Anleitung für die Arbeit mit einem KI-Assistenten.
 
 ## Neu in 0.9
 
@@ -105,7 +165,7 @@ Es verändert **weder** Spiele, **noch** die Firmware der PS5, **noch** den Jail
 
 # Verwendung
 
-1. **AnyPad laden.** Lade `AnyPad-PS5-0.9.1-beta.elf` von den [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) herunter und lade es mit dem Payload-Loader, den du üblicherweise nutzt.
+1. **AnyPad laden.** Lade `AnyPad-PS5-0.9.5-beta.elf` von den [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) herunter und lade es mit dem Payload-Loader, den du üblicherweise nutzt.
 2. **Seite öffnen.** Öffne **AnyPad** in der Medien-Zeile der Konsole oder `http://<Konsolen-IP>:8095` von einem Handy oder Computer im selben Netzwerk.
 3. **Koppeln.** Drücke **Koppeln** und versetze den Controller dann in den Kopplungsmodus, nahe an der Konsole.
 

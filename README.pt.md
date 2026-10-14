@@ -12,7 +12,7 @@ O AnyPad PS5 permite-lhe usar na sua PS5 comandos de outras plataformas. Liga-os
 
 Não é preciso nenhum adaptador USB.
 
-**Versão 0.9.1-beta.** Testada numa PS5 fat, firmware 10.01, com um DualShock 4 e um 8BitDo SF30 Pro (modo Switch), nos menus da consola, em jogos e em emuladores.
+**Versão 0.9.5-beta.** Testada numa PS5 fat, firmware 10.01, com um DualShock 4 e um 8BitDo SF30 Pro (modo Switch), nos menus da consola, em jogos e em emuladores.
 
 **Disponível em doze idiomas:** inglês, espanhol, francês, italiano, português, alemão, russo, chinês simplificado, chinês tradicional, japonês, coreano e árabe. A página do AnyPad segue o idioma da consola.
 
@@ -24,11 +24,71 @@ O AnyPad PS5 começou a 3 de outubro de 2026, por volta das 14:20 (hora de Espan
 
 O objetivo agora é que o AnyPad funcione com mais comandos. Se o experimentar, envie-me o seu registo (veja «Ajude-nos a confirmar a compatibilidade» mais abaixo): cada registo ajuda.
 
-Se desenvolve um emulador e quer integrar o AnyPad, estou disposto a partilhar o código consigo. Escreva-me para [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com).
+O código-fonte completo está publicado neste repositório com licença GPL-3.0-or-later (veja «Código aberto e trabalho com uma IA» mais abaixo). Se desenvolve um emulador e quer integrar o AnyPad, pode fazê-lo ao abrigo dessa licença. Escreva-me para [exposed.ct.ws@gmail.com](mailto:exposed.ct.ws@gmail.com) se precisar de ajuda.
 
 Resta um problema conhecido: se o DualSense for desligado enquanto o AnyPad está a funcionar, pode ficar a piscar a azul. Espero que os projetos futuros não o tenham. Os projetos derivados do AnyPad, do código que publiquei, muito provavelmente herdarão este problema. Faz parte do legado do AnyPad, e é um sinal de que, pelo menos na parte Bluetooth, são forks do AnyPad.
 
 ---
+
+## Código aberto e trabalho com uma IA
+
+Desde a versão 0.9.5, todo o código-fonte do AnyPad PS5 está publicado neste repositório, com licença GPL-3.0-or-later: o anfitrião Bluetooth, os perfis de comandos, a página do AnyPad, os testes e os scripts de compilação. Inclui um simulador, por isso é possível verificar um comando num computador, sem consola.
+
+O que acredito que o AnyPad acrescenta de verdade, mais do que a ponte em si, é **o seu sistema de comunicação para integrar novos comandos com a ajuda de uma IA**. Enquanto o AnyPad está em execução, a sua página oferece, na sua rede local:
+
+- o registo, em tempo real;
+- algumas definições da ligação Bluetooth que podem ser alteradas em funcionamento, sem reiniciar nem recompilar;
+- o botão de emparelhar.
+
+Um assistente de IA que tenha um terminal num computador da mesma rede (por exemplo Claude Code, Codex CLI ou Gemini CLI) pode acompanhar o que o AnyPad faz enquanto liga um comando, propor uma alteração, recompilar o ELF, enviá-lo para a consola e verificar o resultado na execução seguinte. Foi assim que o próprio AnyPad foi melhorado.
+
+O ficheiro **[AI-WORKFLOW.md](AI-WORKFLOW.md)** (em inglês) é um guia escrito para esse assistente: como ligar-se, o que pode e o que não pode tocar, como testar uma alteração e como adicionar um novo comando. Pode dá-lo ao assistente como primeira instrução.
+
+Tenha em conta:
+
+- Um chat no navegador não chega à sua consola. O assistente precisa de um terminal num computador ligado à mesma rede local que a PS5. O AnyPad nunca se liga à internet.
+- A página não tem PIN, como em todas as versões: qualquer pessoa na sua rede local pode ler o registo e enviar ordens ao AnyPad. Use-o apenas numa rede de confiança e pare o AnyPad quando terminar.
+- O registo contém os endereços Bluetooth dos seus comandos e o id do seu utilizador da consola. Reveja-o antes de o partilhar.
+
+### Partilhe o que aprendem (você e a sua IA)
+
+Se adaptar o AnyPad a um comando, com ou sem IA, abra por favor uma [issue](https://codeberg.org/elmonomalva0/Any-Pad-ps5/issues) com o modelo do comando, o firmware da consola, o jailbreak, a versão do AnyPad, o que alterou e porquê, e o registo. Se uma IA o ajudou, diga-o e deixe que seja ela a escrever a explicação: o que o comando faz de diferente, o que foi alterado e como foi testado. Analisarei cada proposta e integrarei as compatíveis em versões posteriores. Uma alteração tem de continuar a passar `make test` e não pode alterar a forma como o DualShock 4 e o 8BitDo se ligam.
+
+### Compilar a partir do código
+
+Precisa do [ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk).
+
+```
+make test                                               # testes no computador, com o simulador Bluetooth
+make ps5 PS5_PAYLOAD_SDK=/path/to/ps5-payload-sdk       # o ELF em dist/
+tools/build-elf-docker.sh /path/to/ps5-payload-sdk      # ou o mesmo, dentro de um contentor
+```
+
+### Por favor, mencione-me
+
+Se fizer a sua própria versão do AnyPad, ou a incluir (ou parte dela) num emulador, num HEN, num payload ou em qualquer outro programa, agradeço muito que mencione **elmonomalvad0** e coloque uma ligação para este projeto. A licença, GPL-3.0-or-later, já exige que mantenha os avisos de direitos de autor e que distribua as suas alterações com a mesma licença. A menção é um pedido, não uma condição, e é o que faz valer a pena continuar a partilhar o trabalho.
+
+### Dentro do código
+
+| Onde | O que faz |
+| --- | --- |
+| `src/host.c` | O anfitrião Bluetooth Classic: pesquisa, chamadas, emparelhamento, canais L2CAP, SDP e HID |
+| `src/le.c` | Bluetooth LE: pesquisa, emparelhamento com Secure Connections e troca de identidade, HID sobre GATT |
+| `src/profiles.c` | Um perfil por família de comandos: ids, como ler os relatórios, sequência de despertar, vibração e luzes |
+| `src/generic.c`, `maps/` | Qualquer outro comando HID, lido através do seu próprio descritor e de um ficheiro de mapeamento opcional |
+| `src/hci_usb.c`, `src/usb_desc.c`, `src/evstream.c` | O HCI por USB com o chip Bluetooth da consola, partilhado com o sistema |
+| `src/ps5_vpad.c` | Cria o DualSense virtual e alimenta-o |
+| `src/web.c`, `web/index.html` | A página e a sua API |
+| `src/ps5_main.c` | O ciclo principal do payload |
+| `tests/` | Os simuladores Bluetooth (`sim.c`, `sim_le.c`) e todos os testes |
+
+Adicionar um comando é, na maioria dos casos, adicionar um perfil em `src/profiles.c` e um teste com o simulador. O [AI-WORKFLOW.md](AI-WORKFLOW.md) explica os detalhes.
+
+---
+
+## Novidades da 0.9.5
+
+- **Código aberto:** todo o código está publicado, com um guia para trabalhar com um assistente de IA.
 
 ## Novidades da 0.9
 
@@ -105,7 +165,7 @@ O AnyPad PS5 corre como um payload residente numa PS5 com jailbreak. Usa o chip 
 
 # Como usar
 
-1. **Carregue o AnyPad.** Descarregue `AnyPad-PS5-0.9.1-beta.elf` em [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) e carregue-o com o carregador de payloads que usa habitualmente.
+1. **Carregue o AnyPad.** Descarregue `AnyPad-PS5-0.9.5-beta.elf` em [Releases](https://codeberg.org/elmonomalva0/Any-Pad-ps5/releases) e carregue-o com o carregador de payloads que usa habitualmente.
 2. **Abra a página.** Abra o **AnyPad** na linha de Conteúdos multimédia da consola, ou `http://<ip-da-consola>:8095` a partir de um telemóvel ou computador da mesma rede.
 3. **Emparelhe.** Prima **Emparelhar** e depois coloque o comando em modo de emparelhamento, perto da consola.
 

@@ -1,0 +1,37 @@
+# AnyPad PS5 mapping file: copy to /data/anypad/maps/VVVV_PPPP.map, where
+# VVVV and PPPP are the controller's vendor and product ids in hex (the log
+# prints them when the controller connects: "has no profile, reading its
+# HID descriptor"). Only controllers with no built-in profile use it.
+#
+# buttonN = <control>    N is the HID button number (1-32)
+#   controls: cross circle square triangle l1 r1 l2 r2 l3 r3
+#             create options ps touchpad up down left right none
+#
+# lx | ly | rx | ry | l2 | r2 = <axis>
+#   axes: x y z rx ry rz slider dial brake accel none
+#
+# invert lx | ly | rx | ry | l2 | r2
+#
+# Example: a DirectInput-style pad whose right stick is on Rx/Ry and whose
+# triggers are on Z/Rz.
+
+button1 = square
+button2 = cross
+button3 = circle
+button4 = triangle
+button5 = l1
+button6 = r1
+button7 = l2
+button8 = r2
+button9 = create
+button10 = options
+button11 = l3
+button12 = r3
+button13 = ps
+
+lx = x
+ly = y
+rx = rx
+ry = ry
+l2 = z
+r2 = rz

@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnyPad PS5</title>
+<style>
+:root {
+  --bg: #08080a; --surface: #101014; --card: rgba(24,24,28,.88); --card2: #15151a; --line: rgba(255,255,255,.08);
+  --text: #f4f6fb; --dim: #8e94a3; --accent: #ff8a00; --accent-glow: rgba(255,138,0,.40); --accent-ink: #ffd3a1; --teal: #2ee6a6;
+  --ok: #3ddc84; --bad: #ff4d5e; --chip: rgba(255,138,0,.14);
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body { margin: 0; color: var(--text); background: var(--bg);
+  background-image: radial-gradient(900px 520px at 85% -10%, rgba(255,138,0,.14), rgba(0,0,0,0) 60%),
+                    radial-gradient(700px 420px at -10% 110%, rgba(46,230,166,.07), rgba(0,0,0,0) 60%);
+  font: 15px/1.45 Inter, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+.meta, .combo, .picked, td:first-child, #ver, #chip { unicode-bidi: plaintext; }
+.shell { display: grid; grid-template-columns: 236px 1fr; min-height: 100vh; }
+/* ---- side bar ---- */
+.side { background: rgba(16,16,20,.92); border-inline-end: 1px solid var(--line); padding: 18px 14px;
+  display: flex; flex-direction: column; gap: 6px; position: sticky; top: 0; height: 100vh; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 4px 6px 16px; }
+.logo { width: 38px; height: 38px; border-radius: 11px; background: var(--accent); display: grid; place-items: center;
+  box-shadow: 0 0 22px var(--accent-glow); color: #141414; }
+.logo svg { width: 24px; height: 24px; }
+.brand b { font-size: 18px; letter-spacing: .3px; } .brand b span { color: var(--accent); }
+.brand small { display: block; color: var(--dim); font-size: 11px; direction: ltr; }
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav button { display: flex; align-items: center; gap: 12px; width: 100%; text-align: start; border: 0;
+  background: transparent; color: #c9cdd6; padding: 11px 14px; border-radius: 12px; font: inherit;
+  font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; cursor: pointer; }
+.nav button svg { width: 19px; height: 19px; flex: none; opacity: .85; }
+.nav button:hover, .nav button:focus { background: rgba(255,255,255,.05); outline: none; }
+.nav button.on { background: var(--accent); color: #141414; box-shadow: 0 6px 22px var(--accent-glow); }
+.side .grow { flex: 1; }
+#status { align-self: flex-start; font-size: 12px; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--line); color: var(--dim); }
+#status.on { border-color: rgba(61,220,132,.5); color: var(--ok); }
+#status.off { border-color: rgba(255,77,94,.5); color: var(--bad); }
+#chip { color: var(--dim); font-size: 11px; padding: 6px 4px 0; }
+/* ---- content ---- */
+main { padding: 26px 30px 40px; max-width: 1100px; width: 100%; }
+.view[hidden] { display: none; }
+h1.title { margin: 0 0 18px; font-size: 28px; font-weight: 700; letter-spacing: -.3px; }
+h1.title span { color: var(--accent); }
+h2 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); font-weight: 700; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; margin-bottom: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.hint { color: var(--dim); font-size: 13px; }
+button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text);
+  padding: 9px 16px; border-radius: 12px; cursor: pointer; }
+button:hover, button:focus { border-color: rgba(255,138,0,.65); outline: none; }
+button.solid { background: var(--accent); border-color: var(--accent); color: #141414; font-weight: 700; box-shadow: 0 6px 20px var(--accent-glow); }
+button.blue { background: #0070d1; border-color: #0070d1; color: #fff; font-weight: 700; }
+button.danger { border-color: rgba(255,77,94,.55); color: var(--bad); background: rgba(255,77,94,.06); }
+button:disabled { opacity: .45; cursor: default; box-shadow: none; }
+/* ---- pairing: radar ---- */
+.pairbox { display: grid; grid-template-columns: 240px 1fr; gap: 26px; align-items: center; }
+.radar { position: relative; width: 230px; height: 230px; border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, rgba(46,230,166,.10), rgba(8,8,10,.6) 70%); border: 1px solid var(--line); }
+.radar .ring { position: absolute; border-radius: 50%; border: 1px solid rgba(255,255,255,.09); }
+.radar .r1 { inset: 18%; } .radar .r2 { inset: 34%; } .radar .r3 { inset: 6%; }
+.radar .cross { position: absolute; inset: 0; background:
+  linear-gradient(rgba(255,255,255,.06), rgba(255,255,255,.06)) 50% 0 / 1px 100% no-repeat,
+  linear-gradient(rgba(255,255,255,.06), rgba(255,255,255,.06)) 0 50% / 100% 1px no-repeat; }
+.radar .sweep { position: absolute; inset: 0; border-radius: 50%; display: none;
+  background: conic-gradient(from 0deg, rgba(46,230,166,0) 0deg, rgba(46,230,166,0) 290deg, rgba(46,230,166,.55) 360deg);
+  animation: spin 2.4s linear infinite; }
+.radar .pulse { position: absolute; inset: 40%; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; display: none; }
+.radar .core { position: absolute; inset: 39%; border-radius: 50%; display: grid; place-items: center;
+  background: #121217; border: 1px solid var(--line); color: var(--dim); }
+.radar .core svg { width: 58%; height: 58%; }
+.radar .blip { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%;
+  background: var(--teal); box-shadow: 0 0 12px var(--teal); }
+.radar[data-mode="search"] .sweep { display: block; }
+.radar[data-mode="search"] .core { color: var(--teal); border-color: rgba(46,230,166,.45); }
+.radar[data-mode="pause"] { background: radial-gradient(circle at 50% 50%, rgba(255,138,0,.22), rgba(8,8,10,.6) 70%); border-color: rgba(255,138,0,.55); }
+.radar[data-mode="pause"] .pulse { display: block; animation: ping 1.8s ease-out infinite; }
+.radar[data-mode="pause"] .core { color: #141414; background: var(--accent); border-color: var(--accent); box-shadow: 0 0 26px var(--accent-glow); }
+.radar[data-mode="fail"] { border-color: rgba(255,77,94,.5); background: radial-gradient(circle, rgba(255,77,94,.12), rgba(8,8,10,.6) 70%); }
+.radar[data-mode="fail"] .core { color: var(--bad); }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes ping { 0% { inset: 40%; opacity: .9; } 100% { inset: 0%; opacity: 0; } }
+.pairstate { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.pairstate.search { color: var(--teal); } .pairstate.pause { color: var(--accent); } .pairstate.fail { color: var(--bad); }
+.prog { height: 8px; border-radius: 99px; background: rgba(255,255,255,.07); overflow: hidden; margin: 14px 0 16px; }
+.prog b { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--teal), var(--accent)); transition: width .9s linear; }
+.prog.pause b { background: var(--accent); }
+.prog[hidden] { display: none; }
+/* ---- pads ---- */
+.pads { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+.pad { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; background: var(--card2); }
+.pad .top { display: flex; align-items: center; gap: 10px; }
+.pad .ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--chip); color: var(--accent); flex: none; }
+.pad .ico svg { width: 22px; height: 22px; }
+.pad .name { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pad .slot { color: #141414; background: var(--accent); border-radius: 8px; padding: 1px 9px; font-size: 12px; font-weight: 800; }
+.pad .meta { color: var(--dim); font-size: 12px; margin: 4px 0 12px; direction: ltr; }
+.viz { display: flex; gap: 14px; align-items: center; justify-content: center; }
+.stick { width: 62px; height: 62px; border-radius: 50%; border: 2px solid rgba(255,255,255,.10); position: relative; background: rgba(255,255,255,.02); }
+.stick i { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+.trig { width: 10px; height: 62px; border: 1px solid rgba(255,255,255,.10); border-radius: 5px; position: relative; overflow: hidden; }
+.trig b { position: absolute; bottom: 0; left: 0; right: 0; background: var(--accent); }
+.btns { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; min-height: 24px; }
+.btns span { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--chip); color: var(--accent-ink); font-weight: 700; }
+.batt { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12px; color: var(--dim); }
+.batt .bar { flex: 1; height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; }
+.batt .bar b { display: block; height: 100%; background: var(--ok); }
+.batt.low .bar b { background: var(--bad); }
+/* ---- paired list ---- */
+table { width: 100%; border-collapse: separate; border-spacing: 0 8px; font-size: 14px; }
+td { padding: 12px 12px; background: var(--card2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+td:first-child { border-inline-start: 1px solid var(--line); border-start-start-radius: 12px; border-end-start-radius: 12px; }
+td:last-child { border-inline-end: 1px solid var(--line); border-start-end-radius: 12px; border-end-end-radius: 12px; }
+td.r { text-align: end; }
+td.r .acts { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; }
+td.empty { background: none; border: 0; color: var(--dim); }
+.combo { font-size: 12px; color: var(--dim); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.15); margin-inline-end: 8px; }
+.dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+/* ---- guide ---- */
+.tips { margin: 0 0 18px; padding-inline-start: 20px; color: #cfd3dc; }
+.tips li { margin: 4px 0; }
+.guide { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.gcard { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; background: var(--card2); }
+.gcard h3 { margin: 0 0 6px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.gcard p { margin: 0; color: #c4c9d3; font-size: 13px; }
+.tag { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; padding: 2px 7px; border-radius: 6px; }
+.tag.t { background: rgba(61,220,132,.15); color: var(--ok); }
+.tag.b { background: rgba(255,138,0,.15); color: #ffb35c; }
+.tag.x { background: rgba(255,255,255,.08); color: var(--dim); }
+/* ---- dialog, log ---- */
+.dlg { position: fixed; inset: 0; background: rgba(0,0,0,.72); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10; }
+.dlg[hidden] { display: none; }
+.dlg .box { background: #121217; border: 1px solid rgba(255,138,0,.5); border-radius: 18px; padding: 18px 20px; width: 100%; max-width: 640px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.dlg h3 { margin: 0 0 6px; font-size: 17px; color: var(--accent); }
+.dlg .live { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; margin: 10px 0; }
+.dlg .live span { font-size: 13px; padding: 3px 10px; border-radius: 99px; background: var(--chip); color: var(--accent-ink); }
+.dlg .bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.dlg .bar b { display: block; height: 100%; width: 0; background: var(--accent); }
+.dlg .picked { font-weight: 700; margin: 8px 0 12px; min-height: 22px; }
+.dlg .count button.on { background: var(--accent); border-color: var(--accent); color: #141414; font-weight: 700; }
+.dlg .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+pre { margin: 12px 0 0; max-height: 360px; overflow: auto; font-size: 12px; color: #d8dbe2; direction: ltr; text-align: left;
+  background: #0b0b0e; border: 1px solid var(--line); border-radius: 12px; padding: 12px; white-space: pre-wrap; }
+.empty { color: var(--dim); font-size: 14px; padding: 6px 0; }
+/* ---- narrow screens: the side bar becomes a top bar ---- */
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 1fr; }
+  .side { position: static; height: auto; padding: 12px; flex-direction: column; }
+  .nav { flex-direction: row; overflow-x: auto; }
+  .nav button { width: auto; flex: none; padding: 9px 12px; font-size: 12px; }
+  .side .grow { display: none; }
+  main { padding: 16px; }
+  .pairbox { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+  .pairbox .row { justify-content: center; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="side">
+  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 7h9.6a5 5 0 0 1 4.9 6l-.9 4.2a2.5 2.5 0 0 1-4.4 1L14.8 16H9.2l-1.6 2.2a2.5 2.5 0 0 1-4.4-1L2.3 13a5 5 0 0 1 4.9-6z"/><path d="M7 10v4M5 12h4"/><circle cx="15.5" cy="11" r=".8" fill="currentColor"/><circle cx="18" cy="13" r=".8" fill="currentColor"/></svg></div><div><b><span>Any</span>Pad PS5</b><small id="ver"></small></div></div>
+  <nav class="nav">
+    <button data-v="home" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-6"/></svg><span data-t="navhome"></span></button>
+    <button data-v="padsv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span data-t="navpads"></span></button>
+    <button data-v="guide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M9 7h6"/></svg><span data-t="navguide"></span></button>
+    <button data-v="sys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span data-t="navsys"></span></button>
+  </nav>
+  <div class="grow"></div>
+  <div id="status" data-t="connecting"></div>
+  <div id="chip"></div>
+</aside>
+
+<main>
+  <section id="v-home" class="view">
+    <h1 class="title" data-t="hometitle" data-html="1"></h1>
+    <div id="btfail" class="card" hidden>
+      <h2 data-t="btna"></h2>
+      <div id="btreason" class="hint"></div>
+      <div class="row" style="margin-top:12px">
+        <button id="retry" class="solid" data-t="retry"></button>
+        <span class="hint" data-t="retryhint"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="pairbox">
+        <div class="radar" id="radar" data-mode="idle">
+          <div class="ring r3"></div><div class="ring r1"></div><div class="ring r2"></div><div class="cross"></div>
+          <div class="sweep"></div><div class="pulse"></div><div id="blips"></div>
+          <div class="core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 7h9.6a5 5 0 0 1 4.9 6l-.9 4.2a2.5 2.5 0 0 1-4.4 1L14.8 16H9.2l-1.6 2.2a2.5 2.5 0 0 1-4.4-1L2.3 13a5 5 0 0 1 4.9-6z"/><path d="M7 10v4M5 12h4"/><circle cx="15.5" cy="11" r=".8" fill="currentColor"/><circle cx="18" cy="13" r=".8" fill="currentColor"/></svg></div>
+        </div>
+        <div>
+          <div id="pairstate" class="pairstate"></div>
+          <div id="pairinfo" class="hint"></div>
+          <div id="prog" class="prog" hidden><b id="progbar"></b></div>
+          <div class="row" style="margin-top:6px">
+            <button id="pair" class="solid" data-t="pairbtn"></button>
+          </div>
+          <div class="hint" style="margin-top:14px" data-t="pairintro" data-html="1"></div>
+        </div>
+      </div>
+    </div>
+    <h2 data-t="connected"></h2>
+    <div id="pads" class="pads"></div>
+  </section>
+
+  <section id="v-padsv" class="view" hidden>
+    <h1 class="title" data-t="padstitle" data-html="1"></h1>
+    <table id="paired"></table>
+  </section>
+
+  <section id="v-guide" class="view" hidden>
+    <h1 class="title" data-t="guidetitle" data-html="1"></h1>
+    <ul id="tips" class="tips"></ul>
+    <div id="guide" class="guide"></div>
+  </section>
+
+  <section id="v-sys" class="view" hidden>
+    <h1 class="title"><span>AnyPad</span> PS5</h1>
+    <div class="card">
+      <div class="row">
+        <button id="showlog" data-t="showlog"></button>
+        <button id="exit" class="solid" data-t="exit"></button>
+        <span id="exithint" class="hint" data-t="exithint"></span>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button id="stop" class="danger" data-t="stop"></button>
+        <span class="hint" data-t="stophint"></span>
+      </div>
+      <pre id="log" hidden></pre>
+    </div>
+  </section>
+</main>
+</div>
+
+
+<div id="dlg" class="dlg" hidden>
+  <div class="box" role="dialog" aria-modal="true">
+    <h3 id="dlgtitle"></h3>
+    <div class="hint" data-t="howmany"></div>
+    <div id="dlgcount" class="acts count">
+      <button data-n="1" data-t="n1"></button><button data-n="3" data-t="n3"></button>
+    </div>
+    <div id="dlgpress" class="hint" style="margin-top:14px"></div>
+    <div id="dlglive" class="live"></div>
+    <div class="bar"><b id="dlgbar"></b></div>
+    <div id="dlgpicked" class="picked"></div>
+    <div class="acts">
+      <button id="dlgsave" class="solid" data-t="save"></button>
+      <button id="dlgremove" class="danger" data-t="remove"></button>
+      <button id="dlgcancel" data-t="cancel"></button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const PAD_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 7h9.6a5 5 0 0 1 4.9 6l-.9 4.2a2.5 2.5 0 0 1-4.4 1L14.8 16H9.2l-1.6 2.2a2.5 2.5 0 0 1-4.4-1L2.3 13a5 5 0 0 1 4.9-6z"/><path d="M7 10v4M5 12h4"/><circle cx="15.5" cy="11" r=".8" fill="currentColor"/><circle cx="18" cy="13" r=".8" fill="currentColor"/></svg>';
+/* Texts in the console's language (it comes with /api/state); English for any language not here. */
+const TEXT = {
+  es: {
+    connecting: "conectando…", btna: "Bluetooth no disponible", retry: "Reintentar Bluetooth",
+    retryhint: "El resto del menú y el log siguen funcionando.", pairh: "Emparejar",
+    pairintro: "Pulsa <b>Emparejar</b> y pon el mando en modo emparejamiento (DualShock 4: Share + PS). Cuando la consola " +
+      "pregunte quién usa el mando, elige <b>Juego rápido / Invitado</b>. Si el mando no tiene botón PS, usa <b>Pulsar PS</b> " +
+      "o <b>Configurar PS</b> en «Mandos emparejados». Los mandos solo quedan emparejados mientras AnyPad está en marcha. " +
+      "No apagues el DualSense mientras AnyPad está en marcha.",
+    pairbtn: "Emparejar un mando (60 s)", connected: "Mandos conectados", paired: "Mandos emparejados",
+    showlog: "Ver log", hidelog: "Ocultar log", exit: "Salir", exithint: "Cierra esta página; AnyPad PS5 sigue funcionando.",
+    exitfail: "Si no se ha cerrado, pulsa el botón PS del mando para volver al menú de la consola.",
+    stop: "Apagar AnyPad PS5", stophint: "Desconecta los mandos y deja el Bluetooth como estaba. Hazlo antes de volver a lanzar el ELF.",
+    running: "en marcha", nobt: "sin Bluetooth", starting: "iniciando Bluetooth…", offline: "sin conexión", stopping: "deteniéndose",
+    searching: (n) => "Buscando mandos… " + n + " s. Pon el mando en modo emparejamiento.",
+    waiting: (n) => "Otro mando acaba de llamar a la consola: la búsqueda empieza en " + n + " s y durará 60 s. Pon el mando en modo emparejamiento cuando empiece.",
+    idle: "Pon el mando en modo emparejamiento después de pulsar.",
+    nopads: "Ninguno. Enciende un mando emparejado o empareja uno nuevo.", nopaired: "Ninguno todavía.",
+    battery: "Batería", charging: "cargando", pressps: "Pulsar PS",
+    presspshint: "Para mandos que no tienen botón PS (los que no son de PlayStation): es como mantener pulsado PS",
+    forget: "Olvidar", forgetq: (a) => "¿Olvidar " + a + "? Tendrás que emparejarlo de nuevo.",
+    stopq: "¿Detener AnyPad PS5? Los mandos conectados se desconectarán.",
+    unknownpad: "Mando desconocido", genericpad: "Mando HID genérico", panel: "PANEL", pl: "J",
+    psconf: "Configurar PS", psconfhint: "Elige una combinación de botones de este mando que haga de botón PS",
+    howmany: "¿Cuántos botones quieres usar como PS?", n1: "1 botón", n3: "3 botones",
+    press1: "Pulsa en el mando el botón que quieras y mantenlo 1 segundo.",
+    pressn: (n) => "Pulsa en el mando los " + n + " botones a la vez y mantenlos 1 segundo.",
+    pickcount: "Elige primero cuántos botones.", save: "Guardar", remove: "Quitar", cancel: "Cancelar"
+  },
+  en: {
+    connecting: "connecting…", btna: "Bluetooth not available", retry: "Retry Bluetooth",
+    retryhint: "The rest of the menu and the log keep working.", pairh: "Pair",
+    pairintro: "Press <b>Pair</b> and put the controller in pairing mode (DualShock 4: Share + PS). When the console asks " +
+      "who uses the controller, choose <b>Quick play / Guest</b>. If the controller has no PS button, use <b>Press PS</b> " +
+      "or <b>Configure PS</b> in “Paired controllers”. Controllers stay paired only while AnyPad is running. " +
+      "Do not switch off the DualSense while AnyPad is running.",
+    pairbtn: "Pair a controller (60 s)", connected: "Connected controllers", paired: "Paired controllers",
+    showlog: "Show log", hidelog: "Hide log", exit: "Exit", exithint: "Closes this page; AnyPad PS5 keeps running.",
+    exitfail: "If it did not close, press the PS button on the controller to go back to the console menu.",
+    stop: "Stop AnyPad PS5", stophint: "Disconnects the controllers and leaves Bluetooth as it was. Do it before running the ELF again.",
+    running: "running", nobt: "no Bluetooth", starting: "starting Bluetooth…", offline: "offline", stopping: "stopping",
+    searching: (n) => "Searching for controllers… " + n + " s. Put the controller in pairing mode.",
+    waiting: (n) => "Another controller just called the console: the search starts in " + n + " s and lasts 60 s. Put the controller in pairing mode when it starts.",
+    idle: "Put the controller in pairing mode after pressing.",
+    nopads: "None. Switch on a paired controller or pair a new one.", nopaired: "None yet.",
+    battery: "Battery", charging: "charging", pressps: "Press PS",
+    presspshint: "For controllers without a PS button (not PlayStation ones): like holding PS",
+    forget: "Forget", forgetq: (a) => "Forget " + a + "? You will have to pair it again.",
+    stopq: "Stop AnyPad PS5? Connected controllers will be disconnected.",
+    unknownpad: "Unknown controller", genericpad: "Generic HID controller", panel: "PAD", pl: "P",
+    psconf: "Configure PS", psconfhint: "Choose a combination of this controller's buttons to act as the PS button",
+    howmany: "How many buttons do you want to use as PS?", n1: "1 button", n3: "3 buttons",
+    press1: "Press the button you want on the controller and hold it for 1 second.",
+    pressn: (n) => "Press the " + n + " buttons on the controller at the same time and hold them for 1 second.",
+    pickcount: "First choose how many buttons.", save: "Save", remove: "Remove", cancel: "Cancel"
+  },
+  fr: {
+    connecting: "connexion…", btna: "Bluetooth indisponible", retry: "Réessayer le Bluetooth",
+    retryhint: "Le reste du menu et le journal continuent de fonctionner.", pairh: "Associer",
+    pairintro: "Appuyez sur <b>Associer</b> et mettez la manette en mode association (DualShock 4 : Share + PS). Quand la console " +
+      "demande qui utilise la manette, choisissez <b>Partie rapide / Invité</b>. Si la manette n'a pas de touche PS, utilisez " +
+      "<b>Appuyer sur PS</b> ou <b>Configurer PS</b> dans « Manettes associées ». Les manettes ne restent associées que tant " +
+      "qu'AnyPad fonctionne. N'éteignez pas la DualSense pendant qu'AnyPad fonctionne.",
+    pairbtn: "Associer une manette (60 s)", connected: "Manettes connectées", paired: "Manettes associées",
+    showlog: "Voir le journal", hidelog: "Masquer le journal", exit: "Quitter", exithint: "Ferme cette page ; AnyPad PS5 continue de fonctionner.",
+    exitfail: "Si la page ne s'est pas fermée, appuyez sur la touche PS de la manette pour revenir au menu de la console.",
+    stop: "Arrêter AnyPad PS5", stophint: "Déconnecte les manettes et laisse le Bluetooth comme il était. À faire avant de relancer l'ELF.",
+    running: "en marche", nobt: "sans Bluetooth", starting: "démarrage du Bluetooth…", offline: "hors ligne", stopping: "arrêt en cours",
+    searching: (n) => "Recherche de manettes… " + n + " s. Mettez la manette en mode association.",
+    waiting: (n) => "Une autre manette vient d'appeler la console : la recherche commence dans " + n + " s et dure 60 s. Mettez la manette en mode association quand elle commence.",
+    idle: "Mettez la manette en mode association après avoir appuyé.",
+    nopads: "Aucune. Allumez une manette associée ou associez-en une nouvelle.", nopaired: "Aucune pour l'instant.",
+    battery: "Batterie", charging: "en charge", pressps: "Appuyer sur PS",
+    presspshint: "Pour les manettes sans touche PS (non PlayStation) : comme maintenir PS enfoncée",
+    forget: "Oublier", forgetq: (a) => "Oublier " + a + " ? Vous devrez l'associer à nouveau.",
+    stopq: "Arrêter AnyPad PS5 ? Les manettes connectées seront déconnectées.",
+    unknownpad: "Manette inconnue", genericpad: "Manette HID générique", panel: "PAVÉ", pl: "J",
+    psconf: "Configurer PS", psconfhint: "Choisissez une combinaison de touches de cette manette qui servira de touche PS",
+    howmany: "Combien de touches voulez-vous utiliser comme PS ?", n1: "1 touche", n3: "3 touches",
+    press1: "Appuyez sur la touche de votre choix sur la manette et maintenez-la 1 seconde.",
+    pressn: (n) => "Appuyez en même temps sur les " + n + " touches de la manette et maintenez-les 1 seconde.",
+    pickcount: "Choisissez d'abord le nombre de touches.", save: "Enregistrer", remove: "Supprimer", cancel: "Annuler"
+  },
+  it: {
+    connecting: "connessione…", btna: "Bluetooth non disponibile", retry: "Riprova il Bluetooth",
+    retryhint: "Il resto del menu e il log continuano a funzionare.", pairh: "Associa",
+    pairintro: "Premi <b>Associa</b> e metti il controller in modalità di associazione (DualShock 4: Share + PS). Quando la console " +
+      "chiede chi usa il controller, scegli <b>Gioco rapido / Ospite</b>. Se il controller non ha il tasto PS, usa <b>Premi PS</b> " +
+      "o <b>Configura PS</b> in «Controller associati». I controller restano associati solo mentre AnyPad è in funzione. " +
+      "Non spegnere il DualSense mentre AnyPad è in funzione.",
+    pairbtn: "Associa un controller (60 s)", connected: "Controller connessi", paired: "Controller associati",
+    showlog: "Mostra log", hidelog: "Nascondi log", exit: "Esci", exithint: "Chiude questa pagina; AnyPad PS5 resta in funzione.",
+    exitfail: "Se non si è chiusa, premi il tasto PS del controller per tornare al menu della console.",
+    stop: "Arresta AnyPad PS5", stophint: "Disconnette i controller e lascia il Bluetooth com'era. Fallo prima di avviare di nuovo l'ELF.",
+    running: "in funzione", nobt: "senza Bluetooth", starting: "avvio del Bluetooth…", offline: "non in linea", stopping: "arresto in corso",
+    searching: (n) => "Ricerca dei controller… " + n + " s. Metti il controller in modalità di associazione.",
+    waiting: (n) => "Un altro controller ha appena chiamato la console: la ricerca inizia tra " + n + " s e dura 60 s. Metti il controller in modalità di associazione quando inizia.",
+    idle: "Metti il controller in modalità di associazione dopo aver premuto.",
+    nopads: "Nessuno. Accendi un controller associato o associane uno nuovo.", nopaired: "Ancora nessuno.",
+    battery: "Batteria", charging: "in carica", pressps: "Premi PS",
+    presspshint: "Per i controller senza tasto PS (non PlayStation): come tenere premuto PS",
+    forget: "Dimentica", forgetq: (a) => "Dimenticare " + a + "? Dovrai associarlo di nuovo.",
+    stopq: "Arrestare AnyPad PS5? I controller connessi verranno disconnessi.",
+    unknownpad: "Controller sconosciuto", genericpad: "Controller HID generico", panel: "TOUCHPAD", pl: "G",
+    psconf: "Configura PS", psconfhint: "Scegli una combinazione di tasti di questo controller che faccia da tasto PS",
+    howmany: "Quanti tasti vuoi usare come PS?", n1: "1 tasto", n3: "3 tasti",
+    press1: "Premi sul controller il tasto che vuoi e tienilo premuto per 1 secondo.",
+    pressn: (n) => "Premi insieme sul controller i " + n + " tasti e tienili premuti per 1 secondo.",
+    pickcount: "Scegli prima quanti tasti.", save: "Salva", remove: "Rimuovi", cancel: "Annulla"
+  },
+  pt: {
+    connecting: "a ligar…", btna: "Bluetooth indisponível", retry: "Tentar o Bluetooth de novo",
+    retryhint: "O resto do menu e o registo continuam a funcionar.", pairh: "Emparelhar",
+    pairintro: "Prima <b>Emparelhar</b> e coloque o comando em modo de emparelhamento (DualShock 4: Share + PS). Quando a consola " +
+      "perguntar quem usa o comando, escolha <b>Jogo rápido / Convidado</b>. Se o comando não tiver botão PS, use <b>Premir PS</b> " +
+      "ou <b>Configurar PS</b> em «Comandos emparelhados». Os comandos só ficam emparelhados enquanto o AnyPad estiver a funcionar. " +
+      "Não desligue o DualSense enquanto o AnyPad estiver a funcionar.",
+    pairbtn: "Emparelhar um comando (60 s)", connected: "Comandos ligados", paired: "Comandos emparelhados",
+    showlog: "Ver registo", hidelog: "Ocultar registo", exit: "Sair", exithint: "Fecha esta página; o AnyPad PS5 continua a funcionar.",
+    exitfail: "Se não fechou, prima o botão PS do comando para voltar ao menu da consola.",
+    stop: "Desligar o AnyPad PS5", stophint: "Desliga os comandos e deixa o Bluetooth como estava. Faça-o antes de voltar a lançar o ELF.",
+    running: "a funcionar", nobt: "sem Bluetooth", starting: "a iniciar o Bluetooth…", offline: "sem ligação", stopping: "a parar",
+    searching: (n) => "A procurar comandos… " + n + " s. Coloque o comando em modo de emparelhamento.",
+    waiting: (n) => "Outro comando acabou de chamar a consola: a procura começa dentro de " + n + " s e dura 60 s. Coloque o comando em modo de emparelhamento quando começar.",
+    idle: "Coloque o comando em modo de emparelhamento depois de premir.",
+    nopads: "Nenhum. Ligue um comando emparelhado ou emparelhe um novo.", nopaired: "Nenhum ainda.",
+    battery: "Bateria", charging: "a carregar", pressps: "Premir PS",
+    presspshint: "Para comandos sem botão PS (os que não são PlayStation): é como manter PS premido",
+    forget: "Esquecer", forgetq: (a) => "Esquecer " + a + "? Terá de o emparelhar de novo.",
+    stopq: "Parar o AnyPad PS5? Os comandos ligados serão desligados.",
+    unknownpad: "Comando desconhecido", genericpad: "Comando HID genérico", panel: "PAINEL", pl: "J",
+    psconf: "Configurar PS", psconfhint: "Escolha uma combinação de botões deste comando que faça de botão PS",
+    howmany: "Quantos botões quer usar como PS?", n1: "1 botão", n3: "3 botões",
+    press1: "Prima no comando o botão que quiser e mantenha-o premido 1 segundo.",
+    pressn: (n) => "Prima ao mesmo tempo os " + n + " botões do comando e mantenha-os premidos 1 segundo.",
+    pickcount: "Escolha primeiro quantos botões.", save: "Guardar", remove: "Remover", cancel: "Cancelar"
+  },
+  de: {
+    connecting: "verbinde…", btna: "Bluetooth nicht verfügbar", retry: "Bluetooth erneut versuchen",
+    retryhint: "Der Rest des Menüs und das Protokoll funktionieren weiter.", pairh: "Koppeln",
+    pairintro: "Drücke <b>Koppeln</b> und versetze den Controller in den Kopplungsmodus (DualShock 4: Share + PS). Wenn die Konsole " +
+      "fragt, wer den Controller benutzt, wähle <b>Schnelles Spiel / Gast</b>. Hat der Controller keine PS-Taste, nutze " +
+      "<b>PS drücken</b> oder <b>PS einrichten</b> unter „Gekoppelte Controller“. Controller bleiben nur gekoppelt, solange AnyPad läuft. " +
+      "Schalte den DualSense nicht aus, solange AnyPad läuft.",
+    pairbtn: "Controller koppeln (60 s)", connected: "Verbundene Controller", paired: "Gekoppelte Controller",
+    showlog: "Protokoll zeigen", hidelog: "Protokoll ausblenden", exit: "Beenden", exithint: "Schließt diese Seite; AnyPad PS5 läuft weiter.",
+    exitfail: "Falls sie sich nicht geschlossen hat, drücke die PS-Taste am Controller, um zum Konsolenmenü zurückzukehren.",
+    stop: "AnyPad PS5 beenden", stophint: "Trennt die Controller und lässt Bluetooth, wie es war. Vor einem erneuten Start des ELF ausführen.",
+    running: "läuft", nobt: "kein Bluetooth", starting: "Bluetooth startet…", offline: "offline", stopping: "wird beendet",
+    searching: (n) => "Suche nach Controllern… " + n + " s. Versetze den Controller in den Kopplungsmodus.",
+    waiting: (n) => "Ein anderer Controller hat gerade die Konsole gerufen: Die Suche beginnt in " + n + " s und dauert 60 s. Versetze den Controller dann in den Kopplungsmodus.",
+    idle: "Versetze den Controller nach dem Drücken in den Kopplungsmodus.",
+    nopads: "Keiner. Schalte einen gekoppelten Controller ein oder kopple einen neuen.", nopaired: "Noch keiner.",
+    battery: "Akku", charging: "lädt", pressps: "PS drücken",
+    presspshint: "Für Controller ohne PS-Taste (keine PlayStation-Controller): wie PS gedrückt halten",
+    forget: "Vergessen", forgetq: (a) => a + " vergessen? Du musst ihn erneut koppeln.",
+    stopq: "AnyPad PS5 beenden? Verbundene Controller werden getrennt.",
+    unknownpad: "Unbekannter Controller", genericpad: "Generischer HID-Controller", panel: "TOUCHPAD", pl: "S",
+    psconf: "PS einrichten", psconfhint: "Wähle eine Tastenkombination dieses Controllers, die als PS-Taste dient",
+    howmany: "Wie viele Tasten möchtest du als PS verwenden?", n1: "1 Taste", n3: "3 Tasten",
+    press1: "Drücke die gewünschte Taste am Controller und halte sie 1 Sekunde lang.",
+    pressn: (n) => "Drücke die " + n + " Tasten am Controller gleichzeitig und halte sie 1 Sekunde lang.",
+    pickcount: "Wähle zuerst, wie viele Tasten.", save: "Speichern", remove: "Entfernen", cancel: "Abbrechen"
+  },
+  ru: {
+    connecting: "подключение…", btna: "Bluetooth недоступен", retry: "Повторить Bluetooth",
+    retryhint: "Остальное меню и журнал продолжают работать.", pairh: "Сопряжение",
+    pairintro: "Нажмите <b>Сопряжение</b> и переведите контроллер в режим сопряжения (DualShock 4: Share + PS). Когда консоль " +
+      "спросит, кто использует контроллер, выберите <b>Быстрая игра / Гость</b>. Если у контроллера нет кнопки PS, используйте " +
+      "<b>Нажать PS</b> или <b>Настроить PS</b> в разделе «Сопряжённые контроллеры». Контроллеры остаются сопряжёнными, только пока работает AnyPad. " +
+      "Не выключайте DualSense, пока работает AnyPad.",
+    pairbtn: "Сопрячь контроллер (60 с)", connected: "Подключённые контроллеры", paired: "Сопряжённые контроллеры",
+    showlog: "Показать журнал", hidelog: "Скрыть журнал", exit: "Выйти", exithint: "Закрывает эту страницу; AnyPad PS5 продолжает работать.",
+    exitfail: "Если страница не закрылась, нажмите кнопку PS на контроллере, чтобы вернуться в меню консоли.",
+    stop: "Выключить AnyPad PS5", stophint: "Отключает контроллеры и оставляет Bluetooth как было. Сделайте это перед повторным запуском ELF.",
+    running: "работает", nobt: "нет Bluetooth", starting: "запуск Bluetooth…", offline: "нет связи", stopping: "остановка",
+    searching: (n) => "Поиск контроллеров… " + n + " с. Переведите контроллер в режим сопряжения.",
+    waiting: (n) => "Другой контроллер только что вызвал консоль: поиск начнётся через " + n + " с и продлится 60 с. Переведите контроллер в режим сопряжения, когда он начнётся.",
+    idle: "После нажатия переведите контроллер в режим сопряжения.",
+    nopads: "Нет. Включите сопряжённый контроллер или сопрягите новый.", nopaired: "Пока нет.",
+    battery: "Батарея", charging: "заряжается", pressps: "Нажать PS",
+    presspshint: "Для контроллеров без кнопки PS (не PlayStation): как удерживать PS",
+    forget: "Забыть", forgetq: (a) => "Забыть " + a + "? Его придётся сопрячь заново.",
+    stopq: "Остановить AnyPad PS5? Подключённые контроллеры будут отключены.",
+    unknownpad: "Неизвестный контроллер", genericpad: "Универсальный HID-контроллер", panel: "ПАНЕЛЬ", pl: "И",
+    psconf: "Настроить PS", psconfhint: "Выберите сочетание кнопок этого контроллера, которое будет работать как кнопка PS",
+    howmany: "Сколько кнопок использовать как PS?", n1: "1 кнопка", n3: "3 кнопки",
+    press1: "Нажмите нужную кнопку на контроллере и удерживайте её 1 секунду.",
+    pressn: (n) => "Нажмите одновременно " + n + " кнопки на контроллере и удерживайте их 1 секунду.",
+    pickcount: "Сначала выберите количество кнопок.", save: "Сохранить", remove: "Удалить", cancel: "Отмена"
+  },
+  zh: {
+    connecting: "正在连接…", btna: "蓝牙不可用", retry: "重试蓝牙",
+    retryhint: "菜单的其余部分和日志仍可使用。", pairh: "配对",
+    pairintro: "按 <b>配对</b>，并让手柄进入配对模式（DualShock 4：Share + PS）。当主机询问谁使用该手柄时，选择 " +
+      "<b>快速游戏 / 访客</b>。如果手柄没有 PS 键，请在“已配对的手柄”中使用 <b>按下 PS</b> 或 <b>设置 PS</b>。" +
+      "手柄只在 AnyPad 运行期间保持配对。AnyPad 运行时请不要关闭 DualSense。",
+    pairbtn: "配对手柄（60 秒）", connected: "已连接的手柄", paired: "已配对的手柄",
+    showlog: "查看日志", hidelog: "隐藏日志", exit: "退出", exithint: "关闭此页面；AnyPad PS5 会继续运行。",
+    exitfail: "如果页面没有关闭，请按手柄上的 PS 键返回主机菜单。",
+    stop: "关闭 AnyPad PS5", stophint: "断开手柄并让蓝牙恢复原状。再次运行 ELF 之前请先执行此操作。",
+    running: "运行中", nobt: "无蓝牙", starting: "正在启动蓝牙…", offline: "离线", stopping: "正在停止",
+    searching: (n) => "正在搜索手柄… " + n + " 秒。请让手柄进入配对模式。",
+    waiting: (n) => "另一个手柄刚刚呼叫了主机：搜索将在 " + n + " 秒后开始，持续 60 秒。开始后请让手柄进入配对模式。",
+    idle: "按下后请让手柄进入配对模式。",
+    nopads: "无。请打开已配对的手柄或配对新手柄。", nopaired: "暂无。",
+    battery: "电量", charging: "充电中", pressps: "按下 PS",
+    presspshint: "适用于没有 PS 键的手柄（非 PlayStation 手柄）：相当于按住 PS",
+    forget: "忘记", forgetq: (a) => "忘记 " + a + "？之后需要重新配对。",
+    stopq: "停止 AnyPad PS5？已连接的手柄将断开连接。",
+    unknownpad: "未知手柄", genericpad: "通用 HID 手柄", panel: "触控板", pl: "P",
+    psconf: "设置 PS", psconfhint: "选择此手柄的一个按键组合作为 PS 键",
+    howmany: "要用几个按键作为 PS？", n1: "1 个按键", n3: "3 个按键",
+    press1: "在手柄上按下你想要的按键并按住 1 秒。",
+    pressn: (n) => "在手柄上同时按下这 " + n + " 个按键并按住 1 秒。",
+    pickcount: "请先选择按键数量。", save: "保存", remove: "删除", cancel: "取消"
+  },
+  "zh-Hant": {
+    connecting: "正在連線…", btna: "藍牙無法使用", retry: "重試藍牙",
+    retryhint: "選單的其他部分和記錄仍可使用。", pairh: "配對",
+    pairintro: "按 <b>配對</b>，並讓控制器進入配對模式（DualShock 4：Share + PS）。當主機詢問誰使用此控制器時，選擇 " +
+      "<b>快速遊戲 / 訪客</b>。如果控制器沒有 PS 鍵，請在「已配對的控制器」中使用 <b>按下 PS</b> 或 <b>設定 PS</b>。" +
+      "控制器只在 AnyPad 執行期間保持配對。AnyPad 執行時請不要關閉 DualSense。",
+    pairbtn: "配對控制器（60 秒）", connected: "已連線的控制器", paired: "已配對的控制器",
+    showlog: "檢視記錄", hidelog: "隱藏記錄", exit: "離開", exithint: "關閉此頁面；AnyPad PS5 會繼續執行。",
+    exitfail: "如果頁面沒有關閉，請按控制器上的 PS 鍵返回主機選單。",
+    stop: "關閉 AnyPad PS5", stophint: "中斷控制器連線並讓藍牙恢復原狀。再次執行 ELF 之前請先這樣做。",
+    running: "執行中", nobt: "無藍牙", starting: "正在啟動藍牙…", offline: "離線", stopping: "正在停止",
+    searching: (n) => "正在搜尋控制器… " + n + " 秒。請讓控制器進入配對模式。",
+    waiting: (n) => "另一個控制器剛剛呼叫了主機：搜尋將在 " + n + " 秒後開始，持續 60 秒。開始後請讓控制器進入配對模式。",
+    idle: "按下後請讓控制器進入配對模式。",
+    nopads: "無。請開啟已配對的控制器或配對新的控制器。", nopaired: "尚無。",
+    battery: "電量", charging: "充電中", pressps: "按下 PS",
+    presspshint: "適用於沒有 PS 鍵的控制器（非 PlayStation 控制器）：等同按住 PS",
+    forget: "忘記", forgetq: (a) => "忘記 " + a + "？之後需要重新配對。",
+    stopq: "停止 AnyPad PS5？已連線的控制器將中斷連線。",
+    unknownpad: "未知控制器", genericpad: "通用 HID 控制器", panel: "觸控板", pl: "P",
+    psconf: "設定 PS", psconfhint: "選擇此控制器的一個按鍵組合作為 PS 鍵",
+    howmany: "要用幾個按鍵作為 PS？", n1: "1 個按鍵", n3: "3 個按鍵",
+    press1: "在控制器上按下你想要的按鍵並按住 1 秒。",
+    pressn: (n) => "在控制器上同時按下這 " + n + " 個按鍵並按住 1 秒。",
+    pickcount: "請先選擇按鍵數量。", save: "儲存", remove: "移除", cancel: "取消"
+  },
+  ja: {
+    connecting: "接続中…", btna: "Bluetooth を使用できません", retry: "Bluetooth を再試行",
+    retryhint: "メニューのほかの部分とログは引き続き使えます。", pairh: "ペアリング",
+    pairintro: "<b>ペアリング</b> を押して、コントローラーをペアリングモードにしてください（DualShock 4：Share + PS）。" +
+      "誰がコントローラーを使うか聞かれたら、<b>クイックプレイ / ゲスト</b> を選びます。PS ボタンのないコントローラーは、" +
+      "「ペアリング済みのコントローラー」の <b>PS を押す</b> または <b>PS を設定</b> を使ってください。" +
+      "コントローラーのペアリングは AnyPad の実行中だけ保たれます。AnyPad の実行中は DualSense の電源を切らないでください。",
+    pairbtn: "コントローラーをペアリング（60 秒）", connected: "接続中のコントローラー", paired: "ペアリング済みのコントローラー",
+    showlog: "ログを表示", hidelog: "ログを隠す", exit: "終了", exithint: "このページを閉じます。AnyPad PS5 は動作し続けます。",
+    exitfail: "閉じない場合は、コントローラーの PS ボタンを押して本体のメニューに戻ってください。",
+    stop: "AnyPad PS5 を停止", stophint: "コントローラーを切断し、Bluetooth を元の状態に戻します。ELF を再実行する前に行ってください。",
+    running: "実行中", nobt: "Bluetooth なし", starting: "Bluetooth を起動中…", offline: "オフライン", stopping: "停止中",
+    searching: (n) => "コントローラーを検索中… " + n + " 秒。コントローラーをペアリングモードにしてください。",
+    waiting: (n) => "別のコントローラーが本体を呼び出しました。検索は " + n + " 秒後に始まり、60 秒続きます。始まったらコントローラーをペアリングモードにしてください。",
+    idle: "押したあとで、コントローラーをペアリングモードにしてください。",
+    nopads: "ありません。ペアリング済みのコントローラーの電源を入れるか、新しくペアリングしてください。", nopaired: "まだありません。",
+    battery: "バッテリー", charging: "充電中", pressps: "PS を押す",
+    presspshint: "PS ボタンのないコントローラー（PlayStation 以外）用：PS を長押しするのと同じです",
+    forget: "削除", forgetq: (a) => a + " を削除しますか？もう一度ペアリングが必要になります。",
+    stopq: "AnyPad PS5 を停止しますか？接続中のコントローラーは切断されます。",
+    unknownpad: "不明なコントローラー", genericpad: "汎用 HID コントローラー", panel: "タッチパッド", pl: "P",
+    psconf: "PS を設定", psconfhint: "このコントローラーのボタンの組み合わせを PS ボタンとして使います",
+    howmany: "PS として使うボタンはいくつですか？", n1: "ボタン 1 個", n3: "ボタン 3 個",
+    press1: "使いたいボタンをコントローラーで押し、1 秒間押し続けてください。",
+    pressn: (n) => "コントローラーの " + n + " 個のボタンを同時に押し、1 秒間押し続けてください。",
+    pickcount: "まずボタンの数を選んでください。", save: "保存", remove: "削除", cancel: "キャンセル"
+  },
+  ko: {
+    connecting: "연결 중…", btna: "블루투스를 사용할 수 없음", retry: "블루투스 다시 시도",
+    retryhint: "메뉴의 나머지 부분과 로그는 계속 작동합니다.", pairh: "페어링",
+    pairintro: "<b>페어링</b>을 누르고 컨트롤러를 페어링 모드로 전환하세요(DualShock 4: Share + PS). 본체가 컨트롤러를 " +
+      "사용할 사람을 물으면 <b>빠른 플레이 / 게스트</b>를 선택하세요. PS 버튼이 없는 컨트롤러는 “페어링된 컨트롤러”의 " +
+      "<b>PS 누르기</b> 또는 <b>PS 설정</b>을 사용하세요. 컨트롤러는 AnyPad가 실행되는 동안에만 페어링이 유지됩니다. " +
+      "AnyPad가 실행되는 동안에는 DualSense를 끄지 마세요.",
+    pairbtn: "컨트롤러 페어링(60초)", connected: "연결된 컨트롤러", paired: "페어링된 컨트롤러",
+    showlog: "로그 보기", hidelog: "로그 숨기기", exit: "나가기", exithint: "이 페이지를 닫습니다. AnyPad PS5는 계속 실행됩니다.",
+    exitfail: "닫히지 않았다면 컨트롤러의 PS 버튼을 눌러 본체 메뉴로 돌아가세요.",
+    stop: "AnyPad PS5 끄기", stophint: "컨트롤러 연결을 끊고 블루투스를 원래대로 둡니다. ELF를 다시 실행하기 전에 하세요.",
+    running: "실행 중", nobt: "블루투스 없음", starting: "블루투스 시작 중…", offline: "오프라인", stopping: "중지 중",
+    searching: (n) => "컨트롤러 검색 중… " + n + "초. 컨트롤러를 페어링 모드로 전환하세요.",
+    waiting: (n) => "다른 컨트롤러가 방금 본체를 호출했습니다. 검색은 " + n + "초 후에 시작되어 60초 동안 계속됩니다. 시작되면 컨트롤러를 페어링 모드로 전환하세요.",
+    idle: "누른 다음 컨트롤러를 페어링 모드로 전환하세요.",
+    nopads: "없음. 페어링된 컨트롤러를 켜거나 새 컨트롤러를 페어링하세요.", nopaired: "아직 없음.",
+    battery: "배터리", charging: "충전 중", pressps: "PS 누르기",
+    presspshint: "PS 버튼이 없는 컨트롤러(PlayStation 제품이 아닌 것)용: PS를 길게 누르는 것과 같습니다",
+    forget: "삭제", forgetq: (a) => a + "을(를) 삭제할까요? 다시 페어링해야 합니다.",
+    stopq: "AnyPad PS5를 중지할까요? 연결된 컨트롤러의 연결이 끊깁니다.",
+    unknownpad: "알 수 없는 컨트롤러", genericpad: "일반 HID 컨트롤러", panel: "터치패드", pl: "P",
+    psconf: "PS 설정", psconfhint: "이 컨트롤러의 버튼 조합을 PS 버튼으로 사용합니다",
+    howmany: "PS로 사용할 버튼은 몇 개인가요?", n1: "버튼 1개", n3: "버튼 3개",
+    press1: "컨트롤러에서 원하는 버튼을 누르고 1초 동안 누르고 있으세요.",
+    pressn: (n) => "컨트롤러에서 버튼 " + n + "개를 동시에 누르고 1초 동안 누르고 있으세요.",
+    pickcount: "먼저 버튼 개수를 선택하세요.", save: "저장", remove: "삭제", cancel: "취소"
+  },
+  ar: {
+    connecting: "جارٍ الاتصال…", btna: "البلوتوث غير متاح", retry: "إعادة محاولة البلوتوث",
+    retryhint: "باقي القائمة والسجل يواصلان العمل.", pairh: "الإقران",
+    pairintro: "اضغط <b>الإقران</b> وضع وحدة التحكم في وضع الإقران (DualShock 4: Share + PS). عندما يسأل الجهاز عمّن يستخدم " +
+      "وحدة التحكم، اختر <b>اللعب السريع / ضيف</b>. إذا لم يكن في وحدة التحكم زر PS، فاستخدم <b>اضغط PS</b> أو " +
+      "<b>إعداد PS</b> في «وحدات التحكم المقترنة». تبقى وحدات التحكم مقترنة فقط أثناء تشغيل AnyPad. " +
+      "لا تُطفئ DualSense أثناء تشغيل AnyPad.",
+    pairbtn: "إقران وحدة تحكم (60 ث)", connected: "وحدات التحكم المتصلة", paired: "وحدات التحكم المقترنة",
+    showlog: "عرض السجل", hidelog: "إخفاء السجل", exit: "خروج", exithint: "يغلق هذه الصفحة؛ ويستمر AnyPad PS5 في العمل.",
+    exitfail: "إذا لم تُغلق، فاضغط زر PS في وحدة التحكم للعودة إلى قائمة الجهاز.",
+    stop: "إيقاف AnyPad PS5", stophint: "يفصل وحدات التحكم ويترك البلوتوث كما كان. افعل ذلك قبل تشغيل ملف ELF مرة أخرى.",
+    running: "قيد التشغيل", nobt: "لا يوجد بلوتوث", starting: "جارٍ تشغيل البلوتوث…", offline: "غير متصل", stopping: "جارٍ الإيقاف",
+    searching: (n) => "جارٍ البحث عن وحدات التحكم… " + n + " ث. ضع وحدة التحكم في وضع الإقران.",
+    waiting: (n) => "استدعت وحدة تحكم أخرى الجهاز للتو: يبدأ البحث بعد " + n + " ث ويستمر 60 ث. ضع وحدة التحكم في وضع الإقران عندما يبدأ.",
+    idle: "ضع وحدة التحكم في وضع الإقران بعد الضغط.",
+    nopads: "لا يوجد. شغّل وحدة تحكم مقترنة أو اقرن وحدة جديدة.", nopaired: "لا يوجد بعد.",
+    battery: "البطارية", charging: "قيد الشحن", pressps: "اضغط PS",
+    presspshint: "لوحدات التحكم التي لا تحتوي على زر PS (غير وحدات PlayStation): كأنك تضغط مطولًا على PS",
+    forget: "نسيان", forgetq: (a) => "نسيان " + a + "؟ سيلزم إقرانها من جديد.",
+    stopq: "إيقاف AnyPad PS5؟ سيتم فصل وحدات التحكم المتصلة.",
+    unknownpad: "وحدة تحكم غير معروفة", genericpad: "وحدة تحكم HID عامة", panel: "لوحة اللمس", pl: "#",
+    psconf: "إعداد PS", psconfhint: "اختر مجموعة أزرار من وحدة التحكم هذه لتعمل كزر PS",
+    howmany: "كم زرًا تريد استخدامه كزر PS؟", n1: "زر واحد", n3: "3 أزرار",
+    press1: "اضغط على الزر الذي تريده في وحدة التحكم واستمر في الضغط لمدة ثانية.",
+    pressn: (n) => "اضغط على الأزرار الـ " + n + " معًا في وحدة التحكم واستمر في الضغط لمدة ثانية.",
+    pickcount: "اختر أولًا عدد الأزرار.", save: "حفظ", remove: "إزالة", cancel: "إلغاء"
+  }
+};
+/* Texts of the new layout (menu, radar, pairing guide), merged into TEXT. */
+const MORE = {
+  es: {
+    navhome: "Inicio", navpads: "Mandos", navguide: "Guía", navsys: "Sistema",
+    hometitle: "Empareja tus <span>mandos</span>", padstitle: "Mandos <span>emparejados</span>", guidetitle: "Guía de <span>mandos</span>",
+    radidle: "Listo para emparejar", radsearch: "Buscando mandos", radsearchhint: "Pon el mando en modo emparejamiento, cerca de la consola.",
+    radpause: "Pausa por el DualSense", radpausehint: "AnyPad se detiene un momento para que el DualSense conecte con la consola. Después sigue solo.",
+    radpads: (n) => n === 1 ? "1 mando conectado" : n + " mandos conectados",
+    gt: "Probado", gb: "Beta", gx: "No se empareja",
+    tips: ["Pulsa <b>Emparejar</b> primero y después pon el mando en modo emparejamiento, cerca de la consola.",
+      "Cuando la consola pregunte quién usa el mando, elige <b>Juego rápido / Invitado</b>.",
+      "Si un mando no aparece, reinícialo (DualShock 4: un clip en el agujero junto a L2 unos 5 s) y vuelve a intentarlo."],
+    guide: [["DualShock 4", "Mantén Share + PS hasta que la barra de luz parpadee dos veces seguidas. Hazlo cada vez que lo emparejes.", "t"],
+      ["8BitDo (modo Switch)", "Selector en S (Switch); mantén Pair unos 3 s, hasta que las luces parpadeen rápido. Sin botón PS: usa Configurar PS.", "t"],
+      ["8BitDo (otros modos)", "Modo M (macOS): funciona como un DualShock 4. Modo A (Android): como mando genérico. Mantén Pair unos 3 s.", "b"],
+      ["Mando Pro de Switch y Switch Online", "Pulsa el botón de sincronización junto al puerto USB-C (en los Switch Online, el de arriba) hasta que las luces corran.", "b"],
+      ["Xbox Series X|S y Xbox One", "Mantén el botón de emparejar, arriba junto al puerto USB, hasta que el logo Xbox parpadee rápido. Conviene tener el mando actualizado.", "b"],
+      ["Xbox Adaptive Controller", "Pulsa el botón de emparejar de la parte de atrás hasta que el logo parpadee.", "b"],
+      ["Clones de DualShock 4", "Igual que el DualShock 4: Share + PS. Si al principio no responden todos los botones, espera unos segundos.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega y otros", "Ponlos en modo Android o PC por Bluetooth (mira su manual) y después en modo emparejamiento.", "b"],
+      ["Joy-Con (de uno en uno)", "Mantén pulsado el botón de sincronización del rail hasta que las luces corran. Se usa de lado; el izquierdo no tiene botón PS: usa Configurar PS.", "b"],
+      ["Wii U Pro y Wiimote", "Pulsa el botón Sync (rojo, detrás o bajo la tapa de las pilas). El Wiimote se usa de lado.", "b"],
+      ["Stadia", "Necesita el firmware Bluetooth que publicó Google. Mantén Y + botón Stadia hasta que parpadee.", "b"],
+      ["DualSense", "Es el mando de la consola: AnyPad no lo empareja. No lo apagues mientras AnyPad está en marcha.", "x"]]
+  },
+  en: {
+    navhome: "Home", navpads: "Controllers", navguide: "Guide", navsys: "System",
+    hometitle: "Pair your <span>controllers</span>", padstitle: "Paired <span>controllers</span>", guidetitle: "Controller <span>guide</span>",
+    radidle: "Ready to pair", radsearch: "Searching for controllers", radsearchhint: "Put the controller in pairing mode, close to the console.",
+    radpause: "Paused for the DualSense", radpausehint: "AnyPad stops for a moment so the DualSense can connect to the console. It carries on by itself afterwards.",
+    radpads: (n) => n === 1 ? "1 controller connected" : n + " controllers connected",
+    gt: "Tested", gb: "Beta", gx: "Not paired",
+    tips: ["Press <b>Pair</b> first, then put the controller in pairing mode, close to the console.",
+      "When the console asks who uses the controller, choose <b>Quick play / Guest</b>.",
+      "If a controller does not show up, reset it (DualShock 4: a paper clip in the hole next to L2 for about 5 s) and try again."],
+    guide: [["DualShock 4", "Hold Share + PS until the light bar flashes twice in a row. Do it every time you pair it.", "t"],
+      ["8BitDo (Switch mode)", "Switch on S (Switch); hold Pair for about 3 s, until the lights blink fast. No PS button: use Configure PS.", "t"],
+      ["8BitDo (other modes)", "M mode (macOS): works as a DualShock 4. A mode (Android): as a generic controller. Hold Pair for about 3 s.", "b"],
+      ["Switch Pro Controller and Switch Online", "Press the sync button next to the USB-C port (on Switch Online pads, the one on top) until the lights run.", "b"],
+      ["Xbox Series X|S and Xbox One", "Hold the pair button, on top next to the USB port, until the Xbox logo blinks fast. An updated controller is best.", "b"],
+      ["Xbox Adaptive Controller", "Press the pair button on the back until the logo blinks.", "b"],
+      ["DualShock 4 clones", "Same as the DualShock 4: Share + PS. If not every button answers at first, wait a few seconds.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega and others", "Set them to Android or PC Bluetooth mode (see their manual), then to pairing mode.", "b"],
+      ["Joy-Con (one at a time)", "Hold the sync button on the rail until the lights run. It is held sideways; the left one has no PS button: use Configure PS.", "b"],
+      ["Wii U Pro and Wii Remote", "Press the Sync button (red, on the back or under the battery cover). The Wii Remote is held sideways.", "b"],
+      ["Stadia", "It needs the Bluetooth firmware Google released. Hold Y + the Stadia button until it blinks.", "b"],
+      ["DualSense", "It is the console's own controller: AnyPad does not pair it. Do not switch it off while AnyPad is running.", "x"]]
+  },
+  fr: {
+    navhome: "Accueil", navpads: "Manettes", navguide: "Guide", navsys: "Système",
+    hometitle: "Associez vos <span>manettes</span>", padstitle: "Manettes <span>associées</span>", guidetitle: "Guide des <span>manettes</span>",
+    radidle: "Prêt à associer", radsearch: "Recherche de manettes", radsearchhint: "Mettez la manette en mode association, près de la console.",
+    radpause: "Pause pour la DualSense", radpausehint: "AnyPad s'arrête un instant pour que la DualSense se connecte à la console. Il reprend tout seul ensuite.",
+    radpads: (n) => n === 1 ? "1 manette connectée" : n + " manettes connectées",
+    gt: "Testée", gb: "Bêta", gx: "Non associée",
+    tips: ["Appuyez d'abord sur <b>Associer</b>, puis mettez la manette en mode association, près de la console.",
+      "Quand la console demande qui utilise la manette, choisissez <b>Partie rapide / Invité</b>.",
+      "Si une manette n'apparaît pas, réinitialisez-la (DualShock 4 : un trombone dans le trou près de L2 pendant 5 s) et réessayez."],
+    guide: [["DualShock 4", "Maintenez Share + PS jusqu'à ce que la barre lumineuse clignote deux fois. À refaire à chaque association.", "t"],
+      ["8BitDo (mode Switch)", "Sélecteur sur S (Switch) ; maintenez Pair environ 3 s, jusqu'à ce que les voyants clignotent vite. Sans touche PS : utilisez Configurer PS.", "t"],
+      ["8BitDo (autres modes)", "Mode M (macOS) : fonctionne comme une DualShock 4. Mode A (Android) : comme une manette générique. Maintenez Pair environ 3 s.", "b"],
+      ["Manette Pro Switch et Switch Online", "Appuyez sur le bouton de synchronisation près du port USB-C (sur les Switch Online, celui du dessus) jusqu'à ce que les voyants défilent.", "b"],
+      ["Xbox Series X|S et Xbox One", "Maintenez le bouton d'association, en haut près du port USB, jusqu'à ce que le logo Xbox clignote vite. Mieux vaut une manette à jour.", "b"],
+      ["Xbox Adaptive Controller", "Appuyez sur le bouton d'association à l'arrière jusqu'à ce que le logo clignote.", "b"],
+      ["Clones de DualShock 4", "Comme la DualShock 4 : Share + PS. Si toutes les touches ne répondent pas tout de suite, attendez quelques secondes.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega et autres", "Mettez-les en mode Android ou PC Bluetooth (voir leur manuel), puis en mode association.", "b"],
+      ["Joy-Con (un par un)", "Maintenez le bouton de synchronisation du rail jusqu'à ce que les voyants défilent. Il se tient à l'horizontale ; le gauche n'a pas de touche PS : utilisez Configurer PS.", "b"],
+      ["Wii U Pro et Wiimote", "Appuyez sur le bouton Sync (rouge, au dos ou sous le couvercle des piles). La Wiimote se tient à l'horizontale.", "b"],
+      ["Stadia", "Elle nécessite le firmware Bluetooth publié par Google. Maintenez Y + le bouton Stadia jusqu'à ce qu'elle clignote.", "b"],
+      ["DualSense", "C'est la manette de la console : AnyPad ne l'associe pas. Ne l'éteignez pas pendant qu'AnyPad fonctionne.", "x"]]
+  },
+  it: {
+    navhome: "Home", navpads: "Controller", navguide: "Guida", navsys: "Sistema",
+    hometitle: "Associa i tuoi <span>controller</span>", padstitle: "Controller <span>associati</span>", guidetitle: "Guida ai <span>controller</span>",
+    radidle: "Pronto ad associare", radsearch: "Ricerca dei controller", radsearchhint: "Metti il controller in modalità di associazione, vicino alla console.",
+    radpause: "Pausa per il DualSense", radpausehint: "AnyPad si ferma un momento perché il DualSense si colleghi alla console. Poi riprende da solo.",
+    radpads: (n) => n === 1 ? "1 controller collegato" : n + " controller collegati",
+    gt: "Provato", gb: "Beta", gx: "Non si associa",
+    tips: ["Premi prima <b>Associa</b>, poi metti il controller in modalità di associazione, vicino alla console.",
+      "Quando la console chiede chi usa il controller, scegli <b>Gioco rapido / Ospite</b>.",
+      "Se un controller non compare, reimpostalo (DualShock 4: una graffetta nel foro vicino a L2 per circa 5 s) e riprova."],
+    guide: [["DualShock 4", "Tieni premuti Share + PS finché la barra luminosa lampeggia due volte. Ogni volta che lo associ.", "t"],
+      ["8BitDo (modalità Switch)", "Selettore su S (Switch); tieni premuto Pair per circa 3 s, finché le luci lampeggiano veloci. Senza tasto PS: usa Configura PS.", "t"],
+      ["8BitDo (altre modalità)", "Modalità M (macOS): funziona come un DualShock 4. Modalità A (Android): come controller generico. Tieni premuto Pair per circa 3 s.", "b"],
+      ["Controller Pro di Switch e Switch Online", "Premi il tasto di sincronizzazione vicino alla porta USB-C (sui Switch Online, quello in alto) finché le luci scorrono.", "b"],
+      ["Xbox Series X|S e Xbox One", "Tieni premuto il tasto di associazione, in alto vicino alla porta USB, finché il logo Xbox lampeggia veloce. Meglio con il controller aggiornato.", "b"],
+      ["Xbox Adaptive Controller", "Premi il tasto di associazione sul retro finché il logo lampeggia.", "b"],
+      ["Cloni di DualShock 4", "Come il DualShock 4: Share + PS. Se all'inizio non rispondono tutti i tasti, aspetta qualche secondo.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega e altri", "Mettili in modalità Android o PC Bluetooth (vedi il manuale), poi in modalità di associazione.", "b"],
+      ["Joy-Con (uno alla volta)", "Tieni premuto il tasto di sincronizzazione sul binario finché le luci scorrono. Si usa in orizzontale; il sinistro non ha tasto PS: usa Configura PS.", "b"],
+      ["Wii U Pro e Wiimote", "Premi il tasto Sync (rosso, sul retro o sotto il coperchio delle pile). Il Wiimote si usa in orizzontale.", "b"],
+      ["Stadia", "Serve il firmware Bluetooth pubblicato da Google. Tieni premuti Y + il tasto Stadia finché lampeggia.", "b"],
+      ["DualSense", "È il controller della console: AnyPad non lo associa. Non spegnerlo mentre AnyPad è in funzione.", "x"]]
+  },
+  pt: {
+    navhome: "Início", navpads: "Comandos", navguide: "Guia", navsys: "Sistema",
+    hometitle: "Emparelhe os seus <span>comandos</span>", padstitle: "Comandos <span>emparelhados</span>", guidetitle: "Guia de <span>comandos</span>",
+    radidle: "Pronto para emparelhar", radsearch: "A procurar comandos", radsearchhint: "Coloque o comando em modo de emparelhamento, perto da consola.",
+    radpause: "Pausa pelo DualSense", radpausehint: "O AnyPad para um momento para o DualSense se ligar à consola. Depois continua sozinho.",
+    radpads: (n) => n === 1 ? "1 comando ligado" : n + " comandos ligados",
+    gt: "Testado", gb: "Beta", gx: "Não emparelha",
+    tips: ["Prima primeiro <b>Emparelhar</b> e depois coloque o comando em modo de emparelhamento, perto da consola.",
+      "Quando a consola perguntar quem usa o comando, escolha <b>Jogo rápido / Convidado</b>.",
+      "Se um comando não aparecer, reponha-o (DualShock 4: um clipe no orifício junto a L2 cerca de 5 s) e tente de novo."],
+    guide: [["DualShock 4", "Mantenha Share + PS até a barra de luz piscar duas vezes. Sempre que o emparelhar.", "t"],
+      ["8BitDo (modo Switch)", "Seletor em S (Switch); mantenha Pair cerca de 3 s, até as luzes piscarem depressa. Sem botão PS: use Configurar PS.", "t"],
+      ["8BitDo (outros modos)", "Modo M (macOS): funciona como um DualShock 4. Modo A (Android): como comando genérico. Mantenha Pair cerca de 3 s.", "b"],
+      ["Comando Pro da Switch e Switch Online", "Prima o botão de sincronização junto à porta USB-C (nos Switch Online, o de cima) até as luzes correrem.", "b"],
+      ["Xbox Series X|S e Xbox One", "Mantenha o botão de emparelhar, em cima junto à porta USB, até o logótipo Xbox piscar depressa. Convém ter o comando atualizado.", "b"],
+      ["Xbox Adaptive Controller", "Prima o botão de emparelhar na parte de trás até o logótipo piscar.", "b"],
+      ["Clones de DualShock 4", "Igual ao DualShock 4: Share + PS. Se no início nem todos os botões responderem, aguarde uns segundos.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega e outros", "Coloque-os em modo Android ou PC por Bluetooth (veja o manual) e depois em modo de emparelhamento.", "b"],
+      ["Joy-Con (um de cada vez)", "Mantenha o botão de sincronização do trilho até as luzes correrem. Usa-se na horizontal; o esquerdo não tem botão PS: use Configurar PS.", "b"],
+      ["Wii U Pro e Wiimote", "Prima o botão Sync (vermelho, atrás ou debaixo da tampa das pilhas). O Wiimote usa-se na horizontal.", "b"],
+      ["Stadia", "Precisa do firmware Bluetooth publicado pela Google. Mantenha Y + o botão Stadia até piscar.", "b"],
+      ["DualSense", "É o comando da consola: o AnyPad não o emparelha. Não o desligue enquanto o AnyPad estiver a funcionar.", "x"]]
+  },
+  de: {
+    navhome: "Start", navpads: "Controller", navguide: "Anleitung", navsys: "System",
+    hometitle: "Koppel deine <span>Controller</span>", padstitle: "Gekoppelte <span>Controller</span>", guidetitle: "Controller-<span>Anleitung</span>",
+    radidle: "Bereit zum Koppeln", radsearch: "Suche nach Controllern", radsearchhint: "Versetze den Controller nahe der Konsole in den Kopplungsmodus.",
+    radpause: "Pause für den DualSense", radpausehint: "AnyPad hält kurz an, damit sich der DualSense mit der Konsole verbinden kann. Danach geht es von selbst weiter.",
+    radpads: (n) => n === 1 ? "1 Controller verbunden" : n + " Controller verbunden",
+    gt: "Getestet", gb: "Beta", gx: "Wird nicht gekoppelt",
+    tips: ["Drücke zuerst <b>Koppeln</b> und versetze dann den Controller nahe der Konsole in den Kopplungsmodus.",
+      "Wenn die Konsole fragt, wer den Controller benutzt, wähle <b>Schnelles Spiel / Gast</b>.",
+      "Erscheint ein Controller nicht, setze ihn zurück (DualShock 4: Büroklammer ins Loch neben L2, etwa 5 s) und versuche es erneut."],
+    guide: [["DualShock 4", "Share + PS halten, bis die Lightbar zweimal hintereinander blinkt. Bei jedem Koppeln.", "t"],
+      ["8BitDo (Switch-Modus)", "Schalter auf S (Switch); Pair etwa 3 s halten, bis die Lichter schnell blinken. Ohne PS-Taste: PS einrichten verwenden.", "t"],
+      ["8BitDo (andere Modi)", "Modus M (macOS): funktioniert wie ein DualShock 4. Modus A (Android): als generischer Controller. Pair etwa 3 s halten.", "b"],
+      ["Switch Pro Controller und Switch Online", "Die Sync-Taste neben dem USB-C-Anschluss drücken (bei Switch Online die obere), bis die Lichter laufen.", "b"],
+      ["Xbox Series X|S und Xbox One", "Die Kopplungstaste oben neben dem USB-Anschluss halten, bis das Xbox-Logo schnell blinkt. Am besten mit aktueller Controller-Firmware.", "b"],
+      ["Xbox Adaptive Controller", "Die Kopplungstaste auf der Rückseite drücken, bis das Logo blinkt.", "b"],
+      ["DualShock-4-Nachbauten", "Wie beim DualShock 4: Share + PS. Reagieren anfangs nicht alle Tasten, ein paar Sekunden warten.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega und andere", "In den Android- oder PC-Bluetooth-Modus stellen (siehe Anleitung), dann in den Kopplungsmodus.", "b"],
+      ["Joy-Con (einzeln)", "Die Sync-Taste an der Schiene halten, bis die Lichter laufen. Er wird quer gehalten; der linke hat keine PS-Taste: PS einrichten verwenden.", "b"],
+      ["Wii U Pro und Wiimote", "Die Sync-Taste drücken (rot, hinten oder unter dem Batteriedeckel). Die Wiimote wird quer gehalten.", "b"],
+      ["Stadia", "Benötigt die von Google veröffentlichte Bluetooth-Firmware. Y + Stadia-Taste halten, bis es blinkt.", "b"],
+      ["DualSense", "Das ist der Controller der Konsole: AnyPad koppelt ihn nicht. Nicht ausschalten, solange AnyPad läuft.", "x"]]
+  },
+  ru: {
+    navhome: "Главная", navpads: "Контроллеры", navguide: "Справка", navsys: "Система",
+    hometitle: "Подключите <span>контроллеры</span>", padstitle: "Сопряжённые <span>контроллеры</span>", guidetitle: "Справка по <span>контроллерам</span>",
+    radidle: "Готово к сопряжению", radsearch: "Поиск контроллеров", radsearchhint: "Переведите контроллер в режим сопряжения рядом с консолью.",
+    radpause: "Пауза для DualSense", radpausehint: "AnyPad ненадолго останавливается, чтобы DualSense подключился к консоли. Затем продолжает сам.",
+    radpads: (n) => "Подключено контроллеров: " + n,
+    gt: "Проверен", gb: "Бета", gx: "Не сопрягается",
+    tips: ["Сначала нажмите <b>Сопряжение</b>, затем переведите контроллер в режим сопряжения рядом с консолью.",
+      "Когда консоль спросит, кто использует контроллер, выберите <b>Быстрая игра / Гость</b>.",
+      "Если контроллер не появляется, сбросьте его (DualShock 4: скрепка в отверстие рядом с L2 примерно на 5 с) и попробуйте снова."],
+    guide: [["DualShock 4", "Удерживайте Share + PS, пока световая панель не мигнёт дважды. При каждом сопряжении.", "t"],
+      ["8BitDo (режим Switch)", "Переключатель на S (Switch); удерживайте Pair около 3 с, пока индикаторы не замигают быстро. Без кнопки PS: «Настроить PS».", "t"],
+      ["8BitDo (другие режимы)", "Режим M (macOS): работает как DualShock 4. Режим A (Android): как универсальный контроллер. Удерживайте Pair около 3 с.", "b"],
+      ["Switch Pro Controller и Switch Online", "Нажмите кнопку синхронизации у порта USB-C (у Switch Online — верхнюю), пока индикаторы не побегут.", "b"],
+      ["Xbox Series X|S и Xbox One", "Удерживайте кнопку сопряжения сверху у порта USB, пока логотип Xbox не замигает быстро. Лучше обновить контроллер.", "b"],
+      ["Xbox Adaptive Controller", "Нажмите кнопку сопряжения сзади, пока логотип не замигает.", "b"],
+      ["Копии DualShock 4", "Как у DualShock 4: Share + PS. Если сначала отвечают не все кнопки, подождите несколько секунд.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega и другие", "Включите режим Android или ПК по Bluetooth (см. инструкцию), затем режим сопряжения.", "b"],
+      ["Joy-Con (по одному)", "Удерживайте кнопку синхронизации на рейке, пока индикаторы не побегут. Держится горизонтально; у левого нет кнопки PS: «Настроить PS».", "b"],
+      ["Wii U Pro и Wiimote", "Нажмите кнопку Sync (красная, сзади или под крышкой батарей). Wiimote держится горизонтально.", "b"],
+      ["Stadia", "Нужна прошивка Bluetooth, выпущенная Google. Удерживайте Y + кнопку Stadia, пока не замигает.", "b"],
+      ["DualSense", "Это контроллер самой консоли: AnyPad его не сопрягает. Не выключайте его, пока работает AnyPad.", "x"]]
+  },
+  zh: {
+    navhome: "首页", navpads: "手柄", navguide: "指南", navsys: "系统",
+    hometitle: "配对你的<span>手柄</span>", padstitle: "已配对的<span>手柄</span>", guidetitle: "手柄<span>指南</span>",
+    radidle: "可以配对", radsearch: "正在搜索手柄", radsearchhint: "在主机附近让手柄进入配对模式。",
+    radpause: "为 DualSense 暂停", radpausehint: "AnyPad 暂停片刻，让 DualSense 连接主机。之后会自动继续。",
+    radpads: (n) => "已连接 " + n + " 个手柄",
+    gt: "已测试", gb: "测试版", gx: "不配对",
+    tips: ["先按<b>配对</b>，再在主机附近让手柄进入配对模式。", "主机询问由谁使用手柄时，选择<b>快速游戏 / 访客</b>。",
+      "如果手柄没有出现，请重置它（DualShock 4：用回形针按 L2 旁的小孔约 5 秒）后重试。"],
+    guide: [["DualShock 4", "按住 Share + PS，直到灯条连闪两次。每次配对都要这样做。", "t"],
+      ["8BitDo（Switch 模式）", "开关拨到 S（Switch）；按住 Pair 约 3 秒，直到指示灯快速闪烁。没有 PS 键：使用“设置 PS”。", "t"],
+      ["8BitDo（其他模式）", "M 模式（macOS）：作为 DualShock 4 使用。A 模式（Android）：作为通用手柄。按住 Pair 约 3 秒。", "b"],
+      ["Switch Pro 手柄和 Switch Online", "按下 USB-C 接口旁的同步键（Switch Online 手柄为顶部按键），直到指示灯流动。", "b"],
+      ["Xbox Series X|S 和 Xbox One", "按住顶部 USB 接口旁的配对键，直到 Xbox 徽标快速闪烁。最好先更新手柄固件。", "b"],
+      ["Xbox Adaptive Controller", "按下背面的配对键，直到徽标闪烁。", "b"],
+      ["DualShock 4 仿制手柄", "与 DualShock 4 相同：Share + PS。如果一开始不是所有按键都有反应，请等几秒。", "b"],
+      ["GameSir、MOGA、SteelSeries、iPega 等", "按说明书切换到 Android 或 PC 蓝牙模式，然后进入配对模式。", "b"],
+      ["Joy-Con（单个使用）", "按住滑轨上的同步键，直到指示灯流动。横握使用；左手柄没有 PS 键：使用“设置 PS”。", "b"],
+      ["Wii U Pro 和 Wiimote", "按下 Sync 键（红色，在背面或电池盖下）。Wiimote 横握使用。", "b"],
+      ["Stadia", "需要 Google 发布的蓝牙固件。按住 Y + Stadia 键直到闪烁。", "b"],
+      ["DualSense", "这是主机自带的手柄：AnyPad 不会配对它。AnyPad 运行时不要关闭它。", "x"]]
+  },
+  "zh-Hant": {
+    navhome: "首頁", navpads: "控制器", navguide: "指南", navsys: "系統",
+    hometitle: "配對你的<span>控制器</span>", padstitle: "已配對的<span>控制器</span>", guidetitle: "控制器<span>指南</span>",
+    radidle: "可以配對", radsearch: "正在搜尋控制器", radsearchhint: "在主機附近讓控制器進入配對模式。",
+    radpause: "為 DualSense 暫停", radpausehint: "AnyPad 暫停片刻，讓 DualSense 連接主機。之後會自動繼續。",
+    radpads: (n) => "已連線 " + n + " 個控制器",
+    gt: "已測試", gb: "測試版", gx: "不配對",
+    tips: ["先按<b>配對</b>，再在主機附近讓控制器進入配對模式。", "主機詢問由誰使用控制器時，選擇<b>快速遊戲 / 訪客</b>。",
+      "如果控制器沒有出現，請重設它（DualShock 4：用迴紋針按 L2 旁的小孔約 5 秒）後重試。"],
+    guide: [["DualShock 4", "按住 Share + PS，直到燈條連閃兩次。每次配對都要這樣做。", "t"],
+      ["8BitDo（Switch 模式）", "開關撥到 S（Switch）；按住 Pair 約 3 秒，直到指示燈快速閃爍。沒有 PS 鍵：使用「設定 PS」。", "t"],
+      ["8BitDo（其他模式）", "M 模式（macOS）：作為 DualShock 4 使用。A 模式（Android）：作為通用控制器。按住 Pair 約 3 秒。", "b"],
+      ["Switch Pro 控制器和 Switch Online", "按下 USB-C 連接埠旁的同步鍵（Switch Online 控制器為頂部按鍵），直到指示燈流動。", "b"],
+      ["Xbox Series X|S 和 Xbox One", "按住頂部 USB 連接埠旁的配對鍵，直到 Xbox 標誌快速閃爍。最好先更新控制器韌體。", "b"],
+      ["Xbox Adaptive Controller", "按下背面的配對鍵，直到標誌閃爍。", "b"],
+      ["DualShock 4 仿製控制器", "與 DualShock 4 相同：Share + PS。如果一開始不是所有按鍵都有反應，請等幾秒。", "b"],
+      ["GameSir、MOGA、SteelSeries、iPega 等", "依說明書切換到 Android 或 PC 藍牙模式，然後進入配對模式。", "b"],
+      ["Joy-Con（單個使用）", "按住滑軌上的同步鍵，直到指示燈流動。橫握使用；左控制器沒有 PS 鍵：使用「設定 PS」。", "b"],
+      ["Wii U Pro 和 Wiimote", "按下 Sync 鍵（紅色，在背面或電池蓋下）。Wiimote 橫握使用。", "b"],
+      ["Stadia", "需要 Google 發布的藍牙韌體。按住 Y + Stadia 鍵直到閃爍。", "b"],
+      ["DualSense", "這是主機內建的控制器：AnyPad 不會配對它。AnyPad 執行時請勿關閉它。", "x"]]
+  },
+  ja: {
+    navhome: "ホーム", navpads: "コントローラー", navguide: "ガイド", navsys: "システム",
+    hometitle: "<span>コントローラー</span>をペアリング", padstitle: "ペアリング済みの<span>コントローラー</span>", guidetitle: "コントローラー<span>ガイド</span>",
+    radidle: "ペアリングの準備完了", radsearch: "コントローラーを検索中", radsearchhint: "本体の近くでコントローラーをペアリングモードにしてください。",
+    radpause: "DualSense のため一時停止", radpausehint: "DualSense が本体に接続できるよう、AnyPad が少しの間止まります。その後は自動で続きます。",
+    radpads: (n) => n + " 台のコントローラーが接続中",
+    gt: "動作確認済み", gb: "ベータ", gx: "ペアリングしない",
+    tips: ["先に<b>ペアリング</b>を押し、本体の近くでコントローラーをペアリングモードにしてください。",
+      "本体に誰が使うか聞かれたら、<b>クイックプレイ / ゲスト</b>を選んでください。",
+      "コントローラーが表示されない場合はリセットして（DualShock 4：L2 横の穴にクリップを約 5 秒）やり直してください。"],
+    guide: [["DualShock 4", "ライトバーが 2 回続けて点滅するまで Share + PS を押し続けます。ペアリングのたびに必要です。", "t"],
+      ["8BitDo（Switch モード）", "スイッチを S（Switch）に。ランプが速く点滅するまで Pair を約 3 秒押します。PS ボタンなし：「PS を設定」を使用。", "t"],
+      ["8BitDo（その他のモード）", "M モード（macOS）：DualShock 4 として動作。A モード（Android）：汎用コントローラーとして。Pair を約 3 秒押します。", "b"],
+      ["Switch Pro コントローラーと Switch Online", "USB-C 端子横のシンクロボタン（Switch Online は上部のボタン）をランプが流れるまで押します。", "b"],
+      ["Xbox Series X|S と Xbox One", "上部 USB 端子横のペアリングボタンを Xbox ロゴが速く点滅するまで押し続けます。コントローラーの更新を推奨。", "b"],
+      ["Xbox Adaptive Controller", "背面のペアリングボタンをロゴが点滅するまで押します。", "b"],
+      ["DualShock 4 互換品", "DualShock 4 と同じく Share + PS。最初に一部のボタンが反応しない場合は数秒お待ちください。", "b"],
+      ["GameSir、MOGA、SteelSeries、iPega など", "説明書に従って Android または PC の Bluetooth モードにし、その後ペアリングモードにします。", "b"],
+      ["Joy-Con（1本ずつ）", "レールのシンクロボタンをランプが流れるまで押し続けます。横持ちで使用。左側には PS ボタンがないため「PS を設定」を使用。", "b"],
+      ["Wii U Pro と Wii リモコン", "Sync ボタン（赤、背面または電池カバーの中）を押します。Wii リモコンは横持ちで使用。", "b"],
+      ["Stadia", "Google が公開した Bluetooth ファームウェアが必要です。点滅するまで Y + Stadia ボタンを押し続けます。", "b"],
+      ["DualSense", "本体付属のコントローラーです。AnyPad ではペアリングしません。AnyPad の実行中は電源を切らないでください。", "x"]]
+  },
+  ko: {
+    navhome: "홈", navpads: "컨트롤러", navguide: "가이드", navsys: "시스템",
+    hometitle: "<span>컨트롤러</span>를 페어링하세요", padstitle: "페어링된 <span>컨트롤러</span>", guidetitle: "컨트롤러 <span>가이드</span>",
+    radidle: "페어링 준비 완료", radsearch: "컨트롤러 검색 중", radsearchhint: "본체 가까이에서 컨트롤러를 페어링 모드로 만드세요.",
+    radpause: "DualSense를 위해 일시 정지", radpausehint: "DualSense가 본체에 연결할 수 있도록 AnyPad가 잠시 멈춥니다. 이후 자동으로 계속합니다.",
+    radpads: (n) => "연결된 컨트롤러 " + n + "개",
+    gt: "검증됨", gb: "베타", gx: "페어링 안 함",
+    tips: ["먼저 <b>페어링</b>을 누르고, 본체 가까이에서 컨트롤러를 페어링 모드로 만드세요.",
+      "본체가 누가 사용할지 물으면 <b>빠른 플레이 / 게스트</b>를 선택하세요.",
+      "컨트롤러가 나타나지 않으면 초기화한 뒤(DualShock 4: L2 옆 구멍에 클립을 약 5초) 다시 시도하세요."],
+    guide: [["DualShock 4", "라이트 바가 두 번 연속 깜빡일 때까지 Share + PS를 누르세요. 페어링할 때마다 필요합니다.", "t"],
+      ["8BitDo (Switch 모드)", "스위치를 S(Switch)에 두고, 표시등이 빠르게 깜빡일 때까지 Pair를 약 3초 누르세요. PS 버튼이 없으면 'PS 설정'을 사용하세요.", "t"],
+      ["8BitDo (다른 모드)", "M 모드(macOS): DualShock 4로 동작. A 모드(Android): 범용 컨트롤러로 동작. Pair를 약 3초 누르세요.", "b"],
+      ["Switch Pro 컨트롤러와 Switch Online", "USB-C 포트 옆의 동기화 버튼(Switch Online은 위쪽 버튼)을 표시등이 흐를 때까지 누르세요.", "b"],
+      ["Xbox Series X|S와 Xbox One", "위쪽 USB 포트 옆의 페어링 버튼을 Xbox 로고가 빠르게 깜빡일 때까지 누르세요. 컨트롤러 업데이트를 권장합니다.", "b"],
+      ["Xbox Adaptive Controller", "뒷면의 페어링 버튼을 로고가 깜빡일 때까지 누르세요.", "b"],
+      ["DualShock 4 호환 제품", "DualShock 4와 같습니다: Share + PS. 처음에 일부 버튼이 반응하지 않으면 몇 초 기다리세요.", "b"],
+      ["GameSir, MOGA, SteelSeries, iPega 등", "설명서에 따라 Android 또는 PC 블루투스 모드로 설정한 뒤 페어링 모드로 만드세요.", "b"],
+      ["Joy-Con (한 개씩)", "레일의 동기화 버튼을 표시등이 흐를 때까지 누르세요. 가로로 들고 사용하며, 왼쪽에는 PS 버튼이 없으니 'PS 설정'을 사용하세요.", "b"],
+      ["Wii U Pro와 Wii 리모컨", "Sync 버튼(빨간색, 뒷면 또는 배터리 덮개 안)을 누르세요. Wii 리모컨은 가로로 들고 사용합니다.", "b"],
+      ["Stadia", "Google이 공개한 블루투스 펌웨어가 필요합니다. 깜빡일 때까지 Y + Stadia 버튼을 누르세요.", "b"],
+      ["DualSense", "본체 기본 컨트롤러입니다. AnyPad는 페어링하지 않습니다. AnyPad 실행 중에는 끄지 마세요.", "x"]]
+  },
+  ar: {
+    navhome: "الرئيسية", navpads: "وحدات التحكم", navguide: "الدليل", navsys: "النظام",
+    hometitle: "أقرِن <span>وحدات التحكم</span>", padstitle: "وحدات التحكم <span>المقترنة</span>", guidetitle: "دليل <span>وحدات التحكم</span>",
+    radidle: "جاهز للإقران", radsearch: "جارٍ البحث عن وحدات التحكم", radsearchhint: "ضع وحدة التحكم في وضع الإقران بالقرب من الجهاز.",
+    radpause: "إيقاف مؤقت من أجل DualSense", radpausehint: "يتوقف AnyPad لحظة كي يتصل DualSense بالجهاز، ثم يتابع تلقائيًا.",
+    radpads: (n) => "وحدات التحكم المتصلة: " + n,
+    gt: "مُختبرة", gb: "تجريبي", gx: "لا تُقرَن",
+    tips: ["اضغط <b>الإقران</b> أولًا، ثم ضع وحدة التحكم في وضع الإقران بالقرب من الجهاز.",
+      "عندما يسأل الجهاز عمّن يستخدم وحدة التحكم، اختر <b>لعب سريع / ضيف</b>.",
+      "إذا لم تظهر وحدة التحكم، أعد ضبطها (DualShock 4: مشبك ورق في الثقب بجانب L2 نحو 5 ثوانٍ) وحاول مجددًا."],
+    guide: [["DualShock 4", "اضغط مع الاستمرار على Share + PS حتى يومض شريط الضوء مرتين متتاليتين. في كل مرة تقرنها.", "t"],
+      ["8BitDo (وضع Switch)", "المفتاح على S (Switch)؛ اضغط Pair نحو 3 ثوانٍ حتى تومض الأضواء بسرعة. بلا زر PS: استخدم «إعداد PS».", "t"],
+      ["8BitDo (أوضاع أخرى)", "الوضع M (macOS): يعمل مثل DualShock 4. الوضع A (Android): كوحدة تحكم عامة. اضغط Pair نحو 3 ثوانٍ.", "b"],
+      ["وحدة Switch Pro وSwitch Online", "اضغط زر المزامنة بجانب منفذ USB-C (في Switch Online الزر العلوي) حتى تجري الأضواء.", "b"],
+      ["Xbox Series X|S وXbox One", "اضغط مع الاستمرار على زر الإقران أعلى الوحدة بجانب منفذ USB حتى يومض شعار Xbox بسرعة. يُفضّل تحديث وحدة التحكم.", "b"],
+      ["Xbox Adaptive Controller", "اضغط زر الإقران في الخلف حتى يومض الشعار.", "b"],
+      ["نسخ مقلّدة من DualShock 4", "مثل DualShock 4: Share + PS. إذا لم تستجب كل الأزرار في البداية فانتظر بضع ثوانٍ.", "b"],
+      ["GameSir وMOGA وSteelSeries وiPega وغيرها", "اضبطها على وضع Android أو PC عبر البلوتوث (راجع الدليل) ثم على وضع الإقران.", "b"],
+      ["Joy-Con (كلٌّ على حدة)", "اضغط مع الاستمرار على زر المزامنة في السكة حتى تجري الأضواء. يُمسك بالعرض؛ الأيسر بلا زر PS: استخدم «إعداد PS».", "b"],
+      ["Wii U Pro وWiimote", "اضغط زر Sync (الأحمر، في الخلف أو تحت غطاء البطاريات). يُمسك Wiimote بالعرض.", "b"],
+      ["Stadia", "يحتاج إلى برنامج البلوتوث الذي نشرته Google. اضغط Y + زر Stadia حتى يومض.", "b"],
+      ["DualSense", "إنها وحدة التحكم الخاصة بالجهاز: AnyPad لا يقرنها. لا تُطفئها أثناء تشغيل AnyPad.", "x"]]
+  }
+};
+for (const k in MORE) if (TEXT[k]) Object.assign(TEXT[k], MORE[k]);
+
+let L = TEXT.es, lang = "";
+function setLang(code) {
+  if (code === lang) return;
+  lang = code;
+  L = TEXT[code] || TEXT.en;
+  document.documentElement.lang = code;
+  document.documentElement.dir = code === "ar" ? "rtl" : "ltr";
+  for (const e of document.querySelectorAll("[data-t]")) {
+    const v = L[e.dataset.t];
+    if (typeof v !== "string") continue;
+    if (e.dataset.html) e.innerHTML = v; else e.textContent = v;
+  }
+  if (!$("log").hidden) $("showlog").textContent = L.hidelog;
+  renderGuide();
+}
+/* Pairing guide: how each kind of controller goes into pairing mode. */
+function renderGuide() {
+  const tips = $("tips"), g = $("guide");
+  if (!tips || !g) return;
+  tips.replaceChildren();
+  for (const t of (L.tips || TEXT.en.tips)) { const li = el("li"); li.innerHTML = t; tips.appendChild(li); }
+  g.replaceChildren();
+  for (const [name, how, tag] of (L.guide || TEXT.en.guide)) {
+    const c = el("div", "gcard"), h = el("h3");
+    h.append(el("span", "", name), el("span", "tag " + tag, tag === "t" ? L.gt : tag === "b" ? L.gb : L.gx));
+    c.append(h, el("p", "", how));
+    g.appendChild(c);
+  }
+}
+/* The side bar: one view at a time. */
+function showView(v) {
+  for (const b of document.querySelectorAll(".nav button")) b.classList.toggle("on", b.dataset.v === v);
+  for (const sec of document.querySelectorAll(".view")) sec.hidden = sec.id !== "v-" + v;
+  try { sessionStorage.setItem("anypad-view", v); } catch (e) {}
+}
+for (const b of document.querySelectorAll(".nav button")) b.onclick = () => showView(b.dataset.v);
+setLang("es");
+
+const NAMES = { cross: "✕", circle: "○", square: "□", triangle: "△", l1: "L1", r1: "R1", l2: "L2", r2: "R2",
+  l3: "L3", r3: "R3", up: "↑", down: "↓", left: "←", right: "→", options: "OPTIONS", create: "CREATE",
+  ps: "PS", touchpad: "" };
+async function api(method, path) {
+  const r = await fetch(path, { method, headers: { "X-AnyPad": "1" } });
+  if (!r.ok) throw new Error("http " + r.status);
+  return path === "/api/log" ? r.text() : r.json();
+}
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function stick(x, y) {
+  const s = el("div", "stick"), d = el("i");
+  d.style.left = (x / 255 * 100) + "%";
+  d.style.top = (y / 255 * 100) + "%";
+  s.appendChild(d);
+  return s;
+}
+
+function trigger(v) {
+  const t = el("div", "trig"), b = el("b");
+  b.style.height = (v / 255 * 100) + "%";
+  t.appendChild(b);
+  return t;
+}
+
+function renderPads(pads) {
+  const box = $("pads");
+  box.replaceChildren();
+  if (!pads.length) { box.appendChild(el("div", "empty", L.nopads)); return; }
+  for (const p of pads) {
+    const c = el("div", "pad"), top = el("div", "top"), ico = el("span", "ico");
+    ico.innerHTML = PAD_SVG;
+    top.append(ico, el("span", "name", modelName(p.vid, p.pid) === L.genericpad ? p.profile : modelName(p.vid, p.pid)), el("span", "slot", L.pl + p.slot));
+    c.append(top, el("div", "meta", p.profile + " · " + p.addr));
+    const viz = el("div", "viz");
+    viz.append(trigger(p.l2), stick(p.lx, p.ly), stick(p.rx, p.ry), trigger(p.r2));
+    c.appendChild(viz);
+    const btns = el("div", "btns");
+    for (const b of p.buttons) btns.appendChild(el("span", "", b === "touchpad" ? L.panel : (NAMES[b] || b)));
+    c.appendChild(btns);
+    if (p.battery >= 0) {
+      const bat = el("div", "batt" + (p.battery <= 20 ? " low" : "")), bar = el("div", "bar"), fill = el("b");
+      fill.style.width = p.battery + "%";
+      bar.appendChild(fill);
+      bat.append(el("span", "", L.battery), bar, el("span", "", p.battery + "%" + (p.charging ? " · " + L.charging : "")));
+      c.appendChild(bat);
+    }
+    box.appendChild(c);
+  }
+}
+
+const MODELS = {"054c:09cc": "Sony DualShock 4 v2", "0f0d:0123": "HORI Wireless Controller Light", "054c:05c4": "Sony DualShock 4 v1", "0f0d:00f6": "Hori Onyx", "1532:1009": "Razer Raiju Ultimate", "1532:100a": "Razer Raiju Tournament", "2e95:7725": "SCUF Vantage 2", "054c:0ce6": "Sony DualSense", "054c:0df2": "Sony DualSense Edge", "045e:02e0": "Xbox One S", "045e:02fd": "Xbox One S", "045e:0b00": "Xbox Elite Series 2", "045e:0b05": "Xbox Elite Series 2", "045e:0b0a": "Xbox Adaptive Controller", "045e:0b13": "Xbox Series X|S", "045e:0b20": "Xbox One S", "045e:0b21": "Xbox Adaptive Controller", "045e:0b22": "Xbox Elite Series 2", "057e:2009": "Switch Pro Controller", "057e:2017": "Switch Online SNES", "057e:2019": "Switch Online N64", "057e:201a": "Switch Online Mega Drive", "057e:201e": "Switch Online Mega Drive", "057e:2006": "Joy-Con (L)", "057e:2007": "Joy-Con (R)", "057e:0306": "Wii Remote", "057e:0330": "Wii U Pro Controller", "18d1:9400": "Stadia Controller", "ffff:046e": "GameSir G3s", "05ac:022d": "GameSir G3s", "ffff:046f": "GameSir G4s", "3537:1022": "GameSir G7 Pro", "ffff:0450": "GameSir T1s", "05ac:056b": "GameSir T2a", "20bc:5501": "Betop 2585N2", "2e2c:0002": "Bionik Vulkan", "0079:181c": "LanShen X1Pro", "2717:3144": "Xiaomi Mi Controller", "1949:0402": "Amazon Fire / iPega", "2dc8:2100": "8BitDo SN30 Pro", "2dc8:2101": "8BitDo SN30 Pro", "2dc8:3012": "8BitDo Ultimate 2.4G", "1949:0403": "iPega 9-series", "05ac:022c": "iPega 9-series", "1038:1412": "SteelSeries", "0111:1420": "SteelSeries", "0111:1431": "SteelSeries", "0111:1419": "SteelSeries", "0955:7214": "NVIDIA Shield", "1532:0900": "Razer Serval", "20d6:89e5": "PowerA MOGA Hero", "20d6:0dad": "PowerA MOGA Pro", "20d6:6271": "PowerA MOGA Pro 2", "3250:1002": "Atari VCS", "2e24:200a": "Hyperkin Scout", "04e8:046e": "Mocute 050"};
+function modelName(vid, pid) {
+  if (vid === "0000" && pid === "0000") return L.unknownpad;
+  return MODELS[vid + ":" + pid] || L.genericpad;
+}
+function renderPaired(list, pads) {
+  const t = $("paired");
+  t.replaceChildren();
+  if (!list.length) { const r = t.insertRow(), d = r.insertCell(); d.className = "empty"; d.textContent = L.nopaired; return; }
+  for (const p of list) {
+    const r = t.insertRow(), a = r.insertCell(), b = r.insertCell(), c = r.insertCell();
+    a.append(el("span", "dot" + (p.connected ? " on" : "")), document.createTextNode(p.addr));
+    b.textContent = modelName(p.vid, p.pid) + (p.le ? " · LE" : "");
+    b.title = p.vid + ":" + p.pid;          /* the id stays one hover away, for reports */
+    c.className = "r";
+    const live = (pads || []).find((x) => x.addr === p.addr);       /* connected: has a slot */
+    const acts = el("span", "acts");
+    c.appendChild(acts);
+    if (live && !hasOwnPs(live)) {       /* PlayStation pads have their own PS button: neither shows */
+      /* «Configure PS»: a combination of its buttons that stands for PS */
+      if (live.pscombo) acts.appendChild(el("span", "combo", "PS = " + comboText(live.pscombo.split("+"))));
+      const cf = el("button", "", L.psconf);
+      cf.title = L.psconfhint;
+      cf.onclick = () => openCombo(live, modelName(p.vid, p.pid));
+      acts.appendChild(cf);
+      const ps = el("button", "blue", L.pressps);
+      ps.title = L.presspshint;
+      ps.onclick = async () => { try { await api("POST", "/api/ps?slot=" + live.slot); } catch (e) {} };
+      acts.appendChild(ps);
+    }
+    const f = el("button", "danger", L.forget);
+    f.onclick = async () => {
+      if (!confirm(L.forgetq(p.addr))) return;
+      try { await api("POST", "/api/forget?addr=" + p.addr); } catch (e) {}
+      refresh();
+    };
+    acts.appendChild(f);
+  }
+}
+
+/* ---- «Configure PS» --------------------------------------------------------------- */
+/* PlayStation pads have their own PS button: the setting is for the others. */
+function hasOwnPs(p) { return /DualShock|DualSense/i.test(p.profile); }
+const KEYS = ["l1", "r1", "l2", "r2", "l3", "r3", "cross", "circle", "square", "triangle",
+  "up", "down", "left", "right", "options", "create", "touchpad"];
+function keyName(k) { return k === "touchpad" ? L.panel : k === "options" ? "OPTIONS / START" : k === "create" ? "CREATE / SELECT" : (NAMES[k] || k); }
+function comboText(keys) { return keys.map(keyName).join(" + "); }
+let dlg = null;
+/* The pressed buttons the setting can use (PS itself is not one of them). */
+function showPicked() {
+  $("dlgpicked").textContent = dlg.picked.length ? "PS = " + comboText(dlg.picked) : "";
+  $("dlgsave").disabled = !dlg.count || dlg.picked.length !== dlg.count;
+}
+function setCount(n) {
+  dlg.count = n;
+  dlg.picked = [];
+  dlg.held = "";
+  for (const b of document.querySelectorAll("#dlgcount button")) b.classList.toggle("on", +b.dataset.n === n);
+  $("dlgpress").textContent = n === 1 ? L.press1 : L.pressn(n);
+  $("dlgbar").style.width = "0";
+  showPicked();
+}
+async function openCombo(live, model) {
+  const old = live.pscombo ? live.pscombo.split("+") : [];
+  dlg = { slot: live.slot, old: live.pscombo || "", picked: old, count: old.length, held: "", since: 0, timer: 0 };
+  $("dlgtitle").textContent = L.psconf + " · " + model + " (" + L.pl + live.slot + ")";
+  for (const b of document.querySelectorAll("#dlgcount button")) b.classList.toggle("on", +b.dataset.n === dlg.count);
+  $("dlgpress").textContent = !dlg.count ? L.pickcount : dlg.count === 1 ? L.press1 : L.pressn(dlg.count);
+  $("dlgbar").style.width = "0";
+  showPicked();
+  $("dlg").hidden = false;
+  try { await api("POST", "/api/pscombo?slot=" + live.slot + "&combo=capture"); } catch (e) {}
+  dlg.timer = setInterval(watchCombo, 150);
+}
+/* Reads the pad: exactly the chosen number of buttons, held still for 1 s, is taken. */
+async function watchCombo() {
+  if (!dlg) return;
+  let s;
+  try { s = await api("GET", "/api/state"); } catch (e) { return; }
+  if (!dlg) return;
+  const p = (s.pads || []).find((x) => x.slot === dlg.slot);
+  if (!p) { closeCombo(); return; }
+  const now = p.buttons.filter((b) => KEYS.includes(b));
+  const live = $("dlglive");
+  live.replaceChildren();
+  for (const b of now) live.appendChild(el("span", "", keyName(b)));
+  const key = now.slice().sort().join("+");
+  if (key !== dlg.held) { dlg.held = key; dlg.since = Date.now(); }
+  const ok = dlg.count > 0 && now.length === dlg.count;
+  const part = ok ? Math.min(1, (Date.now() - dlg.since) / 1000) : 0;
+  $("dlgbar").style.width = (part * 100) + "%";
+  if (ok && part >= 1 && key !== dlg.picked.slice().sort().join("+")) {
+    dlg.picked = now;
+    showPicked();
+  }
+}
+function closeCombo() {
+  if (dlg && dlg.timer) clearInterval(dlg.timer);
+  dlg = null;
+  $("dlg").hidden = true;
+  refresh();
+}
+async function sendCombo(text) {
+  try { await api("POST", "/api/pscombo?slot=" + dlg.slot + "&combo=" + text); } catch (e) {}
+}
+for (const b of document.querySelectorAll("#dlgcount button")) b.onclick = () => { if (dlg) setCount(+b.dataset.n); };
+$("dlgsave").onclick = async () => { if (!dlg) return; await sendCombo(dlg.picked.join(",")); closeCombo(); };
+$("dlgremove").onclick = async () => { if (!dlg) return; await sendCombo("none"); closeCombo(); };
+$("dlgcancel").onclick = async () => {        /* the combination there was, or none */
+  if (!dlg) return;
+  await sendCombo(dlg.old ? dlg.old.split("+").join(",") : "none");
+  closeCombo();
+};
+
+/* The radar: idle, searching (sweep and a bar for the search window), the
+ * pause for the DualSense (blue), Bluetooth down (red). Bars instead of
+ * seconds: the longest value seen is the full bar. */
+let barMax = { search: 0, pause: 0 };
+function radar(s) {
+  const pause = Math.max(s.pairwait || 0, s.pause || 0);
+  const mode = s.bluetooth === "failed" ? "fail" : pause > 0 ? "pause" : s.pairing > 0 ? "search" : "idle";
+  const left = mode === "pause" ? pause : mode === "search" ? s.pairing : 0;
+  $("radar").dataset.mode = mode;
+  const st = $("pairstate");
+  st.className = "pairstate " + mode;
+  st.textContent = mode === "fail" ? L.btna : mode === "pause" ? L.radpause : mode === "search" ? L.radsearch
+    : (s.pads && s.pads.length ? L.radpads(s.pads.length) : L.radidle);
+  $("pairinfo").textContent = mode === "pause" ? L.radpausehint : mode === "search" ? L.radsearchhint : mode === "fail" ? "" : L.idle;
+  const prog = $("prog");
+  if (mode === "search" || mode === "pause") {
+    if (left > barMax[mode]) barMax[mode] = left;
+    prog.hidden = false;
+    prog.className = "prog" + (mode === "pause" ? " pause" : "");
+    $("progbar").style.width = Math.round((barMax[mode] - left + 1) / (barMax[mode] + 1) * 100) + "%";
+  } else {
+    barMax = { search: 0, pause: 0 };
+    prog.hidden = true;
+  }
+  const blips = $("blips");
+  blips.replaceChildren();
+  (s.pads || []).forEach((p, i) => {
+    const a = (i * 97 + 30) * Math.PI / 180, r = 34;
+    const b = el("i", "blip");
+    b.style.left = (50 + r * Math.cos(a)) + "%";
+    b.style.top = (50 + r * Math.sin(a)) + "%";
+    blips.appendChild(b);
+  });
+  $("chip").textContent = s.chip ? "Bluetooth: " + s.chip : "";
+}
+
+async function refresh() {
+  try {
+    const s = await api("GET", "/api/state");
+    setLang(TEXT[s.lang] ? s.lang : "en");
+    $("ver").textContent = s.version;
+    $("status").textContent = s.running ? L.running : L.nobt;
+    $("status").className = s.running ? "on" : "off";
+    radar(s);
+    $("btfail").hidden = s.bluetooth !== "failed";
+    $("btreason").textContent = s.reason || "";
+    if (s.bluetooth === "trying") $("status").textContent = L.starting;
+    $("pair").disabled = s.pairing > 0 || s.pairwait > 0 || s.bluetooth !== "ok";
+    renderPads(s.pads);
+    renderPaired(s.paired, s.pads);
+  } catch (e) {
+    $("status").textContent = L.offline;
+    $("status").className = "off";
+  }
+}
+
+$("retry").onclick = async () => { try { await api("POST", "/api/retry"); } catch (e) {} refresh(); };
+$("pair").onclick = async () => { try { await api("POST", "/api/pair"); } catch (e) {} refresh(); };
+$("exit").onclick = () => {
+  /* Only leaves the page: AnyPad PS5 keeps running. Browsers refuse to close a page they did
+     not open from a script, so fall back to going back, then say how to leave. */
+  try { window.close(); } catch (e) {}
+  setTimeout(() => { if (history.length > 1) history.back(); }, 250);
+  setTimeout(() => { $("exithint").textContent = L.exitfail; }, 800);
+};
+$("stop").onclick = async () => {
+  if (!confirm(L.stopq)) return;
+  try { await api("POST", "/api/stop"); } catch (e) {}
+  $("status").textContent = L.stopping;
+};
+$("showlog").onclick = async () => {
+  const pre = $("log");
+  if (!pre.hidden) { pre.hidden = true; $("showlog").textContent = L.showlog; return; }
+  try { pre.textContent = await api("GET", "/api/log"); } catch (e) { return; }
+  pre.hidden = false;
+  pre.scrollTop = pre.scrollHeight;
+  $("showlog").textContent = L.hidelog;
+};
+
+try { const v = sessionStorage.getItem("anypad-view"); if (v && $("v-" + v)) showView(v); } catch (e) {}
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>
