@@ -259,7 +259,7 @@ static struct { int fd; int active; int slot; } g_cli[MAX_CLIENTS];
 static pthread_mutex_t g_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t g_slot_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t g_listener;
-static int g_listen_fd = -1;
+static int g_listen_fd = -1, g_port;
 static volatile int g_run;
 
 static void close_fd(int i)
@@ -495,6 +495,8 @@ static void *listener_main(void *arg)
     return NULL;
 }
 
+static int netpad_busy(void);
+
 int netpad_start(int port)
 {
     struct sockaddr_in a;
@@ -517,6 +519,7 @@ int netpad_start(int port)
     if (listen(fd, 8) != 0) { log_line("netpad: listen failed (%d)", errno); close(fd); return 0; }
 
     g_listen_fd = fd;
+    g_port = port;
     g_run = 1;
     if (pthread_create(&g_listener, NULL, listener_main, NULL) != 0) {
         log_line("netpad: no listener thread");
@@ -538,8 +541,43 @@ void netpad_stop(void)
     if (g_listen_fd >= 0) { shutdown(g_listen_fd, SHUT_RDWR); close(g_listen_fd); g_listen_fd = -1; }
     for (i = 0; i < MAX_CLIENTS; i++) close_fd(i);
     pthread_join(g_listener, NULL);
-    usleep(150000);                     /* let detached client threads unwind */
+    /* The client threads are detached: wait until each has let go of its
+     * entry (and removed its pad), or one still unwinding could close the
+     * socket of a client of the next start that took the same entry. */
+    for (i = 0; i < 40 && netpad_busy(); i++) usleep(50000);
     log_line("netpad: stopped");
+}
+
+/* Is it still serving? The listener must still listen and a connection to
+ * this machine's own address must be taken: the console can leave it dead
+ * when its network is torn down or reconfigured, as web_alive says. */
+int netpad_alive(void)
+{
+    struct sockaddr_in sin;
+    int v = 0, fd, ok;
+    socklen_t l = sizeof v;
+
+    if (!g_run || g_listen_fd < 0) return 0;
+    if (getsockopt(g_listen_fd, SOL_SOCKET, SO_ACCEPTCONN, &v, &l) == 0 && !v) return 0;
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) return 1;                       /* cannot ask: do not call it dead */
+    memset(&sin, 0, sizeof sin);
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons((uint16_t)g_port);
+    sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    ok = connect(fd, (struct sockaddr *)&sin, sizeof sin) == 0;
+    close(fd);                                  /* the server sees a request that never comes */
+    return ok;
+}
+
+static int netpad_busy(void)
+{
+    int i, n = 0;
+
+    pthread_mutex_lock(&g_mtx);
+    for (i = 0; i < MAX_CLIENTS; i++) n += g_cli[i].active;
+    pthread_mutex_unlock(&g_mtx);
+    return n;
 }
 
 int netpad_clients(void)

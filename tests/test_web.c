@@ -103,6 +103,8 @@ int main(void)
     g_web = web_start(&wc, g_port);
     CHECK(g_web != NULL);
     if (!g_web) return 1;
+    CHECK(web_alive(g_web, g_port) == 1);
+    CHECK(web_alive(g_web, g_port + 1) == 0);           /* nobody listens there */
 
     printf("the page\n");
     CHECK(call("GET", "/", out, sizeof out) > 0);

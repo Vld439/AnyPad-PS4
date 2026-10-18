@@ -116,6 +116,7 @@ int main(int argc, char **argv)
     signal(SIGPIPE, SIG_IGN);
     g_port = 20000 + (int)(getpid() % 20000) + 1;
     CHECK(netpad_start(g_port) == 1);
+    CHECK(netpad_alive() == 1);
 
     printf("the controller's name from the page, cleaned and cut whole\n");
     CHECK(strcmp(name_of("/ws?n=DualSense%20Wireless%20Controller"), "DualSense Wireless Controller") == 0);
@@ -191,7 +192,22 @@ int main(int argc, char **argv)
     netpad_stop();
     for (taken = 0, i = 0; i < MAX_PADS; i++) taken += g_taken[i];
     CHECK(taken == 0);
+    CHECK(netpad_busy() == 0);                 /* every client thread let go */
+    CHECK(netpad_alive() == 0);
     close(b); close(c); close(d); close(e);
+
+    printf("served again (the network changed): a new client gets a pad and is fed\n");
+    CHECK(netpad_start(g_port) == 1);
+    CHECK(netpad_alive() == 1);
+    a = ws_open("/ws?n=Again");
+    settle();
+    CHECK(g_taken[0] && strcmp(g_labels[0], "network:Again") == 0);
+    pad_frame(a, PAD_TRIANGLE, 128);
+    settle();
+    CHECK(g_last[0].buttons == PAD_TRIANGLE);
+    netpad_stop();
+    CHECK(!g_taken[0] && netpad_alive() == 0);
+    close(a);
 
     printf(g_fail ? "test_netpad: %d FAILED\n" : "test_netpad: all passed\n", g_fail);
     return g_fail != 0;

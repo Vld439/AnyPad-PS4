@@ -16,12 +16,17 @@
 #define NETPAD_PORT 8096
 
 /* Starts the listener. Returns 1 if it is up, 0 if the port could not be
- * taken (another instance, or the system). Safe to call once. */
+ * taken (another instance, or the system). Can be called again after
+ * netpad_stop (when the network changed under it). */
 int  netpad_start(int port);
 
 /* Stops the listener, drops every client and its virtual pad, joins the
  * threads. Safe to call when it never started. */
 void netpad_stop(void);
+
+/* Is it still serving (listening, and taking a connection to this machine's
+ * own address)? 0 if it never started or was stopped. */
+int  netpad_alive(void);
 
 /* How many clients are driving a pad right now (for the menu/status). */
 int  netpad_clients(void);

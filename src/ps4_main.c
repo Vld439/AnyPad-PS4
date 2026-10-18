@@ -235,26 +235,38 @@ int main(void)
             }
         }
 
-        /* The page follows the network, as Payload Manager's does: every 5 s the
-         * console's address is looked at and the page is served again if the
-         * address changed, the network was lost, or the listener died (pulling
-         * the cable or changing the DNS leaves it dead with the process alive). */
+        /* The pages follow the network, as Payload Manager's does: every 5 s the
+         * console's address is looked at, and the menu and the network
+         * controller are served again if the address changed, the network was
+         * lost, or a listener died (pulling the cable or changing the DNS
+         * leaves it dead with the process alive). */
         if (now - last_net >= 5000) {
             char nip[16];
-            int changed;
+            int changed, net_dead;
 
             last_net = now;
             local_ip(nip);
             changed = strcmp(nip, ip) != 0;
-            if (changed || !g_web) {
-                if (changed) log_line("network: address changed from %s to %s", ip, nip);
-                if (g_web) web_stop(g_web);
+            if (changed) {
+                log_line("network: address changed from %s to %s", ip, nip);
                 snprintf(ip, sizeof ip, "%s", nip);
                 snprintf(g_net_url, sizeof g_net_url, "http://%s:%d/", ip, NETPAD_PORT);
-                g_web = web_start(&wc, WEB_PORT);
-                if (g_web && strcmp(nip, "127.0.0.1") != 0 && changed)
-                    notify(TR("AnyPad PS4: pagina de nuevo en http://%s:%d/", "AnyPad PS4: page back at http://%s:%d/"), nip, WEB_PORT);
             }
+            if (changed || !g_web || !web_alive(g_web, WEB_PORT)) {
+                if (g_web && !changed) log_line("network: the menu stopped answering; serving it again");
+                if (g_web) web_stop(g_web);
+                g_web = web_start(&wc, WEB_PORT);
+            }
+            /* Its clients went with the old address: they open the new one. */
+            net_dead = g_vpad_ok && !netpad_alive();
+            if (g_vpad_ok && (changed || net_dead)) {
+                if (net_dead && !changed) log_line("network: the network controller stopped answering; serving it again");
+                netpad_stop();
+                netpad_start(NETPAD_PORT);
+            }
+            if (changed && g_web && strcmp(nip, "127.0.0.1") != 0)
+                notify(TR("AnyPad PS4: nueva direccion\nMenu: http://%s:%d/\nMando por red: %s",
+                          "AnyPad PS4: new address\nMenu: http://%s:%d/\nNetwork controller: %s"), nip, WEB_PORT, g_net_url);
         }
 
         /* Rest mode on its way: leave cleanly before it, not after. */
