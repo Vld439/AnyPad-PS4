@@ -160,9 +160,14 @@ static const char PAGE[] =
 "if(!n){var h=document.createElement('div');h.textContent='Conecta uno o varios mandos a este dispositivo y pulsa un bot\\u00f3n en cada uno';list.appendChild(h);}"
 "st.textContent=n?on+' de '+n+' enviando a la consola':'Esperando mandos\\u2026';card.className=on?'on':'';}"
 "function short(id){var s=id.replace(/\\s*\\(.*$/,'').replace(/^[0-9a-f]{1,4}-[0-9a-f]{1,4}-/i,'').trim();return (s||'Mando').slice(0,31);}"
+/* A connection not open in 4 s is given up and tried again: one tried while
+ * the console had no network hangs for about a minute, and browsers open one
+ * connection to an address at a time, so it held back the other pads. */
 "function link(i){var p=P[i];if(!p||p.ws)return;var ws=new WebSocket('ws://'+location.host+'/ws?n='+encodeURIComponent(p.name));ws.binaryType='arraybuffer';p.ws=ws;"
-"ws.onopen=function(){p.open=true;draw();};"
-"ws.onclose=function(){p.open=false;p.ws=null;draw();if(P[i]===p)setTimeout(function(){link(i);},2000);};"
+"var t=setTimeout(function(){if(p.open||p.ws!==ws)return;ws.onclose=ws.onerror=null;try{ws.close()}catch(e){}"
+"p.ws=null;if(P[i]===p)setTimeout(function(){link(i);},500);},4000);"
+"ws.onopen=function(){clearTimeout(t);p.open=true;draw();};"
+"ws.onclose=function(){clearTimeout(t);p.open=false;p.ws=null;draw();if(P[i]===p)setTimeout(function(){link(i);},2000);};"
 "ws.onerror=function(){try{ws.close()}catch(e){}};}"
 "function drop(i){var p=P[i];if(!p)return;delete P[i];if(p.ws){try{p.ws.close()}catch(e){}}draw();}"
 "function axis(v){return Math.max(0,Math.min(255,Math.round((v+1)*127.5)));}"
