@@ -38,6 +38,9 @@ struct web {
 };
 
 static int g_allow_any_peer;            /* tests only */
+/* A start that fails (the port taken by another program) is tried again
+ * every 5 s: it is said once, and then when it works again. */
+static int g_start_failed;
 
 static void web_poll_once(web_t *w, long now);
 
@@ -317,13 +320,16 @@ web_t *web_start(const web_cfg *cfg, int port)
     sin.sin_port = htons((uint16_t)port);
     sin.sin_addr.s_addr = htonl(INADDR_ANY);
     if (bind(w->fd, (struct sockaddr *)&sin, sizeof sin) != 0 || listen(w->fd, 4) != 0) {
-        log_line("web: port %d not available (errno %d), no web page", port, errno);
+        if (!g_start_failed)
+            log_line("web: port %d not available (errno %d), no web page; trying again quietly", port, errno);
+        g_start_failed = 1;
         close(w->fd);
         free(w);
         return NULL;
     }
     set_nonblock(w->fd);
-    log_line("web: listening on port %d", port);
+    log_line(g_start_failed ? "web: port %d free again, listening" : "web: listening on port %d", port);
+    g_start_failed = 0;
     return w;
 }
 

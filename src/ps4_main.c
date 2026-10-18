@@ -80,6 +80,7 @@ static usb_pad_mgr_t *g_usb_pads;
 static int g_vpad_test;                 /* VPAD_TEST_FLAG was there */
 static int g_vpad_ok;                   /* virtual pads are possible */
 static char g_net_url[64];              /* the network controller's page, for the menu */
+static int g_net_up;                    /* the network controller is being served */
 
 /* The console's language decides the texts: Spanish, or English for any other. */
 static int g_spanish = 1;
@@ -208,7 +209,8 @@ int main(void)
         /* Controllers over the network (a phone/PC as the pad, the way
          * Control4Free does it): its own port and thread, feeding the same
          * virtual pads. Gives wireless pads without the console's own radio. */
-        if (netpad_start(NETPAD_PORT))
+        g_net_up = netpad_start(NETPAD_PORT);
+        if (g_net_up)
             notify(TR("AnyPad PS4: mando por red en %s (abre esa pagina en el movil)",
                       "AnyPad PS4: network controller at %s (open that page on your phone)"), g_net_url);
         if (access(VPAD_TEST_FLAG, F_OK) == 0) {
@@ -260,9 +262,12 @@ int main(void)
             /* Its clients went with the old address: they open the new one. */
             net_dead = g_vpad_ok && !netpad_alive();
             if (g_vpad_ok && (changed || net_dead)) {
-                if (net_dead && !changed) log_line("network: the network controller stopped answering; serving it again");
+                /* Only if it was up: one that never started (its port taken)
+                 * is tried again quietly. */
+                if (net_dead && !changed && g_net_up)
+                    log_line("network: the network controller stopped answering; serving it again");
                 netpad_stop();
-                netpad_start(NETPAD_PORT);
+                g_net_up = netpad_start(NETPAD_PORT);
             }
             if (changed && g_web && strcmp(nip, "127.0.0.1") != 0)
                 notify(TR("AnyPad PS4: nueva direccion\nMenu: http://%s:%d/\nMando por red: %s",

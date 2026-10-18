@@ -147,6 +147,35 @@ int main(void)
     CHECK(strstr(out, "200") != NULL && stop == 1);
 
     web_stop(g_web);
+
+    printf("its port taken by another program: tried again quietly, said once\n");
+    {
+        struct sockaddr_in sin;
+        int other = socket(AF_INET, SOCK_STREAM, 0), k;
+        unsigned long seq;
+        char lines[2048];
+
+        int on = 1;
+
+        setsockopt(other, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);   /* the test's own TIME_WAITs */
+        memset(&sin, 0, sizeof sin);
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons((uint16_t)g_port);
+        sin.sin_addr.s_addr = htonl(INADDR_ANY);
+        CHECK(bind(other, (struct sockaddr *)&sin, sizeof sin) == 0 && listen(other, 1) == 0);
+        seq = log_seq();
+        for (k = 0; k < 3; k++) CHECK(web_start(&wc, g_port) == NULL);
+        CHECK(log_seq() == seq + 1);
+        log_since(seq, lines, sizeof lines);
+        CHECK(strstr(lines, "not available") != NULL);
+        close(other);
+        seq = log_seq();
+        g_web = web_start(&wc, g_port);
+        CHECK(g_web != NULL);
+        log_since(seq, lines, sizeof lines);
+        CHECK(log_seq() == seq + 1 && strstr(lines, "free again") != NULL);
+        web_stop(g_web);
+    }
     log_close();
     printf(g_fail ? "test_web: %d FAILED\n" : "test_web: all passed\n", g_fail);
     return g_fail != 0;

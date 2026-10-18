@@ -282,6 +282,10 @@ static pthread_mutex_t g_slot_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t g_listener;
 static int g_listen_fd = -1, g_port;
 static volatile int g_run;
+/* A start that fails (the port taken by another program) is tried again
+ * every 5 s: it is said once, and then when it works again. */
+static int g_start_failed;
+#define START_FAILED(...) do { if (!g_start_failed) log_line(__VA_ARGS__); g_start_failed = 1; } while (0)
 
 static void close_fd(int i)
 {
@@ -526,30 +530,32 @@ int netpad_start(int port)
     for (i = 0; i < MAX_CLIENTS; i++) { g_cli[i].fd = -1; g_cli[i].slot = -1; }
 
     fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0) { log_line("netpad: socket failed (%d)", errno); return 0; }
+    if (fd < 0) { START_FAILED("netpad: socket failed (%d)", errno); return 0; }
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
     memset(&a, 0, sizeof a);
     a.sin_family = AF_INET;
     a.sin_addr.s_addr = htonl(INADDR_ANY);
     a.sin_port = htons((uint16_t)port);
     if (bind(fd, (struct sockaddr *)&a, sizeof a) != 0) {
-        log_line("netpad: port %d busy (%d)", port, errno);
+        START_FAILED("netpad: port %d busy (%d); trying again quietly", port, errno);
         close(fd);
         return 0;
     }
-    if (listen(fd, 8) != 0) { log_line("netpad: listen failed (%d)", errno); close(fd); return 0; }
+    if (listen(fd, 8) != 0) { START_FAILED("netpad: listen failed (%d)", errno); close(fd); return 0; }
 
     g_listen_fd = fd;
     g_port = port;
     g_run = 1;
     if (pthread_create(&g_listener, NULL, listener_main, NULL) != 0) {
-        log_line("netpad: no listener thread");
+        START_FAILED("netpad: no listener thread");
         close(fd);
         g_listen_fd = -1;
         g_run = 0;
         return 0;
     }
-    log_line("netpad: controllers over the network on port %d", port);
+    log_line(g_start_failed ? "netpad: port %d free again, controllers over the network"
+                            : "netpad: controllers over the network on port %d", port);
+    g_start_failed = 0;
     return 1;
 }
 

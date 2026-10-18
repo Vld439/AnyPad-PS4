@@ -209,6 +209,40 @@ int main(int argc, char **argv)
     CHECK(!g_taken[0] && netpad_alive() == 0);
     close(a);
 
+    printf("its port taken by another program: tried again quietly, said once\n");
+    {
+        struct sockaddr_in sin;
+        int other = socket(AF_INET, SOCK_STREAM, 0), k;
+        unsigned long seq;
+        char lines[2048];
+
+        int on = 1;
+
+        setsockopt(other, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);   /* the test's own TIME_WAITs */
+        memset(&sin, 0, sizeof sin);
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons((uint16_t)g_port);
+        sin.sin_addr.s_addr = htonl(INADDR_ANY);
+        CHECK(bind(other, (struct sockaddr *)&sin, sizeof sin) == 0 && listen(other, 1) == 0);
+        seq = log_seq();
+        for (k = 0; k < 3; k++) CHECK(netpad_start(g_port) == 0);
+        CHECK(log_seq() == seq + 1);
+        log_since(seq, lines, sizeof lines);
+        CHECK(strstr(lines, "busy") != NULL);
+        CHECK(netpad_alive() == 0);
+        close(other);
+        seq = log_seq();
+        CHECK(netpad_start(g_port) == 1);
+        log_since(seq, lines, sizeof lines);
+        CHECK(log_seq() == seq + 1 && strstr(lines, "free again") != NULL);
+        netpad_stop();
+        seq = log_seq();
+        CHECK(netpad_start(g_port) == 1);              /* after a success, the plain line again */
+        log_since(seq, lines, sizeof lines);
+        CHECK(strstr(lines, "controllers over the network on port") != NULL);
+        netpad_stop();
+    }
+
     printf(g_fail ? "test_netpad: %d FAILED\n" : "test_netpad: all passed\n", g_fail);
     return g_fail != 0;
 }
