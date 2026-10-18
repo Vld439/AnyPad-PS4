@@ -43,6 +43,7 @@
 #include "ps5_sysinfo.h"
 #include "ps5_vpad.h"
 #include "usb_pad.h"
+#include "netpad.h"
 #include "util.h"
 #include "version.h"
 #include "web.h"
@@ -413,6 +414,13 @@ int main(void)
     } else {
         bt_begin();
         g_usb_pads = usb_pad_init(on_usb_feed, on_usb_attach, on_usb_detach);
+        /* Controllers over the network (a phone/PC as the pad, the way
+         * Control4Free does it): its own port and thread, feeding the same
+         * virtual pads. Gives wireless pads without the console's own radio. */
+        if (netpad_start(NETPAD_PORT))
+            notify(TR("AnyPad " ANYPAD_PLATFORM ": mando por red en http://%s:%d/ (abre esa pagina en el movil)",
+                      "AnyPad " ANYPAD_PLATFORM ": network controller at http://%s:%d/ (open that page on your phone)"),
+                   ip, NETPAD_PORT);
         if (access(VPAD_TEST_FLAG, F_OK) == 0) {
             log_line("vpad test: one idle virtual pad on slot 0");
             vpad_add(0);
@@ -495,6 +503,7 @@ int main(void)
         usb_pad_close(g_usb_pads);
         g_usb_pads = NULL;
     }
+    netpad_stop();                      /* drops network clients before their pads go */
     web_stop(g_web);
     host_close(g_host);                 /* our links; removes our virtual pads */
     g_host = NULL;

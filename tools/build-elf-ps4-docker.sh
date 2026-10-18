@@ -32,7 +32,7 @@ CC=$PS4_PAYLOAD_SDK/bin/orbis-clang
 cd /work
 rm -rf build/elf_ps4 && mkdir -p build/elf_ps4
 OBJS=""
-for f in util log crc32 smp_crypto profiles generic host le web web_page config evstream hotkey lock netinfo usb_desc hci_usb ps5_power ps5_ui ps5_apps ps5_sysinfo launcher icon_data ps5_vpad usb_pad ps5_main; do
+for f in util log crc32 smp_crypto profiles generic host le web web_page config evstream hotkey lock netinfo usb_desc hci_usb ps5_power ps5_ui ps5_apps ps5_sysinfo launcher icon_data ps5_vpad usb_pad netpad ps5_main; do
   $CC -std=c11 -Wall -Wextra -Werror -O2 -Isrc -Ibuild -DTARGET_PS4 -c src/$f.c -o build/elf_ps4/$f.o
   OBJS="$OBJS build/elf_ps4/$f.o"
 done
