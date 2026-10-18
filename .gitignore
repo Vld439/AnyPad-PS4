@@ -7,3 +7,5 @@
 # ELFs and their hashes (dist/) are published as release files, not kept in the repository.
 dist/
 tools/ps4-payload-sdk/
+# Builds left here to copy to the console by hand.
+/releases/
