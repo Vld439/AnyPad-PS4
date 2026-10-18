@@ -49,6 +49,11 @@ La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
 
 Hasta 4 mandos a la vez, contando los USB y los de red.
 
+### Panel táctil
+
+- **Pulsar el panel** (muchos juegos lo usan para el mapa o el menú): en los mandos Xbox y GameSir es el botón **View/Back**; en los de Switch, **Capture**. En el mando por red, el botón del panel de un mando de PlayStation, o el View de los demás.
+- **Deslizar el dedo**: la página del mando por red tiene una **zona táctil** que hace de panel del DualShock 4, con uno o dos dedos, y un botón **Pulsar panel**. Va al primer mando de la lista del móvil.
+
 ### El menú
 
 En `http://<IP de tu consola>:8095/`: los mandos conectados con su nombre y sus botones, sticks y gatillos en vivo; la dirección del mando por red y cuántos dispositivos lo usan; **Pulsar PS** por mando; el log; y **Apagar AnyPad**.
@@ -140,6 +145,11 @@ The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 5. When the console asks **who is using the controller**, choose your user. If the controller has no PS button, use **Press PS** in the menu.
 
 Up to 4 controllers at once, counting USB and network ones together.
+
+### Touchpad
+
+- **Pressing the touchpad** (many games use it for the map or the menu): on Xbox and GameSir controllers it is the **View/Back** button; on Switch ones, **Capture**. On the network controller, a PlayStation controller's touchpad button, or the others' View.
+- **Swiping**: the network controller's page has a **touch area** that acts as the DualShock 4's touchpad, with one or two fingers, and a **Pulsar panel** (press touchpad) button. It goes to the first controller in the phone's list.
 
 ### The menu
 

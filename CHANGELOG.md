@@ -11,6 +11,12 @@ project and in this repository's git history.
 
 ## Unreleased
 
+- The network controller's page has a touch area that acts as the DualShock 4's touchpad: one or two fingers, each a new contact as the pad numbers them, and a button to press the touchpad. It goes to the first controller in the phone's list.
+  La página del mando por red tiene una zona táctil que hace de panel del DualShock 4: uno o dos dedos, cada uno un contacto nuevo como los numera el mando, y un botón para pulsar el panel. Va al primer mando de la lista del móvil.
+- The touchpad's click over the network: a PlayStation controller's touchpad button (its SHARE stays SHARE), and the View button of the others, as by USB. Before, the network controller had no way to press it.
+  La pulsación del panel por red: el botón del panel de un mando de PlayStation (su SHARE sigue siendo SHARE), y el View de los demás, como por USB. Antes el mando por red no tenía forma de pulsarlo.
+- Touches keep their contact id from the controller to the virtual pad (they were numbered 0 and 1 by position).
+  Los toques conservan su número de contacto desde el mando hasta el mando virtual (antes se numeraban 0 y 1 por posición).
 - When the menu's or the network controller's port is taken by another program, AnyPad keeps trying every 5 s but says so once in the log, and again when it works, instead of one or two lines every 5 s that pushed everything else out of the log.
   Cuando otro programa ocupa el puerto del menú o del mando por red, AnyPad lo sigue intentando cada 5 s pero lo dice una vez en el log, y otra cuando funciona, en vez de una o dos líneas cada 5 s que echaban todo lo demás del log.
 
