@@ -41,19 +41,31 @@ La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
 
 ## Uso
 
-1. **Carga el ELF** (`AnyPad-PS4-<versión>.elf`) con el cargador de payloads que uses normalmente.
-2. Aparece una notificación con la dirección del **menú** (`http://<ip>:8095/`) y la del **mando por red** (`http://<ip>:8096/`). AnyPad también se añade a la fila de multimedia para abrir el menú desde la consola.
+1. **Descarga** `AnyPad-PS4-<versión>.elf` de [Releases](https://github.com/Vld439/AnyPad-PS4/releases), **cópialo en `/data/payloads`** de la consola y lánzalo.
+2. Aparece una notificación con dos direcciones, con la IP de tu consola: la del **menú** (`http://<IP de tu consola>:8095/`) y la del **mando por red** (`http://<IP de tu consola>:8096/`). AnyPad también se añade a la fila de multimedia, para abrir el menú desde la consola.
 3. **Por USB**: conecta el mando. En cuanto envía su primer dato, la consola recibe un DualShock 4 virtual.
-4. **Por red**: abre `http://<ip>:8096/` en el navegador del móvil o del PC (misma red), conecta allí el mando y pulsa un botón. Toca la pantalla una vez: la página la mantiene encendida mientras juegas. Baja el brillo para ahorrar batería. Puedes conectar **varios mandos al mismo móvil**: cada uno llega a la consola como un mando distinto.
+4. **Por red**: abre la dirección del mando por red en el navegador de un móvil o un PC conectado a la **misma red** que la consola. Conecta allí el mando (por cable o emparejado por Bluetooth con el móvil) y **pulsa un botón**. Toca la pantalla una vez: la página la mantiene encendida mientras juegas; baja el brillo para ahorrar batería. Puedes conectar **varios mandos al mismo móvil**: cada uno llega a la consola como un mando distinto, con su nombre.
 5. Cuando la consola pregunte **quién usa el mando**, elige tu usuario. Si el mando no tiene botón PS, usa **Pulsar PS** en el menú.
 
-Hasta 4 mandos a la vez: los USB ocupan los huecos desde arriba y los de red desde abajo.
+Hasta 4 mandos a la vez, contando los USB y los de red.
 
 ### El menú
 
-`http://<ip>:8095/`: los mandos conectados con sus botones, sticks y gatillos en vivo; la dirección del mando por red y cuántos dispositivos lo usan; **Pulsar PS** por mando; el log; y **Apagar AnyPad**.
+En `http://<IP de tu consola>:8095/`: los mandos conectados con su nombre y sus botones, sticks y gatillos en vivo; la dirección del mando por red y cuántos dispositivos lo usan; **Pulsar PS** por mando; el log; y **Apagar AnyPad**.
 
 **Apaga AnyPad antes de volver a cargar el ELF** (botón del menú, o crea el fichero vacío `/data/anypad/stop`). Al entrar la consola en reposo, AnyPad se para solo: vuelve a cargarlo al despertar.
+
+### Problemas frecuentes
+
+| Problema | Qué hacer |
+| --- | --- |
+| La página no abre en el móvil | El móvil tiene que estar en la **misma red Wi-Fi** que la consola: no con datos móviles ni en una red de invitados (suelen aislar los dispositivos entre sí). Comprueba la dirección en la notificación de AnyPad. |
+| Antes funcionaba y ahora la página no abre | El router le dio **otra IP a la consola**. AnyPad lo detecta en unos segundos y muestra una notificación con las direcciones nuevas: abre la nueva. Para que no cambie, **reserva una IP para la consola en tu router** (reserva DHCP o IP fija). |
+| La página dice «Esperando mandos» | Pulsa un botón del mando: los navegadores no muestran un mando hasta su primera pulsación. |
+| «AnyPad PS4: ya está en marcha» | Ya hay uno cargado. Usa ese, o apágalo desde su menú antes de cargarlo de nuevo. |
+| Un mando no llega a la consola | AnyPad maneja hasta 4 a la vez (USB y red juntos), y la consola cuenta también sus propios mandos. Desconecta alguno. |
+| Un mando de Sony por USB no hace nada | La consola se reserva los mandos de Sony por USB. Conéctalo al móvil y usa el mando por red. |
+| La consola pregunta quién usa el mando y no puedo elegir | Elige con el mando por el que pregunta. Si no tiene botón PS o no responde, usa **Pulsar PS** en el menú. |
 
 ### Ficheros en la consola
 
@@ -73,7 +85,7 @@ El menú y el mando por red solo aceptan conexiones de la red local y no tienen 
 ```
 make test                                   # tests en el ordenador
 make ps4 PS4_PAYLOAD_SDK=/ruta/al/sdk       # el ELF, en dist/
-make send PS4_HOST=<ip> PS4_PORT=<puerto>   # enviarlo al cargador de payloads
+make send PS4_HOST=<IP de la consola> PS4_PORT=<puerto>   # enviarlo al cargador de payloads
 ```
 
 Necesitas el [ps4-payload-sdk](https://github.com/ps4-payload-dev/sdk) (con clang y lld). Los stubs de enlace de `libSceUsbd` y `libSceMbus`, que el SDK no trae, están en `tools/sce_stubs/` y el build los compila solo. `tools/build-elf-ps4-docker.sh <sdk> <imagen>` compila dentro de un contenedor con clang, lld y make. `tools/live.sh` habla con un AnyPad en marcha (estado, log en vivo, parar); ver [AI-WORKFLOW.md](AI-WORKFLOW.md).
@@ -121,19 +133,31 @@ The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 
 ## Use
 
-1. **Load the ELF** (`AnyPad-PS4-<version>.elf`) with the payload loader you normally use.
-2. A notification shows the address of the **menu** (`http://<ip>:8095/`) and of the **network controller** (`http://<ip>:8096/`). AnyPad also adds itself to the media row, to open the menu from the console.
+1. **Download** `AnyPad-PS4-<version>.elf` from [Releases](https://github.com/Vld439/AnyPad-PS4/releases), **copy it to `/data/payloads`** on the console and run it.
+2. A notification shows two addresses, with your console's IP: the **menu** (`http://<your console's IP>:8095/`) and the **network controller** (`http://<your console's IP>:8096/`). AnyPad also adds itself to the media row, to open the menu from the console.
 3. **By USB**: plug the controller in. As soon as it sends its first report, the console gets a virtual DualShock 4.
-4. **Over the network**: open `http://<ip>:8096/` in the browser of a phone or PC (same network), connect the controller there and press a button. Tap the screen once: the page keeps it on while you play. Turn the brightness down to save battery. You can connect **several controllers to the same phone**: each one reaches the console as a separate controller.
+4. **Over the network**: open the network controller's address in the browser of a phone or PC on the **same network** as the console. Connect the controller there (by cable, or paired to the phone by Bluetooth) and **press a button**. Tap the screen once: the page keeps it on while you play; turn the brightness down to save battery. You can connect **several controllers to the same phone**: each one reaches the console as a separate controller, with its name.
 5. When the console asks **who is using the controller**, choose your user. If the controller has no PS button, use **Press PS** in the menu.
 
-Up to 4 controllers at once: USB ones take the slots from the top, network ones from the bottom.
+Up to 4 controllers at once, counting USB and network ones together.
 
 ### The menu
 
-`http://<ip>:8095/`: the connected controllers with their buttons, sticks and triggers live; the network controller's address and how many devices use it; **Press PS** per controller; the log; and **Stop AnyPad**.
+At `http://<your console's IP>:8095/`: the connected controllers with their name and their buttons, sticks and triggers live; the network controller's address and how many devices use it; **Press PS** per controller; the log; and **Stop AnyPad**.
 
 **Stop AnyPad before loading the ELF again** (the menu's button, or create the empty file `/data/anypad/stop`). When the console goes to rest mode, AnyPad stops by itself: load it again after waking up.
+
+### Troubleshooting
+
+| Problem | What to do |
+| --- | --- |
+| The page does not open on the phone | The phone must be on the **same Wi-Fi network** as the console: not on mobile data nor on a guest network (they usually keep devices apart). Check the address in AnyPad's notification. |
+| It worked before and now the page does not open | The router gave the console **another IP**. AnyPad notices within seconds and shows a notification with the new addresses: open the new one. To keep it from changing, **reserve an IP for the console in your router** (DHCP reservation or a static IP). |
+| The page says «Esperando mandos…» (waiting for controllers) | Press a button on the controller: browsers do not show a controller until it is first pressed. |
+| "AnyPad PS4: already running" | One is already loaded. Use it, or stop it from its menu before loading it again. |
+| A controller does not reach the console | AnyPad handles up to 4 at once (USB and network together), and the console also counts its own controllers. Disconnect one. |
+| A Sony controller by USB does nothing | The console keeps Sony's controllers on USB for itself. Connect it to the phone and use the network controller. |
+| The console asks who is using the controller and I cannot choose | Choose with the controller it is asking about. If it has no PS button or does not answer, use **Press PS** in the menu. |
 
 ### Files on the console
 
@@ -153,7 +177,7 @@ The menu and the network controller only accept connections from the local netwo
 ```
 make test                                   # tests on the computer
 make ps4 PS4_PAYLOAD_SDK=/path/to/sdk       # the ELF, in dist/
-make send PS4_HOST=<ip> PS4_PORT=<port>     # send it to the payload loader
+make send PS4_HOST=<console IP> PS4_PORT=<port>   # send it to the payload loader
 ```
 
 You need the [ps4-payload-sdk](https://github.com/ps4-payload-dev/sdk) (with clang and lld). The link stubs for `libSceUsbd` and `libSceMbus`, which the SDK lacks, are in `tools/sce_stubs/` and the build makes them by itself. `tools/build-elf-ps4-docker.sh <sdk> <image>` builds inside a container with clang, lld and make. `tools/live.sh` talks to a running AnyPad (state, live log, stop); see [AI-WORKFLOW.md](AI-WORKFLOW.md).

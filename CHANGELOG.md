@@ -9,6 +9,13 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
+## Unreleased
+
+- When the network changes (the console gets another address, the cable or Wi-Fi comes back), the network controller is served again too, not only the menu, and both are checked every 5 s to really answer: the console can leave a listener dead with AnyPad still running. The notification of a new address gives both addresses.
+  Cuando cambia la red (la consola recibe otra dirección, vuelve el cable o el Wi-Fi), también se vuelve a servir el mando por red, no solo el menú, y cada 5 s se comprueba que los dos responden de verdad: la consola puede dejar muerto un servidor con AnyPad en marcha. La notificación de dirección nueva da las dos direcciones.
+- README: download from Releases and copy to `/data/payloads`; troubleshooting (same network, the console's IP changing, the controller limit).
+  README: descargar de Releases y copiar en `/data/payloads`; problemas frecuentes (misma red, cambio de IP de la consola, límite de mandos).
+
 ## 0.1.0-beta (18 October 2026 / 18 octubre 2026) — the PS4 port / el port a PS4
 
 **Controllers / Mandos**
