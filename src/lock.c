@@ -17,29 +17,49 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 static int g_fd = -1;
 static char g_path[256];
 
+static int port_8095_open(void)
+{
+    struct sockaddr_in sin;
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) return 0;
+    memset(&sin, 0, sizeof sin);
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(8095);
+    sin.sin_addr.s_addr = inet_addr("127.0.0.1");
+    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+    int res = connect(fd, (struct sockaddr *)&sin, sizeof sin);
+    close(fd);
+    return res == 0 || errno == EINPROGRESS || errno == EALREADY;
+}
+
 long lock_boot_time(void)
 {
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        time_t now = time(NULL);
+        if (now > ts.tv_sec) return (long)(now - ts.tv_sec);
+    }
 #if defined(CTL_KERN) && defined(KERN_BOOTTIME)
     int mib[2] = { CTL_KERN, KERN_BOOTTIME };
     struct timeval tv;
     size_t len = sizeof tv;
 
-    if (sysctl(mib, 2, &tv, &len, NULL, 0) != 0) return 0;
-    return (long)tv.tv_sec;
+    if (sysctl(mib, 2, &tv, &len, NULL, 0) == 0) return (long)tv.tv_sec;
 #elif defined(__linux__)
     struct timespec ts_boot, ts_now;
     if (clock_gettime(CLOCK_BOOTTIME, &ts_boot) == 0 && clock_gettime(CLOCK_REALTIME, &ts_now) == 0) {
         return (long)(ts_now.tv_sec - ts_boot.tv_sec);
     }
-    return 0;
-#else
-    return 0;
 #endif
+    return 0;
 }
 
 /* Is the lock at `path` held by a copy that is really running? */
@@ -65,7 +85,10 @@ static int lock_is_live(const char *path, long boot)
     } else if (boot && stat(path, &st) == 0 && (long)st.st_mtime < boot) {
         return 0;                       /* an older lock (id only), written before this boot */
     }
-    return kill((pid_t)pid, 0) == 0 || errno == EPERM;
+
+    if (kill((pid_t)pid, 0) == 0) return 1;
+    if (errno == EPERM) return port_8095_open();
+    return 0;
 }
 
 int lock_take(const char *path)

@@ -657,6 +657,24 @@ static int probe_usbd(usb_dev_t *d, usbd_dev *dev)
         r = U.detach(d->h, d->iface);
         log_line("usb_pad: %s: interface %d taken from the system driver: %#x", d->path, d->iface, (unsigned)r);
     }
+    /* A licensed pad (GameSir Kaleid Flux) also has USB audio interfaces: left
+     * alone, the console takes them for a headset and routes sound there,
+     * silencing the TV. Claim them so no sound is sent to the pad. */
+    {
+        int off = 0;
+
+        while (off + 2 <= len) {
+            const uint8_t *dsc = cfg + off;
+
+            if (dsc[0] < 2 || off + dsc[0] > len) break;
+            if (dsc[1] == 0x04 && dsc[0] >= 9 && dsc[3] == 0 && dsc[5] == 0x01 && dsc[2] != d->iface) {
+                if (U.driver_active(d->h, dsc[2]) == 1) U.detach(d->h, dsc[2]);
+                r = U.claim(d->h, dsc[2]);
+                log_line("usb_pad: %s: audio interface %d claimed (no headset): %#x", d->path, dsc[2], (unsigned)r);
+            }
+            off += dsc[0];
+        }
+    }
     /* Windows asks every new device for the Microsoft OS string (0xEE); pads
      * that pick their mode by the host take that as a PC and stay in their
      * Xbox mode. The answer is not needed. */
