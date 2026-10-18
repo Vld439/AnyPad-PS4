@@ -126,9 +126,16 @@ static const char PAGE[] =
 ".pad{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;margin:10px 0;word-break:break-word}"
 ".dot{flex:none;width:10px;height:10px;border-radius:50%;background:#c33}.dot.on{background:#3c3}"
 "small{color:#8a97b2;display:block;line-height:1.5;margin-top:12px}"
+"#lost{margin-top:14px;padding:12px;border:1px solid #c33;border-radius:10px;background:#2a1418;text-align:left}"
+"#lost p{margin:0 0 10px;line-height:1.4}#lost input{width:60%;padding:8px;border-radius:8px;border:1px solid #243049;"
+"background:#0b0f1a;color:#e7ecf5;font:inherit}#lost button{padding:8px 16px;margin-left:6px;border-radius:8px;border:0;"
+"background:#9db4ff;color:#0b0f1a;font:inherit;font-weight:700}"
 "b{color:#9db4ff}</style></head><body>"
 "<h1>AnyPad &mdash; mando por red</h1>"
 "<div class=card id=card><div id=st>Esperando mandos&hellip;</div><div id=pads></div>"
+"<div id=lost hidden><p>No llega a la consola. Si su IP cambi&oacute;, escribe la nueva "
+"(la de la notificaci&oacute;n de AnyPad):</p><input id=ip inputmode=decimal autocomplete=off "
+"placeholder='IP de la consola'><button id=go>Ir</button></div>"
 "<small>El navegador lee los mandos de este dispositivo (tambi&eacute;n los emparejados por <b>Bluetooth</b>) "
 "y env&iacute;a cada uno a la consola como un mando virtual distinto. <b>Toca la pantalla una vez</b> para que no se apague "
 "mientras juegas; baja el brillo al m&iacute;nimo para ahorrar bater&iacute;a.</small></div>"
@@ -154,6 +161,15 @@ static const char PAGE[] =
  * virtual pad goes) when it disconnects; reopened while the pad is there. */
 "var card=document.getElementById('card'),st=document.getElementById('st'),list=document.getElementById('pads');"
 "var P={};"
+/* Not one pad has reached the console for 15 s: its address may have
+ * changed, and only the person knows the new one (the notification shows
+ * it). The page cannot find it by itself. */
+"var lastOk=Date.now(),lost=document.getElementById('lost'),ipIn=document.getElementById('ip');"
+"function go(){var v=ipIn.value.trim();if(!/^\\d{1,3}(\\.\\d{1,3}){3}$/.test(v))return;"
+"location.href='http://'+v+':'+(location.port||'8096')+'/';}"
+"document.getElementById('go').onclick=go;ipIn.onkeydown=function(e){if(e.key==='Enter')go();};"
+"function watch(){var k,n=0,on=0;for(k in P){n++;if(P[k].open)on++;}if(on||!n)lastOk=Date.now();"
+"var show=n>0&&!on&&Date.now()-lastOk>15000;if(show&&lost.hidden&&!ipIn.value)ipIn.value=location.hostname;lost.hidden=!show;}"
 "function draw(){var k,n=0,on=0;list.textContent='';"
 "for(k in P){var p=P[k],r=document.createElement('div'),d=document.createElement('span');n++;if(p.open)on++;"
 "r.className='pad';d.className='dot'+(p.open?' on':'');r.appendChild(d);r.appendChild(document.createTextNode(p.name));list.appendChild(r);}"
@@ -185,7 +201,7 @@ static const char PAGE[] =
 "for(i=0;i<gp.length;i++){var g=gp[i];if(!g||g.connected===false)continue;seen[g.index]=1;"
 "if(!P[g.index]){P[g.index]={name:short(g.id),ws:null,open:false};link(g.index);draw();}"
 "var p=P[g.index];if(p.open){try{p.ws.send(frame(g));}catch(e){}}}"
-"for(k in P)if(!seen[k])drop(k);}"
+"for(k in P)if(!seen[k])drop(k);watch();}"
 "draw();requestAnimationFrame(loop);"
 "</script></body></html>";
 
