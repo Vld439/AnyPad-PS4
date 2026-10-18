@@ -9,7 +9,7 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
-## Unreleased — the PS4 port / el port a PS4
+## 0.1.0-beta (18 October 2026 / 18 octubre 2026) — the PS4 port / el port a PS4
 
 **Controllers / Mandos**
 
