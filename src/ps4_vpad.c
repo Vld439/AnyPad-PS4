@@ -85,8 +85,14 @@ int sceKernelSendNotificationRequest(int, notify_request *, size_t, int);
 
 /* ---- state ------------------------------------------------------------------ */
 
-#define T_IDENTIFY      3000    /* AddDevice to its DEVICE_ADDED line */
+#define T_IDENTIFY     10000    /* AddDevice to its DEVICE_ADDED line, at most */
 #define T_AMBIGUITY      300    /* after a match, watch for a second one */
+/* Between the end of one identification and the next AddDevice. Asked for
+ * a few ms after the previous pad, a device was made but its DEVICE_ADDED
+ * line never came (the ids skipped one: 8, 9 missing, a): asked again, the
+ * first stayed on the console as a pad nobody drives, and the console waited
+ * on it to say who is using it. Asked 2 s apart, every line came. */
+#define T_SETTLE        2500
 #define LINE_MAX_LEN    1024
 
 enum { VP_FREE, VP_QUEUED, VP_PENDING, VP_READY, VP_FAILED };
@@ -112,7 +118,7 @@ static void ps_tick(long now);
 /* The identification under way: one at a time, so a DEVICE_ADDED line can
  * only belong to the device just asked for. */
 static int g_pending = -1;
-static long g_t_add, g_t_match;
+static long g_t_add, g_t_match, g_next_add;
 static int g_matches;
 static uint64_t g_match_dev;
 static int g_log_fd = -1, g_log_is_dev;
@@ -452,14 +458,16 @@ static void finish_identification(long now)
     if (g_matches == 1 && now - g_t_match < T_AMBIGUITY && now - g_t_add < T_IDENTIFY) return;
 
     g_pending = -1;
+    g_next_add = now + T_SETTLE;
     log_source_close();
     if (g_matches != 1) {
         /* Unknown or ambiguous: nothing is bound, inserted into or deleted. */
         log_line("slot %d: virtual pad not identified (%d candidates), left alone", slot, g_matches);
         v->st = VP_FAILED;
-        /* Two pads asked for one after the other: the second sometimes
-         * brings no device at all. Nothing came, so nothing is left behind. */
-        if (g_matches == 0 && v->retries < 2) {
+        /* No line in T_IDENTIFY: most likely no device. Asked again once
+         * only: if a device was made after all and its line lost, every new
+         * try leaves one more pad on the console that nobody drives. */
+        if (g_matches == 0 && v->retries < 1) {
             v->retries++;
             v->retry_at = now + 2000;
             v->st = VP_QUEUED;
@@ -496,6 +504,7 @@ void vpad_poll(long now)
         finish_identification(now);
         return;
     }
+    if (now < g_next_add) return;
     for (i = 0; i < MAX_PADS; i++)
         if (g_slot[i].st == VP_QUEUED && now >= g_slot[i].retry_at) {
             start_identification(i);
