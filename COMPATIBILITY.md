@@ -27,10 +27,10 @@ El conector de auriculares de un mando lo gestiona la consola, no AnyPad.
 The page at `http://<ip>:8096/` sends whatever controller the phone's or PC's browser reads (Gamepad API, standard mapping): plugged into that device, or paired to it by Bluetooth.
 La página `http://<ip>:8096/` envía el mando que lea el navegador del móvil o del PC (Gamepad API, mapeo estándar): conectado a ese dispositivo o emparejado con él por Bluetooth.
 
-| | Status / Estado |
+| Controller / Mando | Status / Estado |
 | --- | --- |
-| Virtual pad created and fed from a test client / Pad virtual creado y alimentado desde un cliente de prueba | ✅ |
-| A real phone with a real controller / Un móvil real con un mando real | ⚠️ |
+| GameSir, through a phone / desde un móvil | ✅ |
+| DualSense, through a phone / desde un móvil | ✅ |
 
 ## Over the console's Bluetooth / Por el Bluetooth de la consola
 

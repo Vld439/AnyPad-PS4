@@ -19,13 +19,15 @@ project and in this repository's git history.
   Cada mando es un DualShock 4 virtual (tipo 1), creado con su primer informe. No se asigna a un usuario (`sceMbusBindDeviceWithUserId` falla en PS4): la consola pregunta quién lo usa.
 - GameSir profile (report `0x05`) for the Kaleid Flux; Switch Pro over USB with its handshake and a keep-alive every 500 ms (the GameSir G8 Plus in Switch mode dropped every 10–25 s without it).
   Perfil GameSir (informe `0x05`) para el Kaleid Flux; Switch Pro por USB con su handshake y un keep-alive cada 500 ms (el GameSir G8 Plus en modo Switch se caía cada 10–25 s sin él).
+- Virtual pads are asked for 2.5 s apart, and their kernel log line is waited for up to 10 s. Asked a few ms after the previous one, a device was made but its line never came; asked again, the first stayed on the console as a pad nobody drives, and the console waited on it to say who is using it ("cannot connect any more controllers").
+  Los mandos virtuales se piden con 2,5 s de separación, y su línea del log del kernel se espera hasta 10 s. Pedido a pocos ms del anterior, el dispositivo se creaba pero su línea no llegaba; al pedirlo otra vez, el primero se quedaba en la consola como un mando que nadie maneja, y la consola esperaba a que dijera quién lo usa («no se pueden conectar más mandos»).
 - Sony's own controllers are left to the console, which keeps them for itself.
   Los mandos de Sony se dejan a la consola, que se los reserva.
 
 **Network controller / Mando por red**
 
-- A phone or PC on the local network opens `http://<ip>:8096/`; its browser reads a controller (plugged in, or paired to the phone by Bluetooth) and sends it over a WebSocket. Each client drives a virtual pad. Local network only. The page keeps the phone's screen awake. The idea comes from [Control4Free](https://github.com/MoHadiShibli/Control4Free).
-  Un móvil o PC en la red local abre `http://<ip>:8096/`; su navegador lee un mando (conectado, o emparejado con el móvil por Bluetooth) y lo envía por WebSocket. Cada cliente maneja un mando virtual. Solo red local. La página mantiene encendida la pantalla del móvil. La idea viene de Control4Free.
+- A phone or PC on the local network opens `http://<ip>:8096/`; its browser reads a controller (plugged in, or paired to the phone by Bluetooth) and sends it over a WebSocket. Each client drives a virtual pad. Local network only. Several controllers on one phone: the page opens one connection per controller, so each is a virtual pad of its own, shown in the menu by the name its browser gives it. The page keeps the phone's screen awake. The idea comes from [Control4Free](https://github.com/MoHadiShibli/Control4Free).
+  Un móvil o PC en la red local abre `http://<ip>:8096/`; su navegador lee un mando (conectado, o emparejado con el móvil por Bluetooth) y lo envía por WebSocket. Cada cliente maneja un mando virtual. Solo red local. Varios mandos en un mismo móvil: la página abre una conexión por mando, así que cada uno es un mando virtual distinto, que el menú muestra con el nombre que le da su navegador. La página mantiene encendida la pantalla del móvil. La idea viene de Control4Free.
 
 **PS4 only / Solo PS4**
 

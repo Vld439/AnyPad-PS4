@@ -32,8 +32,9 @@ Probado en una PS4 con firmware 13.52.
 | Cualquier otro mando **HID** por USB (perfil genérico, leyendo su descriptor) | ⚠️ implementado, sin probar todavía en PS4 |
 | **GameSir Kaleid Flux** por USB | ✅ probado |
 | **GameSir G8 Plus** por USB, en su modo Xbox 360 o Switch | ✅ probado |
-| **Mando por red** desde el navegador de un móvil o PC | ✅ probado en la consola con un cliente de prueba; falta probarlo con un móvil real |
-| Mandos de **Sony** (DualShock 4, DualSense) a través de AnyPad | ❌ la consola se los reserva (y ya funcionan de forma nativa) |
+| **Mando por red** desde el navegador de un móvil o PC | ✅ probado con un móvil real (GameSir y DualSense) |
+| Mandos de **Sony** (DualShock 4, DualSense) por USB a través de AnyPad | ❌ la consola se los reserva (y ya funcionan de forma nativa) |
+| Mandos de **Sony** por el mando por red | ✅ probado (DualSense) |
 | Mandos por el **Bluetooth de la propia consola** | ❌ el sistema es el dueño de esa radio. Para jugar sin cable, usa el mando por red |
 
 La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
@@ -43,7 +44,7 @@ La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
 1. **Carga el ELF** (`AnyPad-PS4-<versión>.elf`) con el cargador de payloads que uses normalmente.
 2. Aparece una notificación con la dirección del **menú** (`http://<ip>:8095/`) y la del **mando por red** (`http://<ip>:8096/`). AnyPad también se añade a la fila de multimedia para abrir el menú desde la consola.
 3. **Por USB**: conecta el mando. En cuanto envía su primer dato, la consola recibe un DualShock 4 virtual.
-4. **Por red**: abre `http://<ip>:8096/` en el navegador del móvil o del PC (misma red), conecta allí el mando y pulsa un botón. Toca la pantalla una vez: la página la mantiene encendida mientras juegas. Baja el brillo para ahorrar batería. Cada página abierta es un mando.
+4. **Por red**: abre `http://<ip>:8096/` en el navegador del móvil o del PC (misma red), conecta allí el mando y pulsa un botón. Toca la pantalla una vez: la página la mantiene encendida mientras juegas. Baja el brillo para ahorrar batería. Puedes conectar **varios mandos al mismo móvil**: cada uno llega a la consola como un mando distinto.
 5. Cuando la consola pregunte **quién usa el mando**, elige tu usuario. Si el mando no tiene botón PS, usa **Pulsar PS** en el menú.
 
 Hasta 4 mandos a la vez: los USB ocupan los huecos desde arriba y los de red desde abajo.
@@ -111,8 +112,9 @@ Tested on a PS4 with firmware 13.52.
 | Any other **HID** controller by USB (generic profile, from its descriptor) | ⚠️ implemented, not tested on a PS4 yet |
 | **GameSir Kaleid Flux** by USB | ✅ tested |
 | **GameSir G8 Plus** by USB, in its Xbox 360 or Switch mode | ✅ tested |
-| **Network controller** from a phone or PC browser | ✅ tested on the console with a test client; not yet with a real phone |
-| **Sony** controllers (DualShock 4, DualSense) through AnyPad | ❌ the console keeps them for itself (and they already work natively) |
+| **Network controller** from a phone or PC browser | ✅ tested with a real phone (GameSir and DualSense) |
+| **Sony** controllers (DualShock 4, DualSense) by USB through AnyPad | ❌ the console keeps them for itself (and they already work natively) |
+| **Sony** controllers through the network controller | ✅ tested (DualSense) |
 | Controllers over the **console's own Bluetooth** | ❌ the system owns that radio. For wireless play, use the network controller |
 
 The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
@@ -122,7 +124,7 @@ The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 1. **Load the ELF** (`AnyPad-PS4-<version>.elf`) with the payload loader you normally use.
 2. A notification shows the address of the **menu** (`http://<ip>:8095/`) and of the **network controller** (`http://<ip>:8096/`). AnyPad also adds itself to the media row, to open the menu from the console.
 3. **By USB**: plug the controller in. As soon as it sends its first report, the console gets a virtual DualShock 4.
-4. **Over the network**: open `http://<ip>:8096/` in the browser of a phone or PC (same network), connect the controller there and press a button. Tap the screen once: the page keeps it on while you play. Turn the brightness down to save battery. Each open page is one controller.
+4. **Over the network**: open `http://<ip>:8096/` in the browser of a phone or PC (same network), connect the controller there and press a button. Tap the screen once: the page keeps it on while you play. Turn the brightness down to save battery. You can connect **several controllers to the same phone**: each one reaches the console as a separate controller.
 5. When the console asks **who is using the controller**, choose your user. If the controller has no PS button, use **Press PS** in the menu.
 
 Up to 4 controllers at once: USB ones take the slots from the top, network ones from the bottom.

@@ -47,7 +47,7 @@ The same API, if you prefer `curl` (changes need the header `X-AnyPad: 1`, and t
 | `POST /api/ps?slot=N` | Hold PS on pad N (1-4) |
 | `POST /api/stop` | Stop AnyPad |
 
-The network controller listens on port 8096: `GET /` is its page, and a WebSocket on the same port takes 10-byte binary frames (`buttons` as a little-endian `uint32` with the `PAD_*` bits of `src/pad.h`, then `lx ly rx ry l2 r2`, one byte each, sticks centred at 128).
+The network controller listens on port 8096: `GET /` is its page, which opens one WebSocket per controller the browser sees (each one is a client, and so a virtual pad, of its own). A WebSocket on that port (`/ws?n=<name>`: the controller's name, shown in the menu) takes 10-byte binary frames (`buttons` as a little-endian `uint32` with the `PAD_*` bits of `src/pad.h`, then `lx ly rx ry l2 r2`, one byte each, sticks centred at 128).
 
 Files on the console, if you can reach them (FTP): `/data/anypad/anypad.log` (and `.log.1`), `/data/anypad/maps/VVVV_PPPP.map` (a mapping for a controller with no profile; see `maps/EXAMPLE.map`), and an empty file `/data/anypad/stop` stops AnyPad.
 
@@ -92,7 +92,7 @@ Facts that cost time to learn:
 
 ## 7. Sharing the result
 
-Report it in the project's issue tracker with:
+Open an [issue](https://github.com/Vld439/AnyPad-PS4/issues) with:
 
 - the controller (brand, model, vendor and product id), the console firmware, the jailbreak and the AnyPad version;
 - what did not work, and the relevant log lines (reviewed first);
