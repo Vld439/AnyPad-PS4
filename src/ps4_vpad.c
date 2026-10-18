@@ -1,5 +1,4 @@
-#include "ps5_vpad.h"
-#include "host.h"
+#include "ps4_vpad.h"
 #include "log.h"
 #include "util.h"
 
@@ -9,7 +8,6 @@
 #include <arpa/inet.h>
 
 #include <ctype.h>
-#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -22,8 +20,8 @@
 
 /* ---- ScePadData ------------------------------------------------------------
  *
- * As PS4/PS5 software sees it: 120 bytes, with acceleration before
- * angular velocity. */
+ * As PS4 software sees it: 120 bytes, with acceleration before angular
+ * velocity. */
 
 typedef struct {
     uint16_t x, y;
@@ -62,29 +60,21 @@ _Static_assert(offsetof(ScePadData, timestamp) == 80, "timestamp offset");
 
 /* ---- system interfaces --------------------------------------------------- */
 
-#define VIRTUAL_DEVICE_DUALSENSE 3
-
 int32_t sceUserServiceInitialize(void *params);
 int32_t sceUserServiceGetInitialUser(int32_t *user);
 int32_t sceUserServiceGetForegroundUser(int32_t *user);
 int32_t sceUserServiceGetLoginUserIdList(int32_t list[4]);
 int32_t scePadInit(void);
 int32_t scePadSetProcessPrivilege(int32_t privilege);
-int32_t scePadGetHandle(int32_t user, int32_t type, int32_t index);
-int32_t scePadOpen(int32_t user, int32_t type, int32_t index, const void *param);
-int32_t scePadClose(int32_t handle);
-int32_t scePadReadState(int32_t handle, ScePadData *data);
 int32_t scePadVirtualDeviceAddDevice(void *param, int32_t deviceType);
 int32_t scePadVirtualDeviceInsertData(int32_t handle, const void *data);
 int32_t scePadVirtualDeviceDeleteDevice(int32_t handle);
 
-/* From the payload SDK (ps5/kernel.h). */
+/* From the payload SDK (ps4/kernel.h). */
 uint64_t kernel_get_ucred_authid(pid_t pid);
 int32_t  kernel_set_ucred_authid(pid_t pid, uint64_t authid);
 int32_t  kernel_get_ucred_caps(pid_t pid, uint8_t caps[16]);
 int32_t  kernel_set_ucred_caps(pid_t pid, const uint8_t caps[16]);
-
-typedef int32_t (*mbus_bind_fn)(uint64_t device_id, int32_t user);
 
 typedef struct {
     char reserved[45];
@@ -107,19 +97,16 @@ typedef struct {
     int32_t handle;
     uint64_t dev;
     pad_state last;             /* the pad's latest state, resent while PS is held from the menu */
+    char label[40];             /* what drives it, for the menu ("Switch Pro", "red") */
     long ps_until;              /* ms; PS is added to the frames until then (0: not held) */
     int ps_active;              /* a frame with PS went out and the release is still to be sent */
-    int retries;                /* PS4: asked again after no device came */
+    int retries;                /* asked again after no device came */
     long retry_at;              /* ms; not before then */
 } vslot;
 
-static mbus_bind_fn g_bind;
-#if defined(TARGET_PS4)
-int32_t sceMbusBindDeviceWithUserId(uint64_t device_id, int32_t user);
-#endif
 static int g_ready;                         /* vpad_init succeeded */
 static int32_t g_user = -1;
-static vslot g_slot[HOST_MAX_PADS];
+static vslot g_slot[MAX_PADS];
 static void ps_tick(long now);
 
 /* The identification under way: one at a time, so a DEVICE_ADDED line can
@@ -152,14 +139,14 @@ void notify(const char *fmt, ...)
 
 /* ---- the kernel log ----------------------------------------------------------
  *
- * The device a virtual DualSense becomes is only told in the kernel log. The
- * log has one reader, which usually belongs to the HEN's log server; that
+ * The device a virtual DualShock 4 becomes is only told in the kernel log.
+ * The log has one reader, which usually belongs to the HEN's log server; that
  * server re-serves it to any number of clients on TCP 3232. So:
  *   - the server is used when there is one;
  *   - /dev/klog only when there is none, held just for the seconds of one
- *     identification, and every line read is copied into AnyPad PS5's log so
+ *     identification, and every line read is copied into AnyPad's log so
  *     nothing taken from it is lost;
- *   - if neither answers with the expected lines, nothing is bound. */
+ *   - if neither answers with the expected lines, nothing is fed. */
 
 static int log_source_open(void)
 {
@@ -211,31 +198,17 @@ static uint64_t hex_after(const char *s, const char *key)
     return v;
 }
 
-/* A virtual DualSense (PS5) or DualShock 4 (PS4) appearing:
- * PS5:
- *   SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x...][type:1][subType:22]
- *   [capabilityBattery:0]...
- * PS4:
- *   #LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x...][type:1][subType:2]
- * A real pad reports a battery on PS5, so a line saying otherwise is not ours. */
+/* A virtual DualShock 4 appearing:
+ *   #LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x1d0304][type:1][subType:2]
+ * A headset comes as [type:2][subType:10]. A real pad plugged in meanwhile
+ * looks the same: that case is left alone as ambiguous. */
 static uint64_t virtual_device_in(const char *line)
 {
     if (!strstr(line, "DEVICE_ADDED")) return 0;
-#if defined(TARGET_PS4)
-    /* PS4: SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x1d0304][type:1][subType:2]
-     * A headset comes as [type:2][subType:10]. A real pad plugged in
-     * meanwhile looks the same: that case is left alone as ambiguous. */
     if (!strstr(line, "[type:1]")) return 0;
     /* A pad on the console's own ports re-registers with the low byte 0
      * (0x30300, 0x90300); the virtual ones never have it (0x1d0304, 0xd030c). */
     if ((hex_after(line, "DeviceId") & 0xFF) == 0) return 0;
-#else
-    const char *bat;
-    if (!strstr(line, "type:1") || !strstr(line, "subType:22"))
-        return 0;
-    bat = strstr(line, "capabilityBattery:");
-    if (bat && bat[18] != '0') return 0;
-#endif
     return hex_after(line, "DeviceId");
 }
 
@@ -272,71 +245,32 @@ static void log_source_read(void)
 
 /* ---- users and privileges ---------------------------------------------------- */
 
-/* The user to give the pads to: one who is signed in. scePadOpen and the
- * bind answer 0x809b0081 (USER_NOT_LOGIN) for a user who is not, and the
- * foreground or initial user is not necessarily signed in (the first trial
- * of the pad hotkey on a console got exactly that). By default the initial
- * user, who is the one who owns the console, is preferred if signed in; then
- * the foreground user; then the first signed-in one.
- *
- * `want` (from /data/anypad/bind_user) overrides that for an experiment: a
- * game only sees a pad bound to the user who started it, so the pad can be
- * given to another signed-in user. "other" means a signed-in user who is not
- * the initial one; a hexadecimal id means that user. If the wish cannot be met
- * (nobody else signed in, or that id is not signed in) the default applies. */
-int32_t vpad_choose_user(const int32_t login[4], int32_t init, int32_t fore, const char *want)
-{
-    int i, n = 0;
-
-    for (i = 0; i < 4; i++) if (login[i] != -1 && login[i] != 0) n++;
-    if (n == 0) return -1;                                       /* nobody is signed in */
-
-    if (want && *want) {
-        if (strcmp(want, "other") == 0) {
-            for (i = 0; i < 4; i++)
-                if (login[i] != -1 && login[i] != 0 && login[i] != init) return login[i];
-        } else {
-            char *end;
-            unsigned long id = strtoul(want, &end, 16);
-            if (end != want && *end == '\0')
-                for (i = 0; i < 4; i++) if (login[i] != -1 && (uint32_t)login[i] == (uint32_t)id) return login[i];
-        }
-    }
-    for (i = 0; i < 4; i++) if (init != -1 && login[i] == init) return init;
-    for (i = 0; i < 4; i++) if (fore != -1 && login[i] == fore) return fore;
-    for (i = 0; i < 4; i++) if (login[i] != -1 && login[i] != 0) return login[i];
-    return -1;
-}
-
+/* A signed-in user, preferring the initial one (who owns the console), then
+ * the foreground one. -1 if nobody is signed in: the console then has nobody
+ * to give a new pad to, so none is made. */
 static int32_t main_user(void)
 {
     int32_t login[4] = { -1, -1, -1, -1 }, init = -1, fore = -1, seen[6];
     static int32_t logged[6] = { -2, -2, -2, -2, -2, -2 };
-    char want[40] = "";
-    FILE *f;
     int i;
 
     if (sceUserServiceGetLoginUserIdList(login) != 0) login[0] = login[1] = login[2] = login[3] = -1;
     if (sceUserServiceGetInitialUser(&init) != 0) init = -1;
     if (sceUserServiceGetForegroundUser(&fore) != 0) fore = -1;
-    if ((f = fopen("/data/anypad/bind_user", "r"))) {
-        if (fgets(want, sizeof want, f)) {
-            for (i = 0; want[i]; i++) if (want[i] == '\n' || want[i] == '\r' || want[i] == ' ') want[i] = 0;
-            if (strncmp(want, "0x", 2) == 0) memmove(want, want + 2, strlen(want + 2) + 1);
-        }
-        fclose(f);
-    }
 
     memcpy(seen, login, sizeof login);
     seen[4] = init;
     seen[5] = fore;
     if (memcmp(seen, logged, sizeof seen) != 0) {                /* log it when it changes */
         memcpy(logged, seen, sizeof seen);
-        log_line("users: initial %#x, foreground %#x, signed in %#x %#x %#x %#x%s%s", (unsigned)init,
+        log_line("users: initial %#x, foreground %#x, signed in %#x %#x %#x %#x", (unsigned)init,
                  (unsigned)fore, (unsigned)login[0], (unsigned)login[1], (unsigned)login[2],
-                 (unsigned)login[3], want[0] ? ", bind_user=" : "", want);
+                 (unsigned)login[3]);
     }
-    return vpad_choose_user(login, init, fore, want);
+    for (i = 0; i < 4; i++) if (init != -1 && login[i] == init) return init;
+    for (i = 0; i < 4; i++) if (fore != -1 && login[i] == fore) return fore;
+    for (i = 0; i < 4; i++) if (login[i] != -1 && login[i] != 0) return login[i];
+    return -1;
 }
 
 /* System-service credentials: MBus refuses a plain payload. Every step is
@@ -403,51 +337,24 @@ int vpad_creds_raise(void)
 
 int vpad_init(void)
 {
-    static const char *const mbus[] = {
-        "/system/common/lib/libSceMbus.sprx", "libSceMbus.sprx",
-    };
-    void *lib = NULL;
     int32_t r;
-    size_t i;
 
     if (!elevate()) return 0;
     if ((r = sceUserServiceInitialize(NULL)) != 0)
         log_line("vpad: sceUserServiceInitialize %#x (already initialised is fine)", (unsigned)r);
 
-    /* libScePad imports from libSceMbus: load it before any scePad call,
-     * or scePadInit can fault on an unresolved import. */
-#if defined(TARGET_PS4)
-    (void)mbus;
-    (void)lib;
-    (void)i;
-    g_bind = sceMbusBindDeviceWithUserId;      /* imported: resolved before the fork */
-#else
-    for (i = 0; i < sizeof mbus / sizeof mbus[0] && !lib; i++)
-        lib = dlopen(mbus[i], RTLD_NOW | RTLD_GLOBAL);
-    if (lib) g_bind = (mbus_bind_fn)dlsym(lib, "sceMbusBindDeviceWithUserId");
-#endif
-    if (!g_bind) {
-        log_line("vpad: libSceMbus not available, refusing to touch libScePad");
-        return 0;
-    }
-    /* scePadInit first. scePadSetProcessPrivilege before it answers
-     * 0x80920005, "not initialised" (found on the first run on a console,
-     * firmware 10.01). The
-     * privilege call is not checked as a precondition: the virtual device
-     * calls report their own errors. */
+    /* scePadInit first: scePadSetProcessPrivilege before it answers
+     * 0x80920005, "not initialised". The privilege call is not checked as a
+     * precondition: the virtual device calls report their own errors. */
     if ((r = scePadInit()) != 0) {
         log_line("vpad: scePadInit failed: %#x", (unsigned)r);
-#if defined(TARGET_PS4)
-        /* The raised authid is the PS5's: try again as the payload. */
+        /* It may refuse the raised authid: try again as the payload. */
         log_line("vpad: our authid was %#llx; trying scePadInit with it", (unsigned long long)g_orig_authid);
         if (!vpad_creds_restore() || (r = scePadInit()) != 0) {
             log_line("vpad: scePadInit failed again: %#x", (unsigned)r);
             return 0;
         }
         log_line("vpad: scePadInit works with the original credentials");
-#else
-        return 0;
-#endif
     }
     if ((r = scePadSetProcessPrivilege(1)) != 0)
         log_line("vpad: scePadSetProcessPrivilege answered %#x, carrying on", (unsigned)r);
@@ -461,7 +368,7 @@ int vpad_init(void)
 
 int vpad_add(int slot)
 {
-    if (!g_ready || slot < 0 || slot >= HOST_MAX_PADS) return 0;
+    if (!g_ready || slot < 0 || slot >= MAX_PADS) return 0;
     if (g_slot[slot].st != VP_FREE && g_slot[slot].st != VP_FAILED) return 0;
     memset(&g_slot[slot], 0, sizeof g_slot[slot]);
     g_slot[slot].st = VP_QUEUED;
@@ -469,13 +376,26 @@ int vpad_add(int slot)
     return 1;
 }
 
-#if defined(TARGET_PS4)
+void vpad_label(int slot, const char *label)
+{
+    if (slot < 0 || slot >= MAX_PADS) return;
+    snprintf(g_slot[slot].label, sizeof g_slot[slot].label, "%s", label ? label : "");
+}
+
+int vpad_get(int slot, char *label, size_t max, pad_state *st)
+{
+    if (!vpad_live(slot)) return 0;
+    if (label && max) snprintf(label, max, "%s", g_slot[slot].label);
+    if (st) *st = g_slot[slot].last;
+    return 1;
+}
+
 /* The PS4 takes device type 1 for a DualShock 4 (found by trying 0..3 on
  * firmware 13.52: 0 is refused, 1-3 all answer 0x803b0006 yet add a pad;
  * only 1 has been seen bound and fed). */
 #define PS4_DEVICE_TYPE 1
 
-static int32_t add_device_ps4(int32_t param[8])
+static int32_t add_device(int32_t param[8])
 {
     int i;
     int32_t r;
@@ -487,13 +407,11 @@ static int32_t add_device_ps4(int32_t param[8])
     log_line("vpad: AddDevice type %d: %#x", PS4_DEVICE_TYPE, (unsigned)r);
     return r;
 }
-#endif
 
 static void start_identification(int slot)
 {
     int32_t param[8];
     int32_t r;
-    int i;
 
     if (g_user == -1) g_user = main_user();     /* signed in since */
     if (g_user == -1) {
@@ -514,17 +432,9 @@ static void start_identification(int slot)
     g_matches = 0;
     g_match_dev = 0;
 
-    /* The parameter block as the PS5 accepts it: size 32, user 1,
-     * the rest marked so that a call writing into it shows in the log. */
-#if defined(TARGET_PS4)
-    (void)i;
-    r = add_device_ps4(param);
-#else
-    for (i = 0; i < 8; i++) param[i] = (int32_t)0xDEADBEEF;
-    param[0] = (int32_t)sizeof param;
-    param[1] = 1;
-    r = scePadVirtualDeviceAddDevice(param, VIRTUAL_DEVICE_DUALSENSE);
-#endif
+    /* The parameter block: size 32, user 1, the rest marked so that a call
+     * writing into it shows in the log. */
+    r = add_device(param);
     log_line("slot %d: AddDevice %#x, block %08x %08x %08x %08x %08x %08x", slot, (unsigned)r,
              (unsigned)param[2], (unsigned)param[3], (unsigned)param[4], (unsigned)param[5],
              (unsigned)param[6], (unsigned)param[7]);
@@ -537,7 +447,6 @@ static void finish_identification(long now)
 {
     vslot *v = &g_slot[g_pending];
     int slot = g_pending;
-    int32_t r;
 
     if (g_matches == 0 && now - g_t_add < T_IDENTIFY) return;
     if (g_matches == 1 && now - g_t_match < T_AMBIGUITY && now - g_t_add < T_IDENTIFY) return;
@@ -548,7 +457,6 @@ static void finish_identification(long now)
         /* Unknown or ambiguous: nothing is bound, inserted into or deleted. */
         log_line("slot %d: virtual pad not identified (%d candidates), left alone", slot, g_matches);
         v->st = VP_FAILED;
-#if defined(TARGET_PS4)
         /* Two pads asked for one after the other: the second sometimes
          * brings no device at all. Nothing came, so nothing is left behind. */
         if (g_matches == 0 && v->retries < 2) {
@@ -557,7 +465,6 @@ static void finish_identification(long now)
             v->st = VP_QUEUED;
             log_line("slot %d: asking again in 2 s (%d)", slot, v->retries);
         }
-#endif
 
         return;
     }
@@ -571,23 +478,10 @@ static void finish_identification(long now)
         memset(v, 0, sizeof *v);
         return;
     }
-#if defined(TARGET_PS4)
-    /* sceMbusBindDeviceWithUserId has another signature on the PS4 and
-     * faults; the console gives the pad an owner itself (or asks who is
-     * using it, which the pad can answer). */
-    (void)r;
+    /* Not bound to a user: sceMbusBindDeviceWithUserId faults on the PS4.
+     * The console gives the pad an owner itself (or asks who is using it,
+     * which the pad can answer). */
     log_line("slot %d: device %#llx ready, owner left to the console", slot, (unsigned long long)v->dev);
-    v->st = VP_READY;
-    return;
-#endif
-    r = g_bind(v->dev, g_user);
-    log_line("slot %d: device %#llx bound to user %#x: %#x", slot, (unsigned long long)v->dev,
-             (unsigned)g_user, (unsigned)r);
-    if (r != 0) {
-        scePadVirtualDeviceDeleteDevice(v->handle);     /* ours, identified */
-        v->st = VP_FAILED;
-        return;
-    }
     v->st = VP_READY;
 }
 
@@ -602,7 +496,7 @@ void vpad_poll(long now)
         finish_identification(now);
         return;
     }
-    for (i = 0; i < HOST_MAX_PADS; i++)
+    for (i = 0; i < MAX_PADS; i++)
         if (g_slot[i].st == VP_QUEUED && now >= g_slot[i].retry_at) {
             start_identification(i);
             return;
@@ -611,7 +505,7 @@ void vpad_poll(long now)
 
 int vpad_live(int slot)
 {
-    return slot >= 0 && slot < HOST_MAX_PADS && g_slot[slot].st == VP_READY;
+    return slot >= 0 && slot < MAX_PADS && g_slot[slot].st == VP_READY;
 }
 
 /* One frame to the virtual pad: the pad's state, with PS added while the menu
@@ -688,7 +582,7 @@ static void ps_tick(long now)
 {
     int i;
 
-    for (i = 0; i < HOST_MAX_PADS; i++) {
+    for (i = 0; i < MAX_PADS; i++) {
         vslot *v = &g_slot[i];
         if (!v->ps_active || v->st != VP_READY) continue;
         if (v->ps_until && now >= v->ps_until) v->ps_until = 0;       /* released */
@@ -702,12 +596,12 @@ void vpad_remove(int slot)
 {
     vslot *v;
 
-    if (slot < 0 || slot >= HOST_MAX_PADS) return;
+    if (slot < 0 || slot >= MAX_PADS) return;
     v = &g_slot[slot];
     switch (v->st) {
     case VP_READY:
         scePadVirtualDeviceDeleteDevice(v->handle);
-        log_line("slot %d: virtual DualSense removed", slot);
+        log_line("slot %d: virtual DualShock 4 removed", slot);
         memset(v, 0, sizeof *v);
         break;
     case VP_PENDING:
@@ -717,94 +611,4 @@ void vpad_remove(int slot)
         memset(v, 0, sizeof *v);
         break;
     }
-}
-
-static int32_t g_phys_err;
-static int32_t g_phys_handle = -1;
-static int g_phys_ours;                 /* we opened it, so we close it */
-static long g_phys_retry_at;
-static int32_t g_open_logged = 1;
-static long g_user_retry_at;
-
-int32_t vpad_physical_error(void) { return g_phys_err; }
-
-/* The handle for the user's pad in this process. A payload has none until
- * it opens the pad, which is what any application does (the system's own
- * UI and the running game each hold the pad too). A refusal is logged and
- * tried again at most every 5 seconds. */
-static int32_t physical_handle(void)
-{
-    int32_t h;
-
-    if (g_phys_handle >= 0) return g_phys_handle;
-    h = scePadGetHandle(g_user, 0, 0);
-    if (h < 0 && now_ms() >= g_phys_retry_at) {
-        g_phys_retry_at = now_ms() + 5000;
-        h = scePadOpen(g_user, 0, 0, NULL);
-        if (h != g_open_logged) {                   /* only when the answer changes */
-            log_line("vpad: scePadOpen of the user's pad (user %#x): %#x", (unsigned)g_user, (unsigned)h);
-            g_open_logged = h;
-        }
-        if (h >= 0) g_phys_ours = 1;
-        /* The user may sign in or out meanwhile: look again. */
-        if (h == (int32_t)0x809B0081) g_user = main_user();
-    }
-    if (h >= 0) g_phys_handle = h;
-    return h;
-}
-
-void vpad_close_physical(void)
-{
-    if (g_phys_handle >= 0 && g_phys_ours) scePadClose(g_phys_handle);
-    g_phys_handle = -1;
-    g_phys_ours = 0;
-}
-
-int vpad_read_physical(uint32_t *buttons)
-{
-    ScePadData d;
-    int32_t h, r;
-
-    /* Only reads the user's own pad, through the handle libScePad gives for
-     * it: never opens, takes over or disconnects it. */
-    if (!g_ready) {
-        g_phys_err = (int32_t)0xFFFF0001;               /* not ready */
-        return 0;
-    }
-    if (g_user == -1) {                 /* nobody was signed in; look again now and then */
-        if (now_ms() >= g_user_retry_at) {
-            g_user_retry_at = now_ms() + 5000;
-            g_user = main_user();
-        }
-        if (g_user == -1) {
-            g_phys_err = (int32_t)0xFFFF0004;           /* nobody signed in */
-            return 0;
-        }
-    }
-    h = physical_handle();
-    if (h < 0) {
-        g_phys_err = h;
-        return 0;
-    }
-    r = scePadReadState(h, &d);
-    if (r != 0) {
-        g_phys_err = r;
-        if (g_phys_ours) scePadClose(h);
-        g_phys_handle = -1;             /* start again from the handle */
-        g_phys_ours = 0;
-        return 0;
-    }
-    if (!d.connected) {
-        g_phys_err = (int32_t)0xFFFF0002;               /* no pad connected */
-        return 0;
-    }
-    g_phys_err = 0;
-    /* The system takes the pad's input while it has focus: that reads as the
-     * 'intercepted' bit, and then the buttons are not ours to use. */
-    if (d.buttons & 0x80000000u) {
-        g_phys_err = (int32_t)0xFFFF0003;               /* intercepted */
-        return 0;
-    }
-    *buttons = d.buttons;
-    return 1;
 }

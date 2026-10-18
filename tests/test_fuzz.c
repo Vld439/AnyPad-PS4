@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-int sdp_find_ids(const unsigned char *p, int n, uint16_t *vid, uint16_t *pid);
-
 static unsigned g_seed = 12345;
 static unsigned rnd(void) { g_seed = g_seed * 1103515245u + 12345u; return g_seed >> 8; }
 
@@ -33,7 +31,6 @@ int main(void)
     for (i = 0; i < 200000; i++) {
         int n = (int)(rnd() % sizeof buf) + 1, k;
         pad_state st;
-        uint16_t vid, pid;
 
         if (i & 1) {
             for (k = 0; k < n; k++) buf[k] = (unsigned char)rnd();
@@ -60,7 +57,6 @@ int main(void)
             pad_state_reset(&st);
             prof->parse(ctx, buf, n < 80 ? n : 80, &st);
         }
-        sdp_find_ids(buf, n, &vid, &pid);
     }
     printf("fuzz: 200000 inputs, %d descriptors accepted, no fault\n", accepted);
     return 0;

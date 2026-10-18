@@ -10,37 +10,28 @@
  * A system driver holding the interface is detached first: that is what
  * makes the console see a GIP pad as a headset or a pad as a keyboard.
  *
- * Two ways in: on the PS5, the ugen nodes, polled from the main loop; on the
- * PS4, which has no ugen nodes, libSceUsbd (libusb under another name), read
- * by one thread per pad whose reports the main loop parses.
+ * The PS4 has no ugen nodes: the pads are reached through libSceUsbd (libusb
+ * under another name), read by one thread per pad whose reports the main
+ * loop parses.
  *
  * The virtual pad is only asked for after the first report has been read,
  * so a controller that never speaks does not leave the console asking who
  * is using a pad that cannot answer.
  *
- * USB pads take the virtual pad slots from the top (3, 2, ...), Bluetooth
- * links from the bottom. */
+ * USB pads take the virtual pad slots from the top (3, 2, ...), network
+ * clients from the bottom. */
 #include "usb_pad.h"
-#include "host.h"
 #include "log.h"
 #include "profiles.h"
 #include "util.h"
 
-#include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#if defined(TARGET_PS4)
 #include <pthread.h>
-#else
-#include <sys/ioctl.h>
-#include <dev/usb/usb.h>
-#include <dev/usb/usb_ioctl.h>
-#endif
 
 #define MAX_USB_DEVS 4
 #define MAX_SEEN 16
@@ -62,13 +53,11 @@ typedef struct {
     uint8_t ep_in, ep_out;
 } usb_iface;
 
-#if defined(TARGET_PS4)
 typedef struct usbd_dev usbd_dev;
 typedef struct usbd_handle usbd_handle;
-#endif
 
 typedef struct {
-    char path[32];                  /* /dev/ugenX.Y, or usb:bus.address */
+    char path[32];                  /* usb:bus.address */
     uint16_t vid, pid;
     int kind, iface, uhid;
     const pad_profile *profile;
@@ -82,7 +71,6 @@ typedef struct {
     long next_wake;
     int hs_step, init_step, init_rounds, init_done, full;   /* HID profiles' wake-up */
     int rx_logged, errors;
-#if defined(TARGET_PS4)
     usbd_handle *h;
     pthread_t thread;
     int thread_on;
@@ -91,14 +79,6 @@ typedef struct {
     uint8_t q[QUEUE_LEN][REPORT_MAX];
     int qlen[QUEUE_LEN];
     int qhead, qcount;
-#else
-    int fd;
-    struct usb_fs_endpoint ep[2];   /* 0: interrupt IN, 1: interrupt OUT */
-    void *bufp[2][1];
-    uint32_t lenp[2][1];
-    uint8_t in_buf[REPORT_MAX], out_buf[REPORT_MAX];
-    int out_busy;
-#endif
 } usb_dev_t;
 
 struct usb_pad_mgr_s {
@@ -225,7 +205,7 @@ static int choose_iface(usb_dev_t *d, const usb_iface *ifs, int nifs)
 
 /* A Nintendo pad on USB first wants its own handshake (as hid-nintendo
  * does: handshake, 3 Mbit, handshake, no USB timeout), or it drops off the
- * bus within a second; then the profile's wake-up as over Bluetooth. */
+ * bus within a second; then the profile's own wake-up. */
 static const uint8_t k_switch_usb[4][2] = { { 0x80, 0x02 }, { 0x80, 0x03 }, { 0x80, 0x02 }, { 0x80, 0x04 } };
 
 static void hid_wake(usb_dev_t *d, long now)
@@ -257,7 +237,7 @@ static void hid_wake(usb_dev_t *d, long now)
     }
     if (!d->profile->init_report || d->init_done) return;
     memset(&o, 0, sizeof o);
-    o.player = (uint8_t)(HOST_MAX_PADS - d->slot);
+    o.player = (uint8_t)(MAX_PADS - d->slot);
     memset(buf, 0, sizeof buf);
     n = d->profile->init_report(d->pctx.bytes, d->init_step, &o, buf, sizeof buf);
     if (n > 0) {
@@ -450,11 +430,8 @@ static usb_dev_t *new_dev(usb_pad_mgr_t *mgr, const char *path)
     memset(d, 0, sizeof *d);
     snprintf(d->path, sizeof d->path, "%s", path);
     d->opened_at = now_ms();
-    d->slot = HOST_MAX_PADS - 1 - (int)(d - mgr->devs);
+    d->slot = MAX_PADS - 1 - (int)(d - mgr->devs);
     pad_state_reset(&d->st);
-#if !defined(TARGET_PS4)
-    d->fd = -1;
-#endif
     return d;
 }
 
@@ -476,7 +453,6 @@ static void drop(usb_pad_mgr_t *mgr, usb_dev_t *d, const char *why)
     d->announced = 0;
 }
 
-#if defined(TARGET_PS4)
 /* ---- PS4: libSceUsbd ------------------------------------------------------ */
 
 #define USBD_ERR(r, code) ((r) == -(code) || \
@@ -787,279 +763,6 @@ static void backend_init(void)
     if (!usbd_load()) log_line("usb_pad: libSceUsbd not available, no USB pads");
 }
 
-#else
-/* ---- PS5: ugen ------------------------------------------------------------ */
-
-#ifndef USB_SHORT_XFER_OK
-#define USB_SHORT_XFER_OK 0x0004
-#endif
-
-static int hid_report_desc(usb_dev_t *d, int iface, uint8_t *buf, int max)
-{
-    struct usb_ctl_request req;
-
-    memset(&req, 0, sizeof req);
-    req.ucr_data = buf;
-    req.ucr_flags = USB_SHORT_XFER_OK;
-    req.ucr_request.bmRequestType = UT_READ_INTERFACE;
-    req.ucr_request.bRequest = UR_GET_DESCRIPTOR;
-    USETW2(req.ucr_request.wValue, 0x22, 0);
-    USETW(req.ucr_request.wIndex, iface);
-    USETW(req.ucr_request.wLength, max);
-    if (ioctl(d->fd, USB_DO_REQUEST, &req) != 0) return -errno;
-    return req.ucr_actlen;
-}
-
-/* A system driver on the interface (the console's headset or keyboard one)
- * keeps its endpoints from us. */
-static void take_iface(int fd, int iface, const char *path)
-{
-    int i = iface;
-
-    if (ioctl(fd, USB_IFACE_DRIVER_ACTIVE, &i) != 0) return;
-    i = iface;
-    if (ioctl(fd, USB_IFACE_DRIVER_DETACH, &i) == 0)
-        log_line("usb_pad: %s: interface %d taken from the system driver", path, iface);
-    else
-        log_line("usb_pad: %s: interface %d held by a system driver, not freed (errno %d)", path, iface, errno);
-}
-
-static int in_start(usb_dev_t *d)
-{
-    struct usb_fs_start st;
-
-    d->lenp[0][0] = sizeof d->in_buf;
-    d->ep[0].nFrames = 1;
-    d->ep[0].aFrames = 0;
-    memset(&st, 0, sizeof st);
-    st.ep_index = 0;
-    return ioctl(d->fd, USB_FS_START, &st) == 0;
-}
-
-static int out_send(usb_dev_t *d, const uint8_t *p, int len)
-{
-    struct usb_fs_start st;
-
-    if (!d->ep_out || d->out_busy || len <= 0 || len > (int)sizeof d->out_buf) return 0;
-    memcpy(d->out_buf, p, (size_t)len);
-    d->lenp[1][0] = (uint32_t)len;
-    d->ep[1].nFrames = 1;
-    d->ep[1].aFrames = 0;
-    memset(&st, 0, sizeof st);
-    st.ep_index = 1;
-    if (ioctl(d->fd, USB_FS_START, &st) != 0) {
-        log_line("usb_pad: %s: send failed (errno %d)", d->path, errno);
-        return 0;
-    }
-    d->out_busy = 1;
-    return 1;
-}
-
-static int fs_open(usb_dev_t *d)
-{
-    struct usb_fs_init init;
-    struct usb_fs_open op;
-    int i, n = d->ep_out ? 2 : 1;
-
-    for (i = 0; i < 2; i++) {
-        d->bufp[i][0] = i ? d->out_buf : d->in_buf;
-        d->lenp[i][0] = sizeof d->in_buf;
-        d->ep[i].ppBuffer = d->bufp[i];
-        d->ep[i].pLength = d->lenp[i];
-        d->ep[i].nFrames = 1;
-    }
-    d->ep[0].flags = USB_FS_FLAG_SINGLE_SHORT_OK;
-    d->ep[1].flags = USB_FS_FLAG_FORCE_SHORT;
-
-    memset(&init, 0, sizeof init);
-    init.pEndpoints = d->ep;
-    init.ep_index_max = (uint8_t)n;
-    if (ioctl(d->fd, USB_FS_INIT, &init) != 0) {
-        log_line("usb_pad: %s: USB_FS_INIT failed (errno %d)", d->path, errno);
-        return 0;
-    }
-    for (i = 0; i < n; i++) {
-        memset(&op, 0, sizeof op);
-        op.ep_index = (uint8_t)i;
-        op.ep_no = i ? d->ep_out : d->ep_in;
-        op.max_bufsize = sizeof d->in_buf;
-        op.max_frames = 1;
-        if (ioctl(d->fd, USB_FS_OPEN, &op) != 0) {
-            log_line("usb_pad: %s: USB_FS_OPEN %#x failed (errno %d)", d->path, op.ep_no, errno);
-            if (i == 0) return 0;
-            d->ep_out = 0;              /* reads still work, only no wake-up */
-        }
-    }
-    if (!in_start(d)) {
-        log_line("usb_pad: %s: first read failed (errno %d)", d->path, errno);
-        return 0;
-    }
-    return 1;
-}
-
-static void dev_close(usb_dev_t *d)
-{
-    if (d->fd >= 0) close(d->fd);
-    d->fd = -1;
-}
-
-static int probe_ugen(usb_dev_t *d)
-{
-    static uint8_t cfg[1024];
-    struct usb_device_descriptor dd;
-    struct usb_gen_descriptor gd;
-    usb_iface ifs[8];
-    int nifs, tot;
-
-    if (ioctl(d->fd, USB_GET_DEVICE_DESC, &dd) != 0) return 0;
-    d->vid = UGETW(dd.idVendor);
-    d->pid = UGETW(dd.idProduct);
-    if (dd.bDeviceClass == 0x09) return 0;          /* hub */
-
-    memset(&gd, 0, sizeof gd);
-    gd.ugd_data = cfg;
-    gd.ugd_maxlen = sizeof cfg;
-    gd.ugd_config_index = USB_UNCONFIG_INDEX;       /* the current one */
-    if (ioctl(d->fd, USB_GET_FULL_DESC, &gd) != 0) {
-        log_line("usb_pad: %s (%04x:%04x): no configuration descriptor (errno %d)", d->path, d->vid, d->pid, errno);
-        return 0;
-    }
-    tot = gd.ugd_actlen < sizeof cfg ? (int)gd.ugd_actlen : (int)sizeof cfg;
-    log_ifaces(d->path, cfg, tot);
-    nifs = read_ifaces(cfg, tot, ifs, 8);
-    if (!choose_iface(d, ifs, nifs)) {
-        log_line("usb_pad: %s (%04x:%04x): no controller interface, left alone", d->path, d->vid, d->pid);
-        return 0;
-    }
-    /* A real DualShock 4 or DualSense works as it is: the console's own. */
-    if (d->vid == 0x054C) {
-        log_line("usb_pad: %s (%04x:%04x): Sony pad, left to the console", d->path, d->vid, d->pid);
-        return 0;
-    }
-    take_iface(d->fd, d->iface, d->path);
-    return fs_open(d);
-}
-
-static int probe_uhid(usb_dev_t *d)
-{
-    static uint8_t desc[1024];
-    struct usb_device_info di;
-    struct usb_gen_descriptor gd;
-
-    if (ioctl(d->fd, USB_GET_DEVICEINFO, &di) != 0) return 0;
-    d->vid = di.udi_vendorNo;
-    d->pid = di.udi_productNo;
-    if (d->vid == 0x054C) return 0;
-    d->profile = profile_find(d->vid, d->pid);
-    if (d->profile) {
-        if (d->profile->setup) d->profile->setup(d->pctx.bytes, d->vid, d->pid);
-    } else {
-        memset(&gd, 0, sizeof gd);
-        gd.ugd_data = desc;
-        gd.ugd_maxlen = sizeof desc;
-        if (ioctl(d->fd, USB_GET_REPORT_DESC, &gd) != 0 ||
-            !generic_setup(d->pctx.bytes, desc, (int)gd.ugd_actlen, d->vid, d->pid, MAP_DIR))
-            return 0;
-        d->profile = &generic_profile;
-    }
-    d->kind = KIND_HID;
-    d->uhid = 1;
-    return 1;
-}
-
-static void probe_node(usb_pad_mgr_t *mgr, const char *path)
-{
-    usb_dev_t *d = new_dev(mgr, path);
-    int ok;
-
-    if (!d) return;
-    d->fd = open(path, O_RDWR | O_NONBLOCK);
-    if (d->fd < 0) {
-        log_line("usb_pad: %s: cannot open (errno %d)", path, errno);
-        mark_seen(mgr, path);
-        return;
-    }
-    ok = strncmp(path, "/dev/uhid", 9) == 0 ? probe_uhid(d) : probe_ugen(d);
-    if (!ok) {
-        dev_close(d);
-        mark_seen(mgr, path);
-        return;
-    }
-    d->active = 1;
-    log_taken(d);
-}
-
-static void scan_usb(usb_pad_mgr_t *mgr)
-{
-    struct dirent *de;
-    DIR *dir;
-    int i;
-
-    for (i = 0; i < MAX_USB_DEVS; i++)
-        if (mgr->devs[i].active && access(mgr->devs[i].path, F_OK) != 0)
-            drop(mgr, &mgr->devs[i], "disconnected");
-    for (i = 0; i < MAX_SEEN; i++)
-        if (mgr->seen[i][0] && access(mgr->seen[i], F_OK) != 0)
-            mgr->seen[i][0] = '\0';         /* gone: look again when it comes back */
-
-    dir = opendir("/dev");
-    if (!dir) return;
-    while ((de = readdir(dir))) {
-        char path[64];
-
-        if (strncmp(de->d_name, "uhid", 4) != 0 && strncmp(de->d_name, "ugen", 4) != 0) continue;
-        if (strcmp(de->d_name, "ugen0.2") == 0) continue;   /* the Bluetooth chip */
-        snprintf(path, sizeof path, "/dev/%s", de->d_name);
-        probe_node(mgr, path);
-    }
-    closedir(dir);
-}
-
-static void poll_ugen(usb_pad_mgr_t *mgr, usb_dev_t *d)
-{
-    for (;;) {
-        struct usb_fs_complete c;
-
-        memset(&c, 0, sizeof c);
-        if (ioctl(d->fd, USB_FS_COMPLETE, &c) != 0) {
-            if (errno != EBUSY && errno != EAGAIN) drop(mgr, d, "stopped answering");
-            return;
-        }
-        if (c.ep_index == 1) {
-            d->out_busy = 0;
-            if (d->ep[1].status != 0 && d->errors++ < 5)
-                log_line("usb_pad: %s: send status %d", d->path, (int)d->ep[1].status);
-            continue;
-        }
-        if (d->ep[0].status == 0 && d->ep[0].aFrames > 0)
-            handle(mgr, d, d->in_buf, (int)d->lenp[0][0]);
-        else if (d->errors++ < 5)
-            log_line("usb_pad: %s: read status %d", d->path, (int)d->ep[0].status);
-        if (!in_start(d)) {
-            drop(mgr, d, "cannot read any more");
-            return;
-        }
-    }
-}
-
-static void poll_dev(usb_pad_mgr_t *mgr, usb_dev_t *d, long now)
-{
-    uint8_t buf[128];
-    ssize_t n;
-
-    if (!d->uhid) {
-        wake(d, now);
-        poll_ugen(mgr, d);
-        return;
-    }
-    while ((n = read(d->fd, buf, sizeof buf)) > 0) handle(mgr, d, buf, (int)n);
-    if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) drop(mgr, d, "stopped answering");
-}
-
-static void backend_init(void)
-{
-}
-#endif
 
 /* ---- the manager ---------------------------------------------------------- */
 

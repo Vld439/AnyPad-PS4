@@ -1,14 +1,12 @@
 #!/bin/sh
-# Talks to a running AnyPad PS5 through its page (HTTP, local network only).
+# Talks to a running AnyPad PS4 through its page (HTTP, local network only).
 # Made for people and for AI assistants alike; see AI-WORKFLOW.md.
 #
 #   ANYPAD_IP=192.168.x.y tools/live.sh watch            follow the log in real time (saved in ./logs/)
-#   ANYPAD_IP=...         tools/live.sh state            state of AnyPad (JSON)
-#   ANYPAD_IP=...         tools/live.sh settings         the settings that can be changed while it runs (JSON)
-#   ANYPAD_IP=...         tools/live.sh set <name> <v>   change one of them
-#   ANYPAD_IP=...         tools/live.sh hci <op> [hex]   one HCI command (op in hex, e.g. 0C1B). Never Reset.
-#   ANYPAD_IP=...         tools/live.sh pair             press "Pair" (60 s)
-#   ANYPAD_IP=...         tools/live.sh stop             stop AnyPad PS5
+#   ANYPAD_IP=...         tools/live.sh state            state of AnyPad (JSON): pads, network controller
+#   ANYPAD_IP=...         tools/live.sh log              the end of the log
+#   ANYPAD_IP=...         tools/live.sh ps <n>           hold PS on pad n (1-4), as the page's button
+#   ANYPAD_IP=...         tools/live.sh stop             stop AnyPad PS4
 #
 # The console's address is shown in the notification AnyPad displays when it
 # starts, and on its page ("http://<ip>:8095/"). Port 8095 unless ANYPAD_PORT is set.
@@ -42,10 +40,8 @@ watch)
     done
     ;;
 state)    curl "$URL/api/state" -s --max-time 5; echo ;;
-settings) curl "$URL/api/tune" -s --max-time 5; echo ;;
-set)      curl "$URL/api/tune?$2=$3" -s --max-time 5 -X POST -H "$H"; echo ;;
-hci)      curl "$URL/api/hci?op=$2&p=$3" -s --max-time 8 -X POST -H "$H"; echo ;;
-pair)     curl "$URL/api/pair" -s --max-time 5 -X POST -H "$H"; echo ;;
+log)      curl "$URL/api/log" -s --max-time 5 ;;
+ps)       curl "$URL/api/ps?slot=${2:?pad number, 1-4}" -s --max-time 5 -X POST -H "$H"; echo ;;
 stop)     curl "$URL/api/stop" -s --max-time 5 -X POST -H "$H"; echo ;;
-*) sed -n '2,13p' "$0"; exit 2 ;;
+*) sed -n '2,12p' "$0"; exit 2 ;;
 esac

@@ -3,8 +3,7 @@
  * virtual pad, fed through the same vpad_* path the USB pads use. */
 #include "netpad.h"
 #include "pad.h"
-#include "ps5_vpad.h"
-#include "host.h"       /* HOST_MAX_PADS */
+#include "ps4_vpad.h"
 #include "log.h"
 #include "nosleep_media.h"
 
@@ -268,8 +267,8 @@ static int claim_slot(void)
     int s, got = -1;
 
     pthread_mutex_lock(&g_slot_mtx);
-    for (s = 0; s < HOST_MAX_PADS; s++)
-        if (vpad_add(s)) { got = s; break; }
+    for (s = 0; s < MAX_PADS; s++)
+        if (vpad_add(s)) { vpad_label(s, "network"); got = s; break; }
     pthread_mutex_unlock(&g_slot_mtx);
     return got;
 }

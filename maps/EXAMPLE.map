@@ -1,4 +1,4 @@
-# AnyPad PS5 mapping file: copy to /data/anypad/maps/VVVV_PPPP.map, where
+# AnyPad PS4 mapping file: copy to /data/anypad/maps/VVVV_PPPP.map, where
 # VVVV and PPPP are the controller's vendor and product ids in hex (the log
 # prints them when the controller connects: "has no profile, reading its
 # HID descriptor"). Only controllers with no built-in profile use it.

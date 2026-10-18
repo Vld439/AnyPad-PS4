@@ -1,4 +1,4 @@
-/* One running copy of AnyPad PS5 at a time.
+/* One running copy of AnyPad PS4 at a time.
  *
  * The lock is a file holding the owner's process id and the console's boot
  * time. It lives on persistent storage, so after a reboot or a crash it is

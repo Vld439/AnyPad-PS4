@@ -1,4 +1,4 @@
-# Build and test outputs (rebuilt by make / tools/build-elf-docker.sh).
+# Build and test outputs (rebuilt by make / tools/build-elf-ps4-docker.sh).
 /build/
 *.o
 # Editor and system noise.

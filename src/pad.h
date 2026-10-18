@@ -1,10 +1,14 @@
 /* The controller state every profile reduces its reports to, and what the
  * console may send back. Buttons use the bit layout of ScePadData.buttons,
- * so the PS5 output needs no remapping. */
+ * so the virtual pad needs no remapping. */
 #ifndef PH_PAD_H
 #define PH_PAD_H
 
 #include <stdint.h>
+
+/* Virtual pads at once: USB pads take the slots from the top, network
+ * clients from the bottom. */
+#define MAX_PADS 4
 
 enum {
     PAD_CREATE   = 0x00000001u,     /* Share / Create / View */
@@ -48,12 +52,6 @@ typedef struct {
     uint8_t r, g, b;                /* light bar, where there is one */
     uint8_t player;                 /* 1-based player number */
 } pad_output;
-
-typedef struct {
-    uint16_t vid, pid;
-    const char *profile;
-    unsigned char addr[6];
-} pad_info;
 
 static inline void pad_state_reset(pad_state *s)
 {

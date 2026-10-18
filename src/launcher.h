@@ -2,7 +2,7 @@
  * app folder (param.json + icon0.png) whose only job is to open AnyPad's web
  * menu in the browser, the way Payload Manager's own entry does. Writing the
  * files is plain file work and is tested here; telling the system about the
- * folder is ps5_apps.c. */
+ * folder is ps4_apps.c. */
 #ifndef ANYPAD_LAUNCHER_H
 #define ANYPAD_LAUNCHER_H
 

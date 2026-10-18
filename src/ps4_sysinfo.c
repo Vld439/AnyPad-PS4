@@ -1,4 +1,4 @@
-#include "ps5_sysinfo.h"
+#include "ps4_sysinfo.h"
 #include "log.h"
 
 #include <sys/param.h>
@@ -6,17 +6,9 @@
 #include <sys/sysctl.h>
 #include <sys/user.h>
 
-#if defined(TARGET_PS4)
 #if defined(__has_include)
 #if __has_include(<ps4/kernel.h>)
 #include <ps4/kernel.h>
-#endif
-#endif
-#else
-#if defined(__has_include)
-#if __has_include(<ps5/kernel.h>)
-#include <ps5/kernel.h>
-#endif
 #endif
 #endif
 

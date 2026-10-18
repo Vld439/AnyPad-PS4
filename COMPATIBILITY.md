@@ -1,117 +1,43 @@
-# Compatibility / Compatibilidad
+# Compatibility / Compatibilidad — AnyPad PS4
 
-Every controller below has its own entry in the code, listed one by one.
-Cada mando de abajo tiene su propia entrada en el código, uno por uno.
+Tested on a PS4 with firmware 13.52. ✅ tested · ⚠️ implemented, not tested on a PS4 yet · ❌ not possible.
+Probado en una PS4 con firmware 13.52. ✅ probado · ⚠️ implementado, sin probar en PS4 · ❌ no es posible.
 
-| Symbol | Meaning / Significado |
-|---|---|
-| ✅ | **Verified** on a real PS5 by a person / **Verificado** en una PS5 real por una persona |
-| 🧪 | **Supported, not yet tested**: you can use this controller on the PS5; the support is written and passes the simulator tests, but nobody has tried it on a console yet / **Soportado, aún sin probar**: puedes usar este mando en la PS5; el soporte está escrito y pasa las pruebas con simulador, pero nadie lo ha probado todavía en una consola |
+## By USB / Por USB
 
-**Today: 3 verified controllers (DualShock 4 v2, 8BitDo SF30 Pro in Switch mode and GameSir G7 SE), plus the other supported ids listed below, plus the generic profile for any other Bluetooth HID gamepad.**
-**Hoy: 3 mandos verificados (DualShock 4 v2, 8BitDo SF30 Pro en modo Switch y GameSir G7 SE), más los demás ids soportados de la lista, más el perfil genérico para cualquier otro mando HID Bluetooth.**
+| Controller / Mando | Id | How AnyPad reads it / Cómo lo lee | Status / Estado |
+| --- | --- | --- | --- |
+| GameSir Kaleid Flux | `3537:1097` | HID, GameSir profile (report `0x05`) | ✅ |
+| GameSir G8 Plus, Xbox 360 mode | `3537:1014` | Xbox 360 (XInput) | ✅ |
+| GameSir G8 Plus, Switch mode | `057e:2009` | HID, Switch Pro profile (USB handshake, then a keep-alive every 500 ms or it drops) | ✅ |
+| Other Xbox 360 (XInput) controllers | class `ff/5d/01` | Xbox 360 (XInput) | ⚠️ |
+| Xbox One / Series (GIP) controllers | class `ff/47/d0` | GIP, powered on by AnyPad | ⚠️ |
+| Other HID controllers with a profile (Switch Pro, DualShock 4 clones by other brands…) | see `src/profiles.c` | their profile | ⚠️ |
+| Any other HID gamepad | — | generic profile, from its report descriptor; buttons and axes can be fixed with `/data/anypad/maps/VVVV_PPPP.map` | ⚠️ |
+| Sony DualShock 4, DualSense | `054c:…` | left to the console: it keeps them for itself and they work natively / se los deja a la consola: se los reserva y ya funcionan de forma nativa | ❌ |
 
-Verified on a PS5 fat, firmware 10.01, with the latest ShadowMountPlus and kstuff-lite.
-Verificado en una PS5 fat, firmware 10.01, con el último ShadowMountPlus y kstuff-lite.
+The GameSir G8 Plus picks its USB mode by itself when plugged in; both modes work. Its own PS4 mode is a native console controller and does not go through AnyPad.
+El GameSir G8 Plus elige solo su modo USB al conectarlo; los dos modos funcionan. Su modo PS4 propio es un mando nativo de la consola y no pasa por AnyPad.
 
-## Sony DualShock 4 family / Familia DualShock 4
+A controller's headphone jack is handled by the console, not by AnyPad.
+El conector de auriculares de un mando lo gestiona la consola, no AnyPad.
 
-| USB id | Controller / Mando | Status |
-|---|---|---|
-| `054c:09cc` | Sony DualShock 4 v2 (CUH-ZCT2) | ✅ Verified / Verificado |
-| `054c:05c4` | Sony DualShock 4 v1 (CUH-ZCT1) | 🧪 |
-| `0f0d:00f6` | Hori Onyx | 🧪 |
-| `1532:1009` | Razer Raiju Ultimate | 🧪 |
-| `1532:100a` | Razer Raiju Tournament Edition | 🧪 |
-| `2e95:7725` | SCUF Vantage 2 | 🧪 |
+## Over the network / Por la red
 
-## Sony DualSense family / Familia DualSense
+The page at `http://<ip>:8096/` sends whatever controller the phone's or PC's browser reads (Gamepad API, standard mapping): plugged into that device, or paired to it by Bluetooth.
+La página `http://<ip>:8096/` envía el mando que lea el navegador del móvil o del PC (Gamepad API, mapeo estándar): conectado a ese dispositivo o emparejado con él por Bluetooth.
 
-| USB id | Controller / Mando | Status |
-|---|---|---|
-| `054c:0ce6` | Sony DualSense | 🧪 |
-| `054c:0df2` | Sony DualSense Edge | 🧪 |
+| | Status / Estado |
+| --- | --- |
+| Virtual pad created and fed from a test client / Pad virtual creado y alimentado desde un cliente de prueba | ✅ |
+| A real phone with a real controller / Un móvil real con un mando real | ⚠️ |
 
-## Xbox
+## Over the console's Bluetooth / Por el Bluetooth de la consola
 
-**Users report Xbox controllers working since 0.8; the exact models are not identified yet. If you use one, please send me your log and the model.**
-**Varios usuarios confirman que los mandos Xbox funcionan desde la 0.8; aún no están identificados los modelos exactos. Si usas uno, envíame tu log y el modelo.**
+❌ The system owns the console's Bluetooth radio and its controller connections; a payload cannot read them. For wireless play, pair the controller to a phone and use the network controller.
+❌ El sistema es el dueño de la radio Bluetooth de la consola y de sus conexiones de mandos; un payload no puede leerlas. Para jugar sin cable, empareja el mando con un móvil y usa el mando por red.
 
-| USB id | Controller / Mando | Status |
-|---|---|---|
-| `045e:02e0` | Xbox One S (Bluetooth Classic firmware) | 🧪 |
-| `045e:02fd` | Xbox One S (Bluetooth Classic firmware, 2nd id) | 🧪 |
-| `045e:0b00` | Xbox Elite Series 2 (Bluetooth Classic firmware) | 🧪 |
-| `045e:0b05` | Xbox Elite Series 2 (Bluetooth Classic firmware, 2nd id) | 🧪 |
-| `045e:0b0a` | Xbox Adaptive Controller (Bluetooth Classic firmware) | 🧪 |
-| `045e:0b13` | Xbox Series X|S (Bluetooth LE) | 🧪 |
-| `045e:0b20` | Xbox One S, current firmware (Bluetooth LE) | 🧪 |
-| `045e:0b21` | Xbox Adaptive Controller (Bluetooth LE) | 🧪 |
-| `045e:0b22` | Xbox Elite Series 2 (Bluetooth LE) | 🧪 |
+## Reporting a controller / Informar de un mando
 
-Bluetooth LE models need Secure Connections pairing; whether the PS5's chip supports every step is unverified.
-Los modelos Bluetooth LE necesitan emparejado con Secure Connections; si el chip de la PS5 admite todos los pasos no está verificado.
-
-## Nintendo Switch
-
-| USB id | Controller / Mando | Status |
-|---|---|---|
-| `057e:2009` | Nintendo Switch Pro Controller (and pads that emulate it) | 🧪 |
-| — | 8BitDo SF30 Pro (Switch mode / modo Switch) | ✅ Verified / Verificado |
-| `057e:2017` | Nintendo Switch Online SNES controller | 🧪 |
-| `057e:2019` | Nintendo Switch Online N64 controller | 🧪 |
-| `057e:201a` | Nintendo Switch Online Mega Drive / Genesis controller | 🧪 |
-
-Rumble is not done yet for these. / La vibración aún no está hecha para estos.
-
-## Third-party pads with a built-in mapping / Mandos de terceros con mapa integrado
-
-The layout is read from each pad's own HID descriptor, and corrected where needed.
-La disposición se lee del descriptor HID de cada mando y se corrige donde hace falta.
-
-| USB id | Controller / Mando | Status |
-|---|---|---|
-| `ffff:046e` | GameSir G3s | 🧪 |
-| `05ac:022d` | GameSir G3s (alternate mode) | 🧪 |
-| `ffff:046f` | GameSir G4s | 🧪 |
-| `3537:1022` | GameSir G7 Pro | 🧪 |
-| `3537:1010` | GameSir G7 SE | ✅ Verified / Verificado |
-| `ffff:0450` | GameSir T1s | 🧪 |
-| `05ac:056b` | GameSir T2a | 🧪 |
-| `20bc:5501` | Betop 2585N2 | 🧪 |
-| `2e2c:0002` | Bionik Vulkan | 🧪 |
-| `0079:181c` | LanShen X1Pro | 🧪 |
-| `2717:3144` | Xiaomi Mi Controller | 🧪 |
-| `1949:0402` | Amazon Fire / iPega controller | 🧪 |
-| `2dc8:2100` | 8BitDo SN30 Pro for Xbox Cloud Gaming | 🧪 |
-| `2dc8:2101` | 8BitDo SN30 Pro for Xbox Cloud Gaming (2nd id) | 🧪 |
-| `2dc8:3012` | 8BitDo Ultimate 2.4G | 🧪 |
-| `1949:0403` | iPega 9-series | 🧪 |
-| `05ac:022c` | iPega 9-series (alternate id) | 🧪 |
-| `1038:1412` | SteelSeries | 🧪 |
-| `0111:1420` | SteelSeries (2nd id) | 🧪 |
-| `0111:1431` | SteelSeries (3rd id) | 🧪 |
-| `0111:1419` | SteelSeries (4th id) | 🧪 |
-| `0955:7214` | NVIDIA Shield controller (2017) | 🧪 |
-| `1532:0900` | Razer Serval | 🧪 |
-| `20d6:89e5` | PowerA MOGA Hero | 🧪 |
-| `20d6:0dad` | PowerA MOGA Pro | 🧪 |
-| `20d6:6271` | PowerA MOGA Pro 2 | 🧪 |
-| `3250:1002` | Atari VCS Modern controller | 🧪 |
-| `2e24:200a` | Hyperkin Scout | 🧪 |
-| `04e8:046e` | Mocute 050 | 🧪 |
-
-## Any other Bluetooth HID gamepad / Cualquier otro mando HID Bluetooth
-
-The generic profile reads the pad's HID descriptor and applies a default mapping (Android/Xbox or DirectInput order). Adjust it with a `.map` file (see `maps/EXAMPLE.map`).
-El perfil genérico lee el descriptor HID y aplica un mapeo por defecto (orden Android/Xbox o DirectInput). Se ajusta con un fichero `.map` (ver `maps/EXAMPLE.map`).
-
-## Not supported yet / Aún no soportado
-
-DualShock 3, Wii Remote / Wii U Pro, Joy-Con used alone.
-DualShock 3, Wii Remote / Wii U Pro, Joy-Con por separado.
-
-## Help us verify / Ayúdanos a verificar
-
-Tried one? Open an issue with the model, the console firmware, what worked and `/data/anypad/anypad.log`.
-¿Has probado alguno? Abre un issue con el modelo, el firmware de la consola, qué funcionó y `/data/anypad/anypad.log`.
+Send its vendor and product id (the log prints them when it is plugged in: `usb_pad: usb:X.Y (VVVV:PPPP): ...`), the AnyPad version (first line of the log) and the relevant log lines. See [AI-WORKFLOW.md](AI-WORKFLOW.md).
+Envía su id de fabricante y de producto (el log los escribe al conectarlo: `usb_pad: usb:X.Y (VVVV:PPPP): ...`), la versión de AnyPad (primera línea del log) y las líneas del log que importen. Ver [AI-WORKFLOW.md](AI-WORKFLOW.md).

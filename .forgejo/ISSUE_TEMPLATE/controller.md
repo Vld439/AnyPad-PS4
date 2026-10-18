@@ -6,15 +6,17 @@ labels:
   - controller
 ---
 
-**Controller:** brand, model, and vendor/product id if the log shows it (`vendor ... product ...`)
+**Controller:** brand, model, and vendor/product id from the log (`usb_pad: usb:X.Y (VVVV:PPPP): ...`)
 
-**Console:** model (fat / slim / Pro), firmware, jailbreak, and the `chip:` line of the log
+**How it is connected:** USB (which mode, if it has several) / network controller (phone or PC, browser)
 
-**AnyPad version:**
+**Console:** model (fat / slim / Pro), firmware, jailbreak
 
-**What happens** (does it pair, connect, move, does the PS button work, rumble):
+**AnyPad version:** (first line of the log)
 
-**Relevant log lines** (review them first: they contain Bluetooth addresses):
+**What happens** (is it recognised, does the virtual pad appear, does it move, does PS work):
+
+**Relevant log lines** (review them first: they contain the id of the console's users):
 
 ```
 ```
@@ -22,7 +24,7 @@ labels:
 **If you changed something (yourself or with an AI):**
 
 - what you changed and why:
-- how you tested it (simulator test, real console):
+- how you tested it (`make test`, real console):
 - AI used (if any):
 
-_Please do not paste tokens or passwords, and do not attach `pads.db`._
+_Please do not paste tokens or passwords._

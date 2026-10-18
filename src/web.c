@@ -131,22 +131,6 @@ static int peer_is_local(const struct sockaddr_in *sin)
            (a >> 16) == 0xC0A8 || (a >> 16) == 0xA9FE;
 }
 
-static int parse_addr(const char *s, unsigned char a[6])
-{
-    unsigned v[6];
-    int i;
-
-    if (sscanf(s, "%2x:%2x:%2x:%2x:%2x:%2x", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) != 6)
-        return 0;
-    for (i = 0; i < 6; i++) a[5 - i] = (unsigned char)v[i];   /* shown MSB first */
-    return 1;
-}
-
-static void fmt_addr(char *out, const unsigned char *a)
-{
-    snprintf(out, 18, "%02X:%02X:%02X:%02X:%02X:%02X", a[5], a[4], a[3], a[2], a[1], a[0]);
-}
-
 /* ---- API --------------------------------------------------------------------- */
 
 /* Copies `s` into out as JSON string content: quotes, backslashes and
@@ -170,70 +154,31 @@ static void api_state(web_t *w, int fd)
         { PAD_OPTIONS, "options" }, { PAD_CREATE, "create" }, { PAD_PS, "ps" },
         { PAD_TOUCHPAD, "touchpad" },
     };
-    host_t *h = *w->cfg.host;
-    char out[8192], a[18], combo[100];
+    char out[4096], label[40], url[80];
     size_t n = 0;
     int i, first = 1;
 
 #define PUT(...) do { int k_ = snprintf(out + n, sizeof out - n, __VA_ARGS__); \
                       if (k_ > 0) n += (size_t)k_ < sizeof out - n ? (size_t)k_ : sizeof out - n - 1; } while (0)
 
-    {
-        static const char *const bt[] = { "trying", "ok", "failed" };
-        char reason[200], combo[100];
-        uint32_t pb = 0;
-        int perr = 0, readable = w->cfg.physical ? w->cfg.physical(&pb, &perr) : 0;
-        int st = *w->cfg.bt_state;
-        size_t b;
-        int fb = 1;
-
-        json_text(reason, sizeof reason, w->cfg.bt_reason);
-        json_text(combo, sizeof combo, w->cfg.combo_text);
-        PUT("{\"version\":\"%s\",\"lang\":\"%s\",\"running\":%s,\"pairing\":%d,\"pairwait\":%d,\"pause\":%d,\"chip\":\"%s\",\"bluetooth\":\"%s\","
-            "\"reason\":\"%s\",\"combo\":\"%s\",\"physical\":{\"readable\":%s,\"error\":\"%08x\",\"buttons\":[",
-            w->cfg.version, w->cfg.lang ? w->cfg.lang : "es", h ? "true" : "false", h ? host_pairing_left(h) : 0,
-            h ? host_pair_wait_left(h) : 0, h ? host_pause_left(h) : 0, w->cfg.chip ? w->cfg.chip : "",
-            bt[st >= 0 && st <= 2 ? st : 0], reason, combo, readable ? "true" : "false",
-            (unsigned)perr);
-        for (b = 0; readable && b < sizeof names / sizeof names[0]; b++)
-            if (pb & names[b].bit) {
-                PUT("%s\"%s\"", fb ? "" : ",", names[b].name);
-                fb = 0;
-            }
-        PUT("]},\"pads\":[");
-    }
-    for (i = 0; h && i < HOST_MAX_PADS; i++) {
-        pad_info info;
+    json_text(url, sizeof url, w->cfg.net_url);
+    PUT("{\"version\":\"%s\",\"lang\":\"%s\",\"net\":{\"url\":\"%s\",\"clients\":%d},\"pads\":[",
+        w->cfg.version, w->cfg.lang ? w->cfg.lang : "es", url,
+        w->cfg.net_clients ? w->cfg.net_clients() : 0);
+    for (i = 0; w->cfg.pad_get && i < MAX_PADS; i++) {
         pad_state st;
         size_t b;
         int fb = 1;
-        if (!host_pad_get(h, i, &info, &st)) continue;
-        fmt_addr(a, info.addr);
-        combo[0] = 0;
-        if (w->cfg.ps_combo_get) w->cfg.ps_combo_get(i, combo, sizeof combo);
-        PUT("%s{\"slot\":%d,\"profile\":\"%s\",\"vid\":\"%04x\",\"pid\":\"%04x\",\"addr\":\"%s\","
-            "\"battery\":%d,\"charging\":%s,\"lx\":%u,\"ly\":%u,\"rx\":%u,\"ry\":%u,\"l2\":%u,\"r2\":%u,"
-            "\"pscombo\":\"%s\",\"buttons\":[",
-            first ? "" : ",", i + 1, info.profile, info.vid, info.pid, a,
-            st.has_battery ? st.battery_pct : -1, st.charging ? "true" : "false",
-            st.lx, st.ly, st.rx, st.ry, st.l2, st.r2, combo);
+        if (!w->cfg.pad_get(i, label, sizeof label, &st)) continue;
+        json_text(label, sizeof label, label);
+        PUT("%s{\"slot\":%d,\"label\":\"%s\",\"lx\":%u,\"ly\":%u,\"rx\":%u,\"ry\":%u,\"l2\":%u,\"r2\":%u,\"buttons\":[",
+            first ? "" : ",", i + 1, label, st.lx, st.ly, st.rx, st.ry, st.l2, st.r2);
         for (b = 0; b < sizeof names / sizeof names[0]; b++)
             if (st.buttons & names[b].bit) {
                 PUT("%s\"%s\"", fb ? "" : ",", names[b].name);
                 fb = 0;
             }
         PUT("]}");
-        first = 0;
-    }
-    PUT("],\"paired\":[");
-    first = 1;
-    for (i = 0; h && i < host_paired_count(h); i++) {
-        host_paired_info p;
-        if (!host_paired_get(h, i, &p)) break;
-        fmt_addr(a, p.addr);
-        PUT("%s{\"addr\":\"%s\",\"vid\":\"%04x\",\"pid\":\"%04x\",\"le\":%s,\"connected\":%s}",
-            first ? "" : ",", a, p.vid, p.pid, p.le ? "true" : "false",
-            p.connected ? "true" : "false");
         first = 0;
     }
     PUT("]}");
@@ -279,44 +224,9 @@ static void api_live(int fd, const char *path)
     respond(fd, 200, "text/plain; charset=utf-8", buf + 32 - k, (size_t)k + strlen(buf + 32));
 }
 
-static int hexval(int c)
-{
-    return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 :
-           c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
-}
-
-/* Dialog mode: one HCI command, /api/hci?op=0C1B&p=0008 (hex). The reply's
- * return parameters come back as hex; anything else shows in the log. */
-static void api_hci(host_t *h, int fd, const char *args)
-{
-    unsigned char p[255], reply[300];
-    char out[700];
-    unsigned op = (unsigned)strtoul(args, NULL, 16);
-    const char *q = strstr(args, "p=");
-    int plen = 0, rlen = 0, i, n;
-
-    if (q) {
-        for (q += 2; hexval(q[0]) >= 0 && hexval(q[1]) >= 0 && plen < (int)sizeof p; q += 2)
-            p[plen++] = (unsigned char)(hexval(q[0]) * 16 + hexval(q[1]));
-    }
-    if (op == 0 || op == 0x0C03) {
-        respond_text(fd, 400, "{\"error\":\"no opcode, or a Reset\"}");
-        return;
-    }
-    if (!host_raw_cmd(h, op, p, plen, reply, &rlen)) {
-        respond_text(fd, 200, "{\"ok\":false}");
-        return;
-    }
-    n = snprintf(out, sizeof out, "{\"ok\":true,\"reply\":\"");
-    for (i = 0; i < rlen && n < (int)sizeof out - 8; i++) n += snprintf(out + n, sizeof out - (size_t)n, "%02x", reply[i]);
-    n += snprintf(out + n, sizeof out - (size_t)n, "\"}");
-    respond(fd, 200, "application/json", out, (size_t)n);
-}
-
 static void handle(web_t *w, int fd, char *req)
 {
     char method[8], path[256], hostname[64], custom[8];
-    host_t *h = *w->cfg.host;
 
     if (sscanf(req, "%7s %255s", method, path) != 2) {
         respond_text(fd, 400, "{\"error\":\"bad request\"}");
@@ -345,26 +255,6 @@ static void handle(web_t *w, int fd, char *req)
     }
     if (strcmp(method, "GET") == 0 && strncmp(path, "/api/live", 9) == 0) {
         api_live(fd, path);
-    } else if (strcmp(method, "GET") == 0 && strcmp(path, "/api/tune") == 0) {
-        char out[256];
-        int n = host_tune_json(out, sizeof out);
-        respond(fd, 200, "application/json", out, (size_t)(n > 0 && n < (int)sizeof out ? n : 0));
-    } else if (strcmp(method, "POST") == 0 && strncmp(path, "/api/tune?", 10) == 0) {
-        char name[32];
-        long v;
-        const char *eq = strchr(path + 10, '=');
-        size_t k = eq ? (size_t)(eq - (path + 10)) : 0;
-        if (!eq || k == 0 || k >= sizeof name) {
-            respond_text(fd, 400, "{\"error\":\"use /api/tune?name=value\"}");
-        } else {
-            memcpy(name, path + 10, k);
-            name[k] = 0;
-            v = strtol(eq + 1, NULL, 0);
-            if (!host_tune_set(h, name, v)) respond_text(fd, 400, "{\"error\":\"unknown name or bad value\"}");
-            else respond_text(fd, 200, "{\"ok\":true}");
-        }
-    } else if (strcmp(method, "POST") == 0 && strncmp(path, "/api/hci?op=", 12) == 0 && h) {
-        api_hci(h, fd, path + 12);
     } else if (strcmp(method, "GET") == 0 && strcmp(path, "/api/state") == 0) {
         api_state(w, fd);
     } else if (strcmp(method, "GET") == 0 && strcmp(path, "/api/log") == 0) {
@@ -386,40 +276,11 @@ static void handle(web_t *w, int fd, char *req)
         }
         strcat(out, "]}");
         respond_text(fd, 200, out);
-    } else if (strcmp(method, "POST") == 0 && strcmp(path, "/api/pair") == 0 && h) {
-        host_pair(h, 60);
-        log_line("web: pairing started");
-        respond_text(fd, 200, "{\"ok\":true}");
-    } else if (strcmp(method, "POST") == 0 && strncmp(path, "/api/forget?addr=", 17) == 0 && h) {
-        unsigned char a[6];
-        if (!parse_addr(path + 17, a)) respond_text(fd, 400, "{\"error\":\"address\"}");
-        else if (!host_forget(h, a)) respond_text(fd, 404, "{\"error\":\"not paired\"}");
-        else respond_text(fd, 200, "{\"ok\":true}");
     } else if (strcmp(method, "POST") == 0 && strncmp(path, "/api/ps?slot=", 13) == 0) {
         int n = atoi(path + 13);
-        if (n < 1 || n > HOST_MAX_PADS) respond_text(fd, 400, "{\"error\":\"slot\"}");
+        if (n < 1 || n > MAX_PADS) respond_text(fd, 400, "{\"error\":\"slot\"}");
         else if (!w->cfg.press_ps || !w->cfg.press_ps(n - 1)) respond_text(fd, 404, "{\"error\":\"no pad\"}");
         else respond_text(fd, 200, "{\"ok\":true}");
-    } else if (strcmp(method, "POST") == 0 && strncmp(path, "/api/pscombo?slot=", 18) == 0) {
-        /* /api/pscombo?slot=N&combo=l1,l2,options (or none, or capture) */
-        int n = atoi(path + 18);
-        const char *q = strstr(path, "&combo=");
-        char text[100];
-        size_t k;
-        for (k = 0; q && q[7 + k] && q[7 + k] != '&' && k < sizeof text - 1; k++)
-            text[k] = q[7 + k] == ',' ? '+' : (char)q[7 + k];
-        text[k] = 0;
-        if (n < 1 || n > HOST_MAX_PADS || !q || !k) respond_text(fd, 400, "{\"error\":\"slot or combo\"}");
-        else if (!w->cfg.ps_combo_set || !w->cfg.ps_combo_set(n - 1, text)) respond_text(fd, 400, "{\"error\":\"combo\"}");
-        else respond_text(fd, 200, "{\"ok\":true}");
-    } else if (strcmp(method, "POST") == 0 && strcmp(path, "/api/retry") == 0) {
-        if (*w->cfg.bt_state == WEB_BT_FAILED) {
-            log_line("web: Bluetooth retry requested");
-            *w->cfg.retry = 1;
-            respond_text(fd, 200, "{\"ok\":true}");
-        } else {
-            respond_text(fd, 400, "{\"error\":\"not failed\"}");
-        }
     } else if (strcmp(method, "POST") == 0 && strcmp(path, "/api/stop") == 0) {
         log_line("web: stop requested");
         *w->cfg.stop = 1;
@@ -468,17 +329,8 @@ web_t *web_start(const web_cfg *cfg, int port)
 
 void web_poll(web_t *w)
 {
-    /* Not re-entered: a request that waits for the chip (dialog mode) pumps
-     * the host, and the host serves the page while it waits (its idle hook).
-     * Served again from inside itself, the same request ran again and again
-     * until the stack ran out (0.6.16 with /api/hci). */
-    static int busy;
-    long now = now_ms();
-
-    if (!w || busy) return;
-    busy = 1;
-    web_poll_once(w, now);
-    busy = 0;
+    if (!w) return;
+    web_poll_once(w, now_ms());
 }
 
 static void web_poll_once(web_t *w, long now)

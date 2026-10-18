@@ -1,4 +1,4 @@
-#include "ps5_ui.h"
+#include "ps4_ui.h"
 #include "log.h"
 
 int sceSystemServiceLaunchWebBrowser(const char *uri, void *reserved);

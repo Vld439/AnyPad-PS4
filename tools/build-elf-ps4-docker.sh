@@ -28,15 +28,10 @@ export PS4_PAYLOAD_SDK=/opt/ps4-payload-sdk
 printf "#!/bin/sh\ncase \"\$1\" in --bindir) echo /usr/lib/llvm-18/bin;; --version) echo 18.1.3;; *) exit 1;; esac\n" \
   > /usr/local/bin/llvm-config
 chmod +x /usr/local/bin/llvm-config
-CC=$PS4_PAYLOAD_SDK/bin/orbis-clang
+command -v make >/dev/null || { echo "the image needs make" >&2; exit 1; }
 cd /work
-rm -rf build/elf_ps4 && mkdir -p build/elf_ps4
-OBJS=""
-for f in util log crc32 smp_crypto profiles generic host le web web_page config evstream hotkey lock netinfo usb_desc hci_usb ps5_power ps5_ui ps5_apps ps5_sysinfo launcher icon_data ps5_vpad usb_pad netpad ps5_main; do
-  $CC -std=c11 -Wall -Wextra -Werror -O2 -Isrc -Ibuild -DTARGET_PS4 -c src/$f.c -o build/elf_ps4/$f.o
-  OBJS="$OBJS build/elf_ps4/$f.o"
-done
-$CC -o "$OUT" $OBJS -lScePad -lSceMbus -lSceUsbd -lSceUserService -lSceSystemService -ldl -lpthread
+rm -rf build/ps4
+make -f ps4.mk
 '
 cd "$PROJ"
 { shasum -a 256 "$OUT" 2>/dev/null || sha256sum "$OUT"; } | tee "$OUT.sha256"
