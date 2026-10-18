@@ -9,10 +9,14 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
-## Unreleased
+## 0.1.1-beta (18 October 2026 / 18 octubre 2026)
 
 - When the network changes (the console gets another address, the cable or Wi-Fi comes back), the network controller is served again too, not only the menu, and both are checked every 5 s to really answer: the console can leave a listener dead with AnyPad still running. The notification of a new address gives both addresses.
   Cuando cambia la red (la consola recibe otra dirección, vuelve el cable o el Wi-Fi), también se vuelve a servir el mando por red, no solo el menú, y cada 5 s se comprueba que los dos responden de verdad: la consola puede dejar muerto un servidor con AnyPad en marcha. La notificación de dirección nueva da las dos direcciones.
+- The network controller's page gives up on a connection that does not open in 4 s and tries again. After the console's network came back, one controller took a minute to come back: a connection tried while the console had no network hung for that long, and browsers open one connection to an address at a time. Now they come back within seconds.
+  La página del mando por red abandona una conexión que no se abre en 4 s y lo vuelve a intentar. Al volver la red de la consola, un mando tardaba un minuto en volver: una conexión intentada mientras la consola no tenía red se quedaba colgada ese tiempo, y los navegadores abren una conexión a la vez hacia una dirección. Ahora vuelven en segundos.
+- When none of its controllers has reached the console for 15 s, the network controller's page says so and offers a box for the console's new IP (the one in the notification), which opens the page there. It cannot find the new address by itself.
+  Cuando ninguno de sus mandos llega a la consola en 15 s, la página del mando por red lo dice y ofrece una casilla para la IP nueva de la consola (la de la notificación), que abre la página ahí. No puede encontrar la dirección nueva por sí sola.
 - README: download from Releases and copy to `/data/payloads`; troubleshooting (same network, the console's IP changing, the controller limit).
   README: descargar de Releases y copiar en `/data/payloads`; problemas frecuentes (misma red, cambio de IP de la consola, límite de mandos).
 
