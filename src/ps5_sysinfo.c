@@ -6,12 +6,25 @@
 #include <sys/sysctl.h>
 #include <sys/user.h>
 
+#if defined(TARGET_PS4)
+#if defined(__has_include)
+#if __has_include(<ps4/kernel.h>)
+#include <ps4/kernel.h>
+#endif
+#endif
+#else
+#if defined(__has_include)
+#if __has_include(<ps5/kernel.h>)
 #include <ps5/kernel.h>
+#endif
+#endif
+#endif
 
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -61,4 +74,26 @@ void sysinfo_log(void)
         log_line("%s", line);
     }
     free(buf);
+
+    /* Log device nodes in /dev related to usb, bluetooth, and input */
+    {
+        DIR *d = opendir("/dev");
+        if (d) {
+            struct dirent *de;
+            char devs[512];
+            int dused = snprintf(devs, sizeof devs, "console: dev nodes:");
+            while ((de = readdir(d))) {
+                if (strncmp(de->d_name, "u", 1) == 0 ||
+                    strncmp(de->d_name, "bt", 2) == 0 ||
+                    strstr(de->d_name, "hid") ||
+                    strstr(de->d_name, "pad")) {
+                    if (dused + (int)strlen(de->d_name) + 3 < (int)sizeof(devs)) {
+                        dused += snprintf(devs + dused, sizeof(devs) - (size_t)dused, " %s,", de->d_name);
+                    }
+                }
+            }
+            closedir(d);
+            log_line("%s", devs);
+        }
+    }
 }

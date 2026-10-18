@@ -2,7 +2,11 @@
 #include "log.h"
 
 #include <sys/stat.h>
+#if defined(__has_include)
+#if __has_include(<sys/sysctl.h>)
 #include <sys/sysctl.h>
+#endif
+#endif
 #include <sys/time.h>
 #include <sys/types.h>
 
@@ -12,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 static int g_fd = -1;
@@ -19,12 +24,22 @@ static char g_path[256];
 
 long lock_boot_time(void)
 {
+#if defined(CTL_KERN) && defined(KERN_BOOTTIME)
     int mib[2] = { CTL_KERN, KERN_BOOTTIME };
     struct timeval tv;
     size_t len = sizeof tv;
 
     if (sysctl(mib, 2, &tv, &len, NULL, 0) != 0) return 0;
     return (long)tv.tv_sec;
+#elif defined(__linux__)
+    struct timespec ts_boot, ts_now;
+    if (clock_gettime(CLOCK_BOOTTIME, &ts_boot) == 0 && clock_gettime(CLOCK_REALTIME, &ts_now) == 0) {
+        return (long)(ts_now.tv_sec - ts_boot.tv_sec);
+    }
+    return 0;
+#else
+    return 0;
+#endif
 }
 
 /* Is the lock at `path` held by a copy that is really running? */

@@ -9,7 +9,7 @@ PS5_PORT ?= 9021
 
 CORE   := src/util.c src/log.c src/crc32.c src/smp_crypto.c src/profiles.c src/generic.c src/host.c src/le.c
 WEB    := src/web.c src/web_page.c
-HOST_CFLAGS := -std=c11 -Wall -Wextra -Werror -O1 -g -Isrc
+HOST_CFLAGS := -std=c11 -Wall -Wextra -Werror -O1 -g -Isrc -D_DEFAULT_SOURCE
 
 BUILD := build
 
@@ -94,7 +94,18 @@ fuzz: | $(BUILD)
 	cc $(HOST_CFLAGS) $(SAN) -o $(BUILD)/test_fuzz $(CORE) tests/test_fuzz.c
 	./$(BUILD)/test_fuzz
 
-# ---- the console payload ----------------------------------------------------
+PS4_HOST ?= ps4
+PS4_PORT ?= 9020
+
+ps4:
+ifndef PS4_PAYLOAD_SDK
+	$(error PS4_PAYLOAD_SDK is undefined)
+endif
+	$(MAKE) -f ps4.mk
+
+send-ps4: ps4
+	@echo "Enviando payload a PS4 en $(PS4_HOST):$(PS4_PORT)..."
+	nc -w 3 $(PS4_HOST) $(PS4_PORT) < dist/AnyPad-PS4-*.elf
 
 ps5:
 ifndef PS5_PAYLOAD_SDK

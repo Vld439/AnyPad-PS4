@@ -42,9 +42,18 @@
 #include "ps5_apps.h"
 #include "ps5_sysinfo.h"
 #include "ps5_vpad.h"
+#include "usb_pad.h"
 #include "util.h"
 #include "version.h"
 #include "web.h"
+
+#if defined(TARGET_PS4)
+#define ANYPAD_PLATFORM "PS4"
+#define ANYPAD_PAD_NAME "DualShock 4"
+#else
+#define ANYPAD_PLATFORM "PS5"
+#define ANYPAD_PAD_NAME "DualSense"
+#endif
 
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -68,6 +77,7 @@
 #define PAIR_FLAG    STATE_DIR "/pair"
 #define STOP_FLAG    STATE_DIR "/stop"
 #define NO_ICON_FLAG STATE_DIR "/no_icon"          /* do not put AnyPad in the media row */
+#define VPAD_TEST_FLAG STATE_DIR "/vpad_test"      /* one idle virtual pad on slot 0, to test them alone */
 #define RM_ICON_FLAG STATE_DIR "/remove_icon"      /* take it out, once */
 #define PAIR_SECONDS 60
 
@@ -95,10 +105,31 @@ static char g_bt_reason[200];
 
 static host_t *g_host;                  /* NULL until Bluetooth is up */
 static web_t *g_web;
+static usb_pad_mgr_t *g_usb_pads;
+static int g_vpad_test;                 /* VPAD_TEST_FLAG was there */
 static int g_vpad_ok;                   /* virtual pads are possible */
 static int g_bt_attempt;                /* Bluetooth tries made in this round */
 static long g_bt_next;                  /* when the next one is due */
 static int g_bt_plain_creds;            /* the chip answered only without raised credentials */
+
+static void on_usb_feed(int slot, const pad_state *st)
+{
+    if (vpad_live(slot)) {
+        vpad_update(slot, st);
+    }
+}
+
+static void on_usb_attach(int slot, const char *name)
+{
+    log_line("usb_pad: attached %s to slot %d", name, slot);
+    vpad_add(slot);
+}
+
+static void on_usb_detach(int slot)
+{
+    log_line("usb_pad: detached slot %d", slot);
+    vpad_remove(slot);
+}
 
 /* Stopping must never hang: while this process lives it holds reads on the
  * Bluetooth chip, and the console's DualSense cannot reconnect. If the
@@ -212,6 +243,13 @@ static void bt_begin(void)
     g_bt_attempt = 0;
     g_bt_next = 0;
     g_bt_reason[0] = '\0';
+#if defined(TARGET_PS4)
+    /* The PS4's Bluetooth is not a USB chip AnyPad can drive; trying would
+     * open the USB pads' nodes instead. */
+    g_bt_state = WEB_BT_FAILED;
+    snprintf(g_bt_reason, sizeof g_bt_reason, "Bluetooth aun no disponible en PS4: usa los mandos por cable.");
+    return;
+#endif
     g_bt_state = WEB_BT_TRYING;
     if (g_vpad_ok) vpad_creds_raise();
 }
@@ -227,8 +265,10 @@ static void bt_try(long now)
     int attempt = ++g_bt_attempt;
 
     if (attempt == RAISED_TRIES + 1 && g_vpad_ok) {
+#if !defined(TARGET_PS4)
         log_line("Bluetooth silent with raised credentials; trying with the original ones");
         if (vpad_creds_restore()) g_bt_plain_creds = 1;
+#endif
     }
     if (hci_usb_open(&hci)) {
         g_host = host_open(hci, DB_PATH, &ev);
@@ -270,7 +310,7 @@ static void bt_lost(const char *why)
     g_host = NULL;
     g_bt_state = WEB_BT_FAILED;
     snprintf(g_bt_reason, sizeof g_bt_reason, "Se perdio el Bluetooth (%s). Pulsa Reintentar.", why);
-    notify(TR("AnyPad PS5: se perdio el Bluetooth.\nPulsa Reintentar en el menu", "AnyPad PS5: Bluetooth was lost.\nPress Retry in the menu"));
+    notify(TR("AnyPad " ANYPAD_PLATFORM ": se perdio el Bluetooth.\nPulsa Reintentar en el menu", "AnyPad " ANYPAD_PLATFORM ": Bluetooth was lost.\nPress Retry in the menu"));
 }
 
 /* ---- flags ---------------------------------------------------------------- */
@@ -288,7 +328,7 @@ static void check_flags(long now)
     if (g_host && access(PAIR_FLAG, F_OK) == 0) {
         unlink(PAIR_FLAG);
         host_pair(g_host, PAIR_SECONDS);
-        notify(TR("AnyPad PS5: emparejando %d s. Pon el mando en modo emparejamiento", "AnyPad PS5: pairing for %d s. Put the controller in pairing mode"), PAIR_SECONDS);
+        notify(TR("AnyPad " ANYPAD_PLATFORM ": emparejando %d s. Pon el mando en modo emparejamiento", "AnyPad " ANYPAD_PLATFORM ": pairing for %d s. Put the controller in pairing mode"), PAIR_SECONDS);
     }
 }
 
@@ -301,14 +341,14 @@ int main(void)
 
     mkdir(STATE_DIR, 0755);
     log_open(LOG_PATH);
-    log_line("AnyPad PS5 %s (build %s)", ANYPAD_VERSION, ANYPAD_BUILD_ID);
+    log_line("AnyPad " ANYPAD_PLATFORM " %s (build %s)", ANYPAD_VERSION, ANYPAD_BUILD_ID);
     (void)g_version_tag;
     g_lang_code = ui_console_language();
     g_spanish = ui_language_is_spanish(g_lang_code);    /* notifications: Spanish, or English */
 
     if (!lock_take(LOCK_PATH)) {
         log_line("another instance is running");
-        notify(TR("AnyPad PS5: ya esta en marcha", "AnyPad PS5: already running"));
+        notify(TR("AnyPad " ANYPAD_PLATFORM ": ya esta en marcha", "AnyPad " ANYPAD_PLATFORM ": already running"));
         log_close();
         return 1;
     }
@@ -345,9 +385,9 @@ int main(void)
     local_ip(ip);
     snprintf(url, sizeof url, "http://%s:%d/", ip, WEB_PORT);
     if (g_web)
-        notify(TR("AnyPad PS5 %s\nMenu: %s (o Contenido multimedia > AnyPad)\nAl emparejar un mando, elige Juego rapido / Invitado cuando la consola lo pregunte", "AnyPad PS5 %s\nMenu: %s (or Media > AnyPad)\nWhen you pair a controller, choose Quick play / Guest when the console asks"), ANYPAD_VERSION, url);
+        notify(TR("AnyPad " ANYPAD_PLATFORM " %s\nMenu: %s\nAl emparejar un mando, elige Juego rapido / Invitado cuando la consola lo pregunte", "AnyPad " ANYPAD_PLATFORM " %s\nMenu: %s\nWhen you pair a controller, choose Quick play / Guest when the console asks"), ANYPAD_VERSION, url);
     else
-        notify(TR("AnyPad PS5 %s\nNo se pudo abrir la pagina del menu: puerto %d ocupado. Si otro payload de mandos sigue en marcha, paralo desde su menu", "AnyPad PS5 %s\nCould not open the menu page: port %d in use. If another controller payload is still running, stop it from its menu"),
+        notify(TR("AnyPad " ANYPAD_PLATFORM " %s\nNo se pudo abrir la pagina del menu: puerto %d ocupado. Si otro payload de mandos sigue en marcha, paralo desde su menu", "AnyPad " ANYPAD_PLATFORM " %s\nCould not open the menu page: port %d in use. If another controller payload is still running, stop it from its menu"),
                ANYPAD_VERSION, WEB_PORT);
 
     sysinfo_log();
@@ -369,9 +409,15 @@ int main(void)
         g_bt_state = WEB_BT_FAILED;
         snprintf(g_bt_reason, sizeof g_bt_reason,
                  "No se pueden crear mandos virtuales en este sistema (ver el log). No se ha tocado el Bluetooth.");
-        notify(TR("AnyPad PS5: no se pueden crear mandos virtuales.\nVer el menu o el log. El Bluetooth no se ha tocado", "AnyPad PS5: cannot create virtual controllers.\nSee the menu or the log. Bluetooth was not touched"));
+        notify(TR("AnyPad " ANYPAD_PLATFORM ": no se pueden crear mandos virtuales.\nVer el menu o el log. El Bluetooth no se ha tocado", "AnyPad " ANYPAD_PLATFORM ": cannot create virtual controllers.\nSee the menu or the log. Bluetooth was not touched"));
     } else {
         bt_begin();
+        g_usb_pads = usb_pad_init(on_usb_feed, on_usb_attach, on_usb_detach);
+        if (access(VPAD_TEST_FLAG, F_OK) == 0) {
+            log_line("vpad test: one idle virtual pad on slot 0");
+            vpad_add(0);
+            g_vpad_test = 1;
+        }
     }
 
     while (!g_stop && !g_web_stop) {
@@ -381,7 +427,16 @@ int main(void)
         else usleep(4000);
         now = now_ms();
         web_poll(g_web);
-        if (g_vpad_ok) vpad_poll(now);
+        if (g_vpad_ok) {
+            vpad_poll(now);
+            if (g_usb_pads) usb_pad_poll(g_usb_pads, now);
+            if (g_vpad_test && vpad_live(0)) {
+                pad_state idle;
+
+                pad_state_reset(&idle);
+                vpad_update(0, &idle);
+            }
+        }
 
         /* The page follows the network, as Payload Manager's does: every 5 s the
          * console's address is looked at and the page is served again if the
@@ -389,22 +444,18 @@ int main(void)
          * the cable or changing the DNS leaves it dead with the process alive). */
         if (now - last_net >= 5000) {
             char nip[16];
-            int changed, dead;
+            int changed;
 
             last_net = now;
             local_ip(nip);
             changed = strcmp(nip, ip) != 0;
-            dead = !web_alive(g_web, WEB_PORT);
-            if (changed || dead) {
-                log_line("web: %s (%s -> %s), serving the page again", dead ? "listener dead" : "network changed", ip, nip);
-                web_stop(g_web);
-                usleep(300000);
+            if (changed || !g_web) {
+                if (changed) log_line("network: address changed from %s to %s", ip, nip);
+                if (g_web) web_stop(g_web);
                 g_web = web_start(&wc, WEB_PORT);
                 snprintf(ip, sizeof ip, "%s", nip);
-                if (g_web && strcmp(nip, "127.0.0.1") != 0)
-                    notify(TR("AnyPad PS5: pagina de nuevo en http://%s:%d/", "AnyPad PS5: page back at http://%s:%d/"), nip, WEB_PORT);
-                else if (!g_web)
-                    log_line("web: could not serve the page again; will try in 5 s");
+                if (g_web && strcmp(nip, "127.0.0.1") != 0 && changed)
+                    notify(TR("AnyPad " ANYPAD_PLATFORM ": pagina de nuevo en http://%s:%d/", "AnyPad " ANYPAD_PLATFORM ": page back at http://%s:%d/"), nip, WEB_PORT);
             }
         }
 
@@ -414,7 +465,7 @@ int main(void)
             last_power = now;
             if (ps == POWER_GOING_TO_REST || ps == POWER_IN_REST) {
                 why = "rest mode";
-                notify(TR("AnyPad PS5: parado por el modo reposo.\nLanzalo de nuevo al despertar", "AnyPad PS5: stopped by rest mode.\nRun it again after waking up"));
+                notify(TR("AnyPad " ANYPAD_PLATFORM ": parado por el modo reposo.\nLanzalo de nuevo al despertar", "AnyPad " ANYPAD_PLATFORM ": stopped by rest mode.\nRun it again after waking up"));
                 break;
             }
         }
@@ -440,17 +491,24 @@ int main(void)
     log_line("stopping: %s", why);
     signal(SIGALRM, on_stop_timeout);
     alarm(T_STOP_MAX_S);
+    if (g_usb_pads) {
+        usb_pad_close(g_usb_pads);
+        g_usb_pads = NULL;
+    }
     web_stop(g_web);
     host_close(g_host);                 /* our links; removes our virtual pads */
     g_host = NULL;
     unlink(DB_PATH);                    /* the session ends: nothing is kept */
     log_line("stopping: Bluetooth released, pads of this session discarded");
     if (g_vpad_ok) {
+        int i;
+
+        for (i = 0; i < HOST_MAX_PADS; i++) vpad_remove(i);    /* the test and USB ones too */
         vpad_creds_restore();           /* leave the credentials as found */
     }
     lock_release();
     log_line("stopped");
     log_close();
-    notify(TR("AnyPad PS5: parado", "AnyPad PS5: stopped"));
+    notify(TR("AnyPad " ANYPAD_PLATFORM ": parado", "AnyPad " ANYPAD_PLATFORM ": stopped"));
     return 0;
 }

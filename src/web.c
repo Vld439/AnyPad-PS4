@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -368,6 +369,23 @@ static void handle(web_t *w, int fd, char *req)
         api_state(w, fd);
     } else if (strcmp(method, "GET") == 0 && strcmp(path, "/api/log") == 0) {
         api_log(w, fd);
+    } else if (strcmp(method, "GET") == 0 && strcmp(path, "/api/devs") == 0) {
+        char out[4096] = "{\"devs\":[";
+        DIR *d = opendir("/dev");
+        int first = 1;
+        if (d) {
+            struct dirent *de;
+            while ((de = readdir(d))) {
+                if (!first && strlen(out) < sizeof(out) - 64) strcat(out, ",");
+                if (strlen(out) < sizeof(out) - 64) {
+                    snprintf(out + strlen(out), sizeof(out) - strlen(out), "\"%s\"", de->d_name);
+                    first = 0;
+                }
+            }
+            closedir(d);
+        }
+        strcat(out, "]}");
+        respond_text(fd, 200, out);
     } else if (strcmp(method, "POST") == 0 && strcmp(path, "/api/pair") == 0 && h) {
         host_pair(h, 60);
         log_line("web: pairing started");
@@ -430,6 +448,9 @@ web_t *web_start(const web_cfg *cfg, int port)
         return NULL;
     }
     setsockopt(w->fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one);
+#ifdef SO_REUSEPORT
+    setsockopt(w->fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof one);
+#endif
     memset(&sin, 0, sizeof sin);
     sin.sin_family = AF_INET;
     sin.sin_port = htons((uint16_t)port);

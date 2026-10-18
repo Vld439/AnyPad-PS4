@@ -109,9 +109,14 @@ typedef struct {
     pad_state last;             /* the pad's latest state, resent while PS is held from the menu */
     long ps_until;              /* ms; PS is added to the frames until then (0: not held) */
     int ps_active;              /* a frame with PS went out and the release is still to be sent */
+    int retries;                /* PS4: asked again after no device came */
+    long retry_at;              /* ms; not before then */
 } vslot;
 
 static mbus_bind_fn g_bind;
+#if defined(TARGET_PS4)
+int32_t sceMbusBindDeviceWithUserId(uint64_t device_id, int32_t user);
+#endif
 static int g_ready;                         /* vpad_init succeeded */
 static int32_t g_user = -1;
 static vslot g_slot[HOST_MAX_PADS];
@@ -206,18 +211,31 @@ static uint64_t hex_after(const char *s, const char *key)
     return v;
 }
 
-/* A virtual DualSense appearing:
+/* A virtual DualSense (PS5) or DualShock 4 (PS4) appearing:
+ * PS5:
  *   SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x...][type:1][subType:22]
  *   [capabilityBattery:0]...
- * A real pad reports a battery, so a line saying otherwise is not ours. */
+ * PS4:
+ *   #LOGIN MGR# Receive Event : SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x...][type:1][subType:2]
+ * A real pad reports a battery on PS5, so a line saying otherwise is not ours. */
 static uint64_t virtual_device_in(const char *line)
 {
+    if (!strstr(line, "DEVICE_ADDED")) return 0;
+#if defined(TARGET_PS4)
+    /* PS4: SCE_MBUS_EVENT_DEVICE_ADDED [DeviceId:0x1d0304][type:1][subType:2]
+     * A headset comes as [type:2][subType:10]. A real pad plugged in
+     * meanwhile looks the same: that case is left alone as ambiguous. */
+    if (!strstr(line, "[type:1]")) return 0;
+    /* A pad on the console's own ports re-registers with the low byte 0
+     * (0x30300, 0x90300); the virtual ones never have it (0x1d0304, 0xd030c). */
+    if ((hex_after(line, "DeviceId") & 0xFF) == 0) return 0;
+#else
     const char *bat;
-
-    if (!strstr(line, "DEVICE_ADDED") || !strstr(line, "type:1") || !strstr(line, "subType:22"))
+    if (!strstr(line, "type:1") || !strstr(line, "subType:22"))
         return 0;
     bat = strstr(line, "capabilityBattery:");
     if (bat && bat[18] != '0') return 0;
+#endif
     return hex_after(line, "DeviceId");
 }
 
@@ -238,7 +256,9 @@ static void log_source_read(void)
             }
             g_line[g_line_len] = '\0';
             g_line_len = 0;
-            if (g_log_is_dev) log_line("klog: %s", g_line);  /* kept, not lost */
+            if (g_log_is_dev || strstr(g_line, "DEVICE_ADDED") || strstr(g_line, "MBUS")) {
+                log_line("klog: %s", g_line);
+            }
             dev = virtual_device_in(g_line);
             if (!dev || g_pending < 0) continue;
             if (g_matches == 0) {
@@ -396,9 +416,16 @@ int vpad_init(void)
 
     /* libScePad imports from libSceMbus: load it before any scePad call,
      * or scePadInit can fault on an unresolved import. */
+#if defined(TARGET_PS4)
+    (void)mbus;
+    (void)lib;
+    (void)i;
+    g_bind = sceMbusBindDeviceWithUserId;      /* imported: resolved before the fork */
+#else
     for (i = 0; i < sizeof mbus / sizeof mbus[0] && !lib; i++)
         lib = dlopen(mbus[i], RTLD_NOW | RTLD_GLOBAL);
     if (lib) g_bind = (mbus_bind_fn)dlsym(lib, "sceMbusBindDeviceWithUserId");
+#endif
     if (!g_bind) {
         log_line("vpad: libSceMbus not available, refusing to touch libScePad");
         return 0;
@@ -410,7 +437,17 @@ int vpad_init(void)
      * calls report their own errors. */
     if ((r = scePadInit()) != 0) {
         log_line("vpad: scePadInit failed: %#x", (unsigned)r);
+#if defined(TARGET_PS4)
+        /* The raised authid is the PS5's: try again as the payload. */
+        log_line("vpad: our authid was %#llx; trying scePadInit with it", (unsigned long long)g_orig_authid);
+        if (!vpad_creds_restore() || (r = scePadInit()) != 0) {
+            log_line("vpad: scePadInit failed again: %#x", (unsigned)r);
+            return 0;
+        }
+        log_line("vpad: scePadInit works with the original credentials");
+#else
         return 0;
+#endif
     }
     if ((r = scePadSetProcessPrivilege(1)) != 0)
         log_line("vpad: scePadSetProcessPrivilege answered %#x, carrying on", (unsigned)r);
@@ -431,6 +468,26 @@ int vpad_add(int slot)
     g_slot[slot].handle = -1;
     return 1;
 }
+
+#if defined(TARGET_PS4)
+/* The PS4 takes device type 1 for a DualShock 4 (found by trying 0..3 on
+ * firmware 13.52: 0 is refused, 1-3 all answer 0x803b0006 yet add a pad;
+ * only 1 has been seen bound and fed). */
+#define PS4_DEVICE_TYPE 1
+
+static int32_t add_device_ps4(int32_t param[8])
+{
+    int i;
+    int32_t r;
+
+    for (i = 0; i < 8; i++) param[i] = (int32_t)0xDEADBEEF;
+    param[0] = 32;
+    param[1] = 1;
+    r = scePadVirtualDeviceAddDevice(param, PS4_DEVICE_TYPE);
+    log_line("vpad: AddDevice type %d: %#x", PS4_DEVICE_TYPE, (unsigned)r);
+    return r;
+}
+#endif
 
 static void start_identification(int slot)
 {
@@ -459,10 +516,15 @@ static void start_identification(int slot)
 
     /* The parameter block as the PS5 accepts it: size 32, user 1,
      * the rest marked so that a call writing into it shows in the log. */
+#if defined(TARGET_PS4)
+    (void)i;
+    r = add_device_ps4(param);
+#else
     for (i = 0; i < 8; i++) param[i] = (int32_t)0xDEADBEEF;
     param[0] = (int32_t)sizeof param;
     param[1] = 1;
     r = scePadVirtualDeviceAddDevice(param, VIRTUAL_DEVICE_DUALSENSE);
+#endif
     log_line("slot %d: AddDevice %#x, block %08x %08x %08x %08x %08x %08x", slot, (unsigned)r,
              (unsigned)param[2], (unsigned)param[3], (unsigned)param[4], (unsigned)param[5],
              (unsigned)param[6], (unsigned)param[7]);
@@ -486,8 +548,20 @@ static void finish_identification(long now)
         /* Unknown or ambiguous: nothing is bound, inserted into or deleted. */
         log_line("slot %d: virtual pad not identified (%d candidates), left alone", slot, g_matches);
         v->st = VP_FAILED;
+#if defined(TARGET_PS4)
+        /* Two pads asked for one after the other: the second sometimes
+         * brings no device at all. Nothing came, so nothing is left behind. */
+        if (g_matches == 0 && v->retries < 2) {
+            v->retries++;
+            v->retry_at = now + 2000;
+            v->st = VP_QUEUED;
+            log_line("slot %d: asking again in 2 s (%d)", slot, v->retries);
+        }
+#endif
+
         return;
     }
+
     v->dev = g_match_dev;
     v->handle = (int32_t)(g_match_dev & 0xFFFFFFFFu);
     if (v->remove_when_found) {
@@ -497,6 +571,15 @@ static void finish_identification(long now)
         memset(v, 0, sizeof *v);
         return;
     }
+#if defined(TARGET_PS4)
+    /* sceMbusBindDeviceWithUserId has another signature on the PS4 and
+     * faults; the console gives the pad an owner itself (or asks who is
+     * using it, which the pad can answer). */
+    (void)r;
+    log_line("slot %d: device %#llx ready, owner left to the console", slot, (unsigned long long)v->dev);
+    v->st = VP_READY;
+    return;
+#endif
     r = g_bind(v->dev, g_user);
     log_line("slot %d: device %#llx bound to user %#x: %#x", slot, (unsigned long long)v->dev,
              (unsigned)g_user, (unsigned)r);
@@ -520,7 +603,7 @@ void vpad_poll(long now)
         return;
     }
     for (i = 0; i < HOST_MAX_PADS; i++)
-        if (g_slot[i].st == VP_QUEUED) {
+        if (g_slot[i].st == VP_QUEUED && now >= g_slot[i].retry_at) {
             start_identification(i);
             return;
         }
@@ -572,10 +655,12 @@ static void send_frame(int slot, const pad_state *st)
     clock_gettime(CLOCK_MONOTONIC, &ts);
     d.timestamp = (uint64_t)ts.tv_sec * 1000000u + (uint64_t)ts.tv_nsec / 1000u;
 
-    if (scePadVirtualDeviceInsertData(g_slot[slot].handle, &d) != 0) {
-        /* Stop feeding a device that refuses: it may not be ours any more. */
-        log_line("slot %d: the virtual pad refused input, stopped feeding it", slot);
-        g_slot[slot].st = VP_FAILED;
+    int32_t ret = scePadVirtualDeviceInsertData(g_slot[slot].handle, &d);
+    if (ret != 0) {
+        static int fail_count = 0;
+        if (fail_count++ % 250 == 1) {
+            log_line("slot %d: insertData failed %#x (handle %#x)", slot, (unsigned)ret, (unsigned)g_slot[slot].handle);
+        }
     }
 }
 

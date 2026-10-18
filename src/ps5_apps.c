@@ -6,25 +6,40 @@
 #include <stdint.h>
 #include <sys/stat.h>
 
+#if defined(TARGET_PS4)
+#if defined(__has_include)
+#if __has_include(<ps4/kernel.h>)
+#include <ps4/kernel.h>
+#endif
+#endif
+#else
+#if defined(__has_include)
+#if __has_include(<ps5/kernel.h>)
 #include <ps5/kernel.h>
+#endif
+#endif
+#endif
 
 extern const unsigned char icon_png_data[];
 extern const unsigned int icon_png_data_len;
 
+#if defined(TARGET_PS4)
+int apps_install_launcher(void)
+{
+    return 0;
+}
+
+int apps_remove_launcher(void)
+{
+    return 0;
+}
+#else
 int sceAppInstUtilInitialize(void);
 int sceAppInstUtilTerminate(void);
 
-/* sceAppInstUtilAppInstallTitleDir is looked up when it is needed instead of
- * being imported: some payload loaders on newer firmwares cannot resolve that
- * import, and then AnyPad would not start at all. Without it there is only no
- * entry in the media row; the page still works. */
 typedef int (*install_dir_fn)(const char *title_id, const char *dir, void *reserved);
 typedef int (*install_all_fn)(void *reserved);
 
-/* Newer firmwares do not resolve these by name: then by NID, the hashed name
- * the system's linker uses (as payload managers that work on every firmware
- * do). sceAppInstUtilAppInstallTitleDir = Wudg3Xe3heE,
- * sceAppInstUtilAppInstallAll = +scQA5stvjs. */
 static intptr_t find_app_inst(const char *name, const char *nid)
 {
     uint32_t lib;
@@ -92,3 +107,4 @@ int apps_remove_launcher(void)
     launcher_remove_files(LAUNCHER_APP_ROOT);
     return r == 0 ? 0 : -1;
 }
+#endif

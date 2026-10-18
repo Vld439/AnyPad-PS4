@@ -569,6 +569,7 @@ static int choose_endpoints(usb_ctx *c)
     return 0;
 }
 
+#if !defined(TARGET_PS4)
 static void default_endpoints(usb_ctx *c)
 {
     log_line("usb: no HCI function found in the descriptor; using the default layout");
@@ -578,6 +579,7 @@ static void default_endpoints(usb_ctx *c)
     c->ep_acl_out = EP_ACL_OUT_DEFAULT;
     c->ev_read_len = MPS_EVENTS_DEFAULT;
 }
+#endif
 
 static int op_chip_vendor(void *ctx);
 
@@ -643,8 +645,12 @@ int hci_usb_open(hci_t *out)
         c->fd = -1;
     }
     if (c->fd < 0) {
+#if !defined(TARGET_PS4)
         if (!open_node(c, k_nodes[0], 1)) return 0;
         default_endpoints(c);
+#else
+        return 0;
+#endif
     }
     if (c->dd_ok) log_chip(c);
     evstream_init(&c->es);

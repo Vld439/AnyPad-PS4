@@ -792,6 +792,157 @@ static int wii_init(void *ctx, int step, const pad_output *o, uint8_t *b, int ma
     }
 }
 
+/* ---- GameSir -------------------------------------------------------------
+ * GameSir G8 (Galileo / G8+), Kaleid, T4 series, Nova, Cyclone.
+ * In Xbox/XInput mode, reports follow standard Xbox layout.
+ * In standard HID/DInput mode, standard 8+ byte layout.
+ */
+static const uint16_t gamesir_ids[][2] = {
+    { 0x3537, 0x0108 },     /* GameSir G8 Galileo / G8+ */
+    { 0x3537, 0x1004 },     /* GameSir T4 Kaleid */
+    { 0x3537, 0x1012 },     /* GameSir Kaleid / Kaleid Flux */
+    { 0x3537, 0x1097 },     /* GameSir Kaleid USB / G8 */
+    { 0x3537, 0x1014 },     /* GameSir Kaleid / G8 mode */
+    { 0x3537, 0x1067 },     /* GameSir G8 / Kaleid alternate PID */
+    { 0x3537, 0x1001 },     /* GameSir T4 Pro */
+    { 0x3537, 0x1009 },     /* GameSir Nova / Nova Lite */
+    { 0x3537, 0x1011 },     /* GameSir Cyclone / Cyclone Pro */
+};
+
+static int xinput_wired_parse(const uint8_t *r, int n, pad_state *st)
+{
+    if (n < 14) return PARSE_NONE;
+    if (r[0] == 0x00) {
+        uint32_t b = 0;
+        uint8_t b1 = r[2];
+        uint8_t b2 = r[3];
+
+        /* D-Pad */
+        if (b1 & 0x01) b |= PAD_UP;
+        if (b1 & 0x02) b |= PAD_DOWN;
+        if (b1 & 0x04) b |= PAD_LEFT;
+        if (b1 & 0x08) b |= PAD_RIGHT;
+        if (b1 & 0x10) b |= PAD_OPTIONS;  /* Start */
+        if (b1 & 0x20) b |= PAD_TOUCHPAD; /* Back */
+        if (b1 & 0x40) b |= PAD_L3;
+        if (b1 & 0x80) b |= PAD_R3;
+
+        /* Buttons */
+        if (b2 & 0x01) b |= PAD_L1;
+        if (b2 & 0x02) b |= PAD_R1;
+        if (b2 & 0x04) b |= PAD_PS;       /* Guide */
+        if (b2 & 0x10) b |= PAD_CROSS;    /* A */
+        if (b2 & 0x20) b |= PAD_CIRCLE;   /* B */
+        if (b2 & 0x40) b |= PAD_SQUARE;   /* X */
+        if (b2 & 0x80) b |= PAD_TRIANGLE; /* Y */
+
+        st->l2 = r[4];
+        st->r2 = r[5];
+        st->buttons = b | trigger_buttons(st->l2, st->r2);
+
+        /* Sticks: int16 (-32768..32767) to uint8 (0..255) */
+        int16_t lx = (int16_t)(r[6] | (r[7] << 8));
+        int16_t ly = (int16_t)(r[8] | (r[9] << 8));
+        int16_t rx = (int16_t)(r[10] | (r[11] << 8));
+        int16_t ry = (int16_t)(r[12] | (r[13] << 8));
+
+        st->lx = (uint8_t)((lx + 32768) >> 8);
+        st->ly = (uint8_t)((32767 - ly) >> 8);
+        st->rx = (uint8_t)((rx + 32768) >> 8);
+        st->ry = (uint8_t)((32767 - ry) >> 8);
+
+        return PARSE_OK;
+    }
+    return PARSE_NONE;
+}
+
+static int gamesir_parse(void *ctx, const uint8_t *r, int n, pad_state *st)
+{
+    if (n < 8) return PARSE_NONE;
+
+    /* GameSir standard 10-byte HID report (Report ID 0x05) */
+    if (r[0] == 0x05 && n >= 10) {
+        uint8_t b1 = r[1], b2 = r[2], hat = r[3];
+        uint32_t b = 0;
+
+        /* Hat switch (0..7, 8 centered) */
+        if (hat < 8) b |= hat_buttons(hat);
+
+        /* Face & Shoulder Buttons (b1) */
+        if (b1 & 0x01) b |= PAD_CROSS;    /* A */
+        if (b1 & 0x02) b |= PAD_CIRCLE;   /* B */
+        if (b1 & 0x08) b |= PAD_SQUARE;   /* X */
+        if (b1 & 0x10) b |= PAD_TRIANGLE; /* Y */
+        if (b1 & 0x40) b |= PAD_L1;
+        if (b1 & 0x80) b |= PAD_R1;
+
+        /* System & Stick Clicks (b2), read off a Kaleid Flux (3537:1097):
+         * 0x01 LT and 0x02 RT pressed (the analog values below say it too) */
+        if (b2 & 0x04) b |= PAD_TOUCHPAD; /* View */
+        if (b2 & 0x08) b |= PAD_OPTIONS;  /* Menu */
+        if (b2 & 0x10) b |= PAD_PS;       /* Home */
+        if (b2 & 0x20) b |= PAD_L3;
+        if (b2 & 0x40) b |= PAD_R3;
+
+        /* Sticks (0..255, center ~128) */
+        st->lx = r[4];
+        st->ly = r[5];
+        st->rx = r[6];
+        st->ry = r[7];
+
+        /* Analog Triggers */
+        st->l2 = r[8];
+        st->r2 = r[9];
+
+        st->buttons = b | trigger_buttons(st->l2, st->r2);
+        return PARSE_OK;
+    }
+
+    /* Wired Xbox 360 / XInput mode (e.g. GameSir Kaleid, G8 wired) */
+    if (r[0] == 0x00 && n >= 14) {
+        int res = xinput_wired_parse(r, n, st);
+        if (res == PARSE_OK) return PARSE_OK;
+    }
+
+    /* Switch mode */
+    if (r[0] == 0x3F || r[0] == 0x30 || r[0] == 0x21) {
+        return switch_parse(ctx, r, n, st);
+    }
+
+    /* DualShock 4 mode report */
+    if (r[0] == 0x01 && n >= 10 && (r[5] & 0x0F) <= 8 && (r[5] & 0xF0) != 0) {
+        sony_basic(r + 1, r + 5, r[8], r[9], st);
+        return PARSE_OK;
+    }
+
+    /* Standard GameSir HID report */
+    st->lx = r[1];
+    st->ly = r[2];
+    st->rx = r[3];
+    st->ry = r[4];
+    if (n >= 7) {
+        st->l2 = r[5];
+        st->r2 = r[6];
+    }
+    if (n >= 9) {
+        uint8_t b1 = r[7], b2 = r[8];
+        uint32_t b = 0;
+        if (b1 & 0x01) b |= PAD_CROSS;    /* A */
+        if (b1 & 0x02) b |= PAD_CIRCLE;   /* B */
+        if (b1 & 0x08) b |= PAD_SQUARE;   /* X */
+        if (b1 & 0x10) b |= PAD_TRIANGLE; /* Y */
+        if (b1 & 0x40) b |= PAD_L1;
+        if (b1 & 0x80) b |= PAD_R1;
+        if (b2 & 0x01) b |= PAD_CREATE;   /* Select / View */
+        if (b2 & 0x02) b |= PAD_OPTIONS;  /* Start / Menu */
+        if (b2 & 0x04) b |= PAD_PS;       /* Home / PS */
+        if (b2 & 0x20) b |= PAD_L3;
+        if (b2 & 0x40) b |= PAD_R3;
+        st->buttons = b | trigger_buttons(st->l2, st->r2);
+    }
+    return PARSE_OK;
+}
+
 /* ---- the table --------------------------------------------------------- */
 
 #define IDS(t) t, (int)(sizeof t / sizeof t[0])
@@ -803,6 +954,7 @@ static const pad_profile k_profiles[] = {
     { "Switch Pro",  IDS(switch_ids), switch_parse, NULL,        switch_init, 1, 0, NULL, 0 },
     { "Joy-Con",     IDS(joycon_ids), joycon_parse, NULL,        joycon_init, 1, 0, joycon_setup, 0 },
     { "Wii",         IDS(wii_ids),    wii_parse,    NULL,        wii_init,    1, 0, NULL, 0 },
+    { "GameSir",     IDS(gamesir_ids),gamesir_parse,NULL,        NULL,        0, 0, NULL, 0 },
 };
 
 const pad_profile *profile_find(uint16_t vid, uint16_t pid)
