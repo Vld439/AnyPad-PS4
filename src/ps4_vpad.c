@@ -549,7 +549,7 @@ static void send_frame(int slot, const pad_state *st)
             if (!st->touch[i].down) continue;
             t->x = st->touch[i].x;
             t->y = st->touch[i].y;
-            t->id = (uint8_t)i;
+            t->id = st->touch[i].id;
             d.touchData.touchNum++;
         }
     }

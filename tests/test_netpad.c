@@ -95,6 +95,18 @@ static void pad_frame(int fd, uint32_t buttons, uint8_t lx)
     ws_frame(fd, 0x2, m, sizeof m);
 }
 
+/* A frame with the touch area: finger 0 down at (x0, y0) as contact id0;
+ * finger 1 up, at a place past the touchpad's edge. */
+static void touch_frame(int fd, uint8_t id0, uint16_t x0, uint16_t y0)
+{
+    uint8_t m[21] = { 0 };
+    m[4] = m[5] = m[6] = m[7] = 128;
+    m[10] = 0x01;
+    m[11] = id0; m[12] = (uint8_t)x0; m[13] = (uint8_t)(x0 >> 8); m[14] = (uint8_t)y0; m[15] = (uint8_t)(y0 >> 8);
+    m[16] = 3; m[17] = 0xB8; m[18] = 0x0B; m[19] = 0xD0; m[20] = 0x07;       /* 3000, 2000 */
+    ws_frame(fd, 0x2, m, sizeof m);
+}
+
 static void settle(void) { usleep(150000); }
 
 static const char *name_of(const char *line)
@@ -160,6 +172,21 @@ int main(int argc, char **argv)
         ws_frame(a, 0x1, (const uint8_t *)"0123456789", 10);
         settle();
         CHECK(g_frames[0] + g_frames[1] == 2);
+    }
+
+    printf("the touch area: fingers, ids and places reach the pad, kept on the touchpad\n");
+    {
+        int sa = strcmp(g_labels[0], "network:GameSir") == 0 ? 0 : 1;
+        touch_frame(a, 7, 1000, 500);
+        settle();
+        CHECK(g_last[sa].has_touch);
+        CHECK(g_last[sa].touch[0].down && g_last[sa].touch[0].id == 7);
+        CHECK(g_last[sa].touch[0].x == 1000 && g_last[sa].touch[0].y == 500);
+        CHECK(!g_last[sa].touch[1].down && g_last[sa].touch[1].id == 3);
+        CHECK(g_last[sa].touch[1].x == 1919 && g_last[sa].touch[1].y == 941);
+        pad_frame(a, 0, 128);                   /* a frame without the area: no touch */
+        settle();
+        CHECK(!g_last[sa].has_touch);
     }
 
     printf("one controller unplugged: only its pad goes\n");

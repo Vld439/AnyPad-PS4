@@ -49,6 +49,7 @@ static uint32_t sony_buttons(const uint8_t *b)
 static void sony_touch(const uint8_t *p, pad_state *st, int i)
 {
     st->touch[i].down = !(p[0] & 0x80);
+    st->touch[i].id = p[0] & 0x7F;
     st->touch[i].x = (uint16_t)(p[1] | (p[2] & 0x0F) << 8);
     st->touch[i].y = (uint16_t)(p[2] >> 4 | p[3] << 4);
 }

@@ -126,6 +126,9 @@ static const char PAGE[] =
 ".pad{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;margin:10px 0;word-break:break-word}"
 ".dot{flex:none;width:10px;height:10px;border-radius:50%;background:#c33}.dot.on{background:#3c3}"
 "small{color:#8a97b2;display:block;line-height:1.5;margin-top:12px}"
+"#tp{margin:14px 0 8px;width:100%;aspect-ratio:1920/942;border:1px solid #243049;border-radius:12px;"
+"background:#0f1628;touch-action:none}#tpc{padding:8px 16px;border-radius:8px;border:1px solid #243049;"
+"background:#141b2e;color:#e7ecf5;font:inherit;touch-action:none}"
 "#lost{margin-top:14px;padding:12px;border:1px solid #c33;border-radius:10px;background:#2a1418;text-align:left}"
 "#lost p{margin:0 0 10px;line-height:1.4}#lost input{width:60%;padding:8px;border-radius:8px;border:1px solid #243049;"
 "background:#0b0f1a;color:#e7ecf5;font:inherit}#lost button{padding:8px 16px;margin-left:6px;border-radius:8px;border:0;"
@@ -133,6 +136,8 @@ static const char PAGE[] =
 "b{color:#9db4ff}</style></head><body>"
 "<h1>AnyPad &mdash; mando por red</h1>"
 "<div class=card id=card><div id=st>Esperando mandos&hellip;</div><div id=pads></div>"
+"<div id=tz hidden><div id=tp></div><button id=tpc>Pulsar panel</button>"
+"<small>Panel t&aacute;ctil: desliza aqu&iacute; con uno o dos dedos. Va al primer mando de la lista.</small></div>"
 "<div id=lost hidden><p>No llega a la consola. Si su IP cambi&oacute;, escribe la nueva "
 "(la de la notificaci&oacute;n de AnyPad):</p><input id=ip inputmode=decimal autocomplete=off "
 "placeholder='IP de la consola'><button id=go>Ir</button></div>"
@@ -153,7 +158,7 @@ static const char PAGE[] =
 "['click','touchstart','keydown'].forEach(function(e){window.addEventListener(e,keepAwake,{passive:true});});"
 "document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')keepAwake();});"
 "var B={CREATE:1,L3:2,R3:4,OPTIONS:8,UP:16,RIGHT:32,DOWN:64,LEFT:128,L2:256,R2:512,L1:1024,R1:2048,"
-"TRIANGLE:4096,CIRCLE:8192,CROSS:16384,SQUARE:32768,PS:65536};"
+"TRIANGLE:4096,CIRCLE:8192,CROSS:16384,SQUARE:32768,PS:65536,TOUCHPAD:1048576};"
 "var map=[B.CROSS,B.CIRCLE,B.SQUARE,B.TRIANGLE,B.L1,B.R1,0,0,B.CREATE,B.OPTIONS,B.L3,B.R3,"
 "B.UP,B.DOWN,B.LEFT,B.RIGHT,B.PS];"
 /* One WebSocket per gamepad: each one is its own client on the console, and
@@ -187,21 +192,46 @@ static const char PAGE[] =
 "ws.onerror=function(){try{ws.close()}catch(e){}};}"
 "function drop(i){var p=P[i];if(!p)return;delete P[i];if(p.ws){try{p.ws.close()}catch(e){}}draw();}"
 "function axis(v){return Math.max(0,Math.min(255,Math.round((v+1)*127.5)));}"
-"function frame(g){var btn=0,l2=0,r2=0,b=g.buttons,a=g.axes,i;"
+/* The touchpad's click: PlayStation pads show it as button 17 (their button 8
+ * stays SHARE); on the others the View button is the touchpad, as by USB. */
+"function frame(g,touch){var btn=0,l2=0,r2=0,b=g.buttons,a=g.axes,i;"
 "for(i=0;i<map.length&&i<b.length;i++){if(b[i]&&b[i].pressed)btn|=map[i];}"
+"if(b.length>17){if(b[17]&&b[17].pressed)btn|=B.TOUCHPAD;}else if(btn&B.CREATE)btn=(btn&~B.CREATE)|B.TOUCHPAD;"
 "if(b[6]){l2=Math.round((b[6].value||0)*255);if(b[6].pressed||l2>30)btn|=B.L2;}"
 "if(b[7]){r2=Math.round((b[7].value||0)*255);if(b[7].pressed||r2>30)btn|=B.R2;}"
-"var buf=new ArrayBuffer(10),d=new DataView(buf);"
+"if(touch&&tpc)btn|=B.TOUCHPAD;"
+"var buf=new ArrayBuffer(touch?21:10),d=new DataView(buf);"
 "d.setUint32(0,btn>>>0,true);"
 "d.setUint8(4,axis(a[0]||0));d.setUint8(5,axis(a[1]||0));"
 "d.setUint8(6,axis(a[2]||0));d.setUint8(7,axis(a[3]||0));"
-"d.setUint8(8,l2);d.setUint8(9,r2);return buf;}"
+"d.setUint8(8,l2);d.setUint8(9,r2);"
+/* The touch area: flags (finger 0, 1 down), then per finger its id, x, y. */
+"if(touch){d.setUint8(10,(T[0].d?1:0)|(T[1].d?2:0));"
+"for(i=0;i<2;i++){d.setUint8(11+i*5,T[i].id);d.setUint16(12+i*5,T[i].x,true);d.setUint16(14+i*5,T[i].y,true);}}"
+"return buf;}"
+/* The phone's screen as the DualShock 4's touchpad (1920 x 942): up to two
+ * fingers, each a new contact id when put down, as the pad numbers them. */
+"var T=[{d:0,id:0,x:0,y:0},{d:0,id:0,x:0,y:0}],tid=0,ptr={},tpc=0;"
+"var tz=document.getElementById('tz'),tp=document.getElementById('tp'),tb=document.getElementById('tpc');"
+"function tpos(e,t){var r=tp.getBoundingClientRect();"
+"t.x=Math.max(0,Math.min(1919,Math.round((e.clientX-r.left)/r.width*1919)));"
+"t.y=Math.max(0,Math.min(941,Math.round((e.clientY-r.top)/r.height*941)));}"
+"tp.addEventListener('pointerdown',function(e){var f=!T[0].d?0:!T[1].d?1:-1;if(f<0)return;"
+"ptr[e.pointerId]=f;tid=(tid+1)&127;T[f].d=1;T[f].id=tid;tpos(e,T[f]);"
+"try{tp.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault();});"
+"tp.addEventListener('pointermove',function(e){var f=ptr[e.pointerId];if(f===undefined)return;tpos(e,T[f]);e.preventDefault();});"
+"function tup(e){var f=ptr[e.pointerId];if(f===undefined)return;T[f].d=0;delete ptr[e.pointerId];}"
+"tp.addEventListener('pointerup',tup);tp.addEventListener('pointercancel',tup);"
+"tb.addEventListener('pointerdown',function(e){tpc=1;e.preventDefault();});"
+"['pointerup','pointercancel','pointerleave'].forEach(function(n){tb.addEventListener(n,function(){tpc=0;});});"
 "function loop(){requestAnimationFrame(loop);"
-"var gp=navigator.getGamepads?navigator.getGamepads():[],seen={},i,k;"
-"for(i=0;i<gp.length;i++){var g=gp[i];if(!g||g.connected===false)continue;seen[g.index]=1;"
-"if(!P[g.index]){P[g.index]={name:short(g.id),ws:null,open:false};link(g.index);draw();}"
-"var p=P[g.index];if(p.open){try{p.ws.send(frame(g));}catch(e){}}}"
-"for(k in P)if(!seen[k])drop(k);watch();}"
+"var gp=navigator.getGamepads?navigator.getGamepads():[],seen={},live=[],first=-1,i,k;"
+"for(i=0;i<gp.length;i++){var g=gp[i];if(!g||g.connected===false)continue;seen[g.index]=1;live.push(g);"
+"if(!P[g.index]){P[g.index]={name:short(g.id),ws:null,open:false};link(g.index);draw();}}"
+"for(k in P)if(!seen[k])drop(k);"
+"for(k in P)if(P[k].open&&(first<0||+k<first))first=+k;"
+"for(i=0;i<live.length;i++){var p=P[live[i].index];if(p.open){try{p.ws.send(frame(live[i],live[i].index===first));}catch(e){}}}"
+"tz.hidden=!live.length;watch();}"
 "draw();requestAnimationFrame(loop);"
 "</script></body></html>";
 
@@ -419,6 +449,21 @@ static void run_pad(int fd, int i, const char *name)
                      (uint32_t)msg[2] << 16 | (uint32_t)msg[3] << 24;
         st.lx = msg[4]; st.ly = msg[5]; st.rx = msg[6]; st.ry = msg[7];
         st.l2 = msg[8]; st.r2 = msg[9];
+        /* The page's touch area, as the DualShock 4's touchpad: one flags
+         * byte (bit 0, 1: finger 0, 1 down), then per finger its id, x and y
+         * (little-endian, touchpad units). Ten-byte frames have none. */
+        if (len >= 21) {
+            int f;
+            st.has_touch = 1;
+            for (f = 0; f < 2; f++) {
+                const uint8_t *t = msg + 11 + f * 5;
+                unsigned x = (unsigned)t[1] | (unsigned)t[2] << 8, y = (unsigned)t[3] | (unsigned)t[4] << 8;
+                st.touch[f].down = (msg[10] >> f) & 1;
+                st.touch[f].id = t[0] & 0x7F;
+                st.touch[f].x = (uint16_t)(x > 1919 ? 1919 : x);
+                st.touch[f].y = (uint16_t)(y > 941 ? 941 : y);
+            }
+        }
 
         if (!announced && vpad_live(slot)) {
             announced = 1;

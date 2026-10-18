@@ -40,7 +40,10 @@ typedef struct {
     int16_t  gyro[3], accel[3];
 
     uint8_t  has_touch;
-    struct { uint8_t down; uint16_t x, y; } touch[2];
+    /* DualShock 4 touchpad units (x 0..1919, y 0..941). `id` numbers the
+     * contact: a new one for each finger put down, as the pad counts them,
+     * so a game does not take two swipes for one. */
+    struct { uint8_t down, id; uint16_t x, y; } touch[2];
 
     uint8_t  has_battery;
     uint8_t  battery_pct, charging;

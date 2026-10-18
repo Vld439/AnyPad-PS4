@@ -74,7 +74,7 @@ static void test_ds5(void)
     r[11] = 0x02;                           /* touchpad click */
     r[17] = 0x34; r[18] = 0x12;             /* gyro x = 0x1234 */
     r[23] = 0xFF; r[24] = 0xFF;             /* accel x = -1 */
-    r[34] = 0x00; r[35] = 0x80; r[36] = 0x37; r[37] = 0x12;   /* finger at (0x780, 0x123) */
+    r[34] = 0x05; r[35] = 0x80; r[36] = 0x37; r[37] = 0x12;   /* finger 5 down at (0x780, 0x123) */
     r[38] = 0x80;                           /* second finger up */
     r[54] = 0x18;                           /* charging, level 8 */
     pad_state_reset(&st);
@@ -85,6 +85,7 @@ static void test_ds5(void)
     CHECK((st.buttons & 0x2) && (st.buttons & 0x4) && (st.buttons & 0x100000));
     CHECK(st.has_motion && st.gyro[0] == 0x1234 && st.accel[0] == -1);
     CHECK(st.has_touch && st.touch[0].down && st.touch[0].x == 0x780 && st.touch[0].y == 0x123);
+    CHECK(st.touch[0].id == 5);
     CHECK(!st.touch[1].down);
     CHECK(st.battery_pct == 85 && st.charging);
 
