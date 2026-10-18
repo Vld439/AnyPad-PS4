@@ -443,8 +443,10 @@ function renderPads(pads) {
   for (const p of pads) {
     const c = el("div", "pad"), top = el("div", "top"), ico = el("span", "ico");
     ico.innerHTML = PAD_SVG;
-    top.append(ico, el("span", "name", p.label === "network" ? L.nettitle : p.label), el("span", "slot", L.pl + p.slot));
-    c.appendChild(top);
+    /* "network" or "network:<the name its browser gave>"; a USB pad: its profile */
+    const net = p.label === "network" || p.label.startsWith("network:");
+    top.append(ico, el("span", "name", net ? p.label.slice(8) || L.nettitle : p.label), el("span", "slot", L.pl + p.slot));
+    c.append(top, el("div", "meta", net ? L.nettitle : "USB"));
     const viz = el("div", "viz");
     viz.append(trigger(p.l2), stick(p.lx, p.ly), stick(p.rx, p.ry), trigger(p.r2));
     c.appendChild(viz);

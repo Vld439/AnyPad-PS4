@@ -33,6 +33,10 @@ $(BUILD)/test_profiles: $(CORE) tests/test_profiles.c | $(BUILD)
 $(BUILD)/test_web: src/web.c src/web_page.c src/log.c src/util.c tests/test_web.c | $(BUILD)
 	cc $(HOST_CFLAGS) -o $@ $^
 
+# The network controller's server (the source itself) against stand-in virtual pads.
+$(BUILD)/test_netpad: src/log.c src/util.c tests/test_netpad.c src/netpad.c | $(BUILD)
+	cc $(HOST_CFLAGS) -o $@ src/log.c src/util.c tests/test_netpad.c -lpthread
+
 # The console source for virtual pads, against stand-ins for the console's libraries.
 $(BUILD)/test_vpad: src/ps4_vpad.c src/log.c src/util.c tests/test_vpad.c | $(BUILD)
 	cc -std=c11 -Wall -Wextra -Werror -O1 -g -Isrc -D_DEFAULT_SOURCE -D_DARWIN_C_SOURCE -o $@ $^
@@ -49,11 +53,12 @@ src/icon_data.c: assets/icon0.png
 $(BUILD)/test_launcher: src/launcher.c src/icon_data.c tests/test_launcher.c | $(BUILD)
 	cc $(HOST_CFLAGS) -o $@ $^
 
-test: $(BUILD)/test_lock $(BUILD)/test_vpad $(BUILD)/test_profiles $(BUILD)/test_web $(BUILD)/test_launcher
+test: $(BUILD)/test_lock $(BUILD)/test_vpad $(BUILD)/test_profiles $(BUILD)/test_web $(BUILD)/test_netpad $(BUILD)/test_launcher
 	./$(BUILD)/test_lock
 	./$(BUILD)/test_vpad
 	./$(BUILD)/test_profiles
 	./$(BUILD)/test_web
+	./$(BUILD)/test_netpad
 	./$(BUILD)/test_launcher
 
 # Malformed input through every parser, under the sanitizers.

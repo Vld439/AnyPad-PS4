@@ -122,15 +122,15 @@ static const char PAGE[] =
 "*{box-sizing:border-box}body{margin:0;font:16px system-ui,sans-serif;background:#0b0f1a;color:#e7ecf5;"
 "min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:18px}"
 "h1{font-size:1.3rem;margin:0}.card{background:#141b2e;border:1px solid #243049;border-radius:14px;"
-"padding:20px;max-width:440px;width:100%;text-align:center}#dot{display:inline-block;width:10px;height:10px;"
-"border-radius:50%;background:#c33;margin-right:8px;vertical-align:middle}.on #dot{background:#3c3}"
-"#pad{font-weight:600;margin:10px 0}small{color:#8a97b2;display:block;line-height:1.5;margin-top:12px}"
+"padding:20px;max-width:440px;width:100%;text-align:center}#st{color:#8a97b2}.on #st{color:#3c3}"
+".pad{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600;margin:10px 0;word-break:break-word}"
+".dot{flex:none;width:10px;height:10px;border-radius:50%;background:#c33}.dot.on{background:#3c3}"
+"small{color:#8a97b2;display:block;line-height:1.5;margin-top:12px}"
 "b{color:#9db4ff}</style></head><body>"
 "<h1>AnyPad &mdash; mando por red</h1>"
-"<div class=card id=card><div><span id=dot></span><span id=st>Conectando&hellip;</span></div>"
-"<div id=pad>Conecta un mando a este dispositivo y pulsa un bot&oacute;n</div>"
-"<small>El navegador lee tu mando (incluso por <b>Bluetooth</b> emparejado a este tel&eacute;fono) y lo "
-"env&iacute;a a la consola como un mando virtual. <b>Toca la pantalla una vez</b> para que no se apague "
+"<div class=card id=card><div id=st>Esperando mandos&hellip;</div><div id=pads></div>"
+"<small>El navegador lee los mandos de este dispositivo (tambi&eacute;n los emparejados por <b>Bluetooth</b>) "
+"y env&iacute;a cada uno a la consola como un mando virtual distinto. <b>Toca la pantalla una vez</b> para que no se apague "
 "mientras juegas; baja el brillo al m&iacute;nimo para ahorrar bater&iacute;a.</small></div>"
 "<script>"
 /* Keep the screen awake. Wake Lock API when the context is secure; otherwise a
@@ -149,19 +149,24 @@ static const char PAGE[] =
 "TRIANGLE:4096,CIRCLE:8192,CROSS:16384,SQUARE:32768,PS:65536};"
 "var map=[B.CROSS,B.CIRCLE,B.SQUARE,B.TRIANGLE,B.L1,B.R1,0,0,B.CREATE,B.OPTIONS,B.L3,B.R3,"
 "B.UP,B.DOWN,B.LEFT,B.RIGHT,B.PS];"
-"var card=document.getElementById('card'),st=document.getElementById('st'),padEl=document.getElementById('pad');"
-"var ws,open=false;"
-"function connect(){ws=new WebSocket('ws://'+location.host+'/ws');ws.binaryType='arraybuffer';"
-"ws.onopen=function(){open=true;card.className='on';st.textContent='Conectado a la consola';};"
-"ws.onclose=function(){open=false;card.className='';st.textContent='Sin conexi\\u00f3n, reintentando\\u2026';setTimeout(connect,1000);};"
+/* One WebSocket per gamepad: each one is its own client on the console, and
+ * so its own virtual pad. Opened when the browser shows the pad, closed (the
+ * virtual pad goes) when it disconnects; reopened while the pad is there. */
+"var card=document.getElementById('card'),st=document.getElementById('st'),list=document.getElementById('pads');"
+"var P={};"
+"function draw(){var k,n=0,on=0;list.textContent='';"
+"for(k in P){var p=P[k],r=document.createElement('div'),d=document.createElement('span');n++;if(p.open)on++;"
+"r.className='pad';d.className='dot'+(p.open?' on':'');r.appendChild(d);r.appendChild(document.createTextNode(p.name));list.appendChild(r);}"
+"if(!n){var h=document.createElement('div');h.textContent='Conecta uno o varios mandos a este dispositivo y pulsa un bot\\u00f3n en cada uno';list.appendChild(h);}"
+"st.textContent=n?on+' de '+n+' enviando a la consola':'Esperando mandos\\u2026';card.className=on?'on':'';}"
+"function short(id){var s=id.replace(/\\s*\\(.*$/,'').replace(/^[0-9a-f]{1,4}-[0-9a-f]{1,4}-/i,'').trim();return (s||'Mando').slice(0,31);}"
+"function link(i){var p=P[i];if(!p||p.ws)return;var ws=new WebSocket('ws://'+location.host+'/ws?n='+encodeURIComponent(p.name));ws.binaryType='arraybuffer';p.ws=ws;"
+"ws.onopen=function(){p.open=true;draw();};"
+"ws.onclose=function(){p.open=false;p.ws=null;draw();if(P[i]===p)setTimeout(function(){link(i);},2000);};"
 "ws.onerror=function(){try{ws.close()}catch(e){}};}"
-"connect();"
+"function drop(i){var p=P[i];if(!p)return;delete P[i];if(p.ws){try{p.ws.close()}catch(e){}}draw();}"
 "function axis(v){return Math.max(0,Math.min(255,Math.round((v+1)*127.5)));}"
-"function loop(){requestAnimationFrame(loop);if(!open)return;"
-"var gp=navigator.getGamepads(),g=null,i;for(i=0;i<gp.length;i++){if(gp[i]){g=gp[i];break;}}"
-"if(!g){padEl.textContent='Conecta un mando y pulsa un bot\\u00f3n';return;}"
-"padEl.textContent=g.id;"
-"var btn=0,l2=0,r2=0,b=g.buttons,a=g.axes;"
+"function frame(g){var btn=0,l2=0,r2=0,b=g.buttons,a=g.axes,i;"
 "for(i=0;i<map.length&&i<b.length;i++){if(b[i]&&b[i].pressed)btn|=map[i];}"
 "if(b[6]){l2=Math.round((b[6].value||0)*255);if(b[6].pressed||l2>30)btn|=B.L2;}"
 "if(b[7]){r2=Math.round((b[7].value||0)*255);if(b[7].pressed||r2>30)btn|=B.R2;}"
@@ -169,10 +174,14 @@ static const char PAGE[] =
 "d.setUint32(0,btn>>>0,true);"
 "d.setUint8(4,axis(a[0]||0));d.setUint8(5,axis(a[1]||0));"
 "d.setUint8(6,axis(a[2]||0));d.setUint8(7,axis(a[3]||0));"
-"d.setUint8(8,l2);d.setUint8(9,r2);"
-"try{ws.send(buf);}catch(e){}}"
-"requestAnimationFrame(loop);"
-"window.addEventListener('gamepadconnected',function(e){padEl.textContent=e.gamepad.id;});"
+"d.setUint8(8,l2);d.setUint8(9,r2);return buf;}"
+"function loop(){requestAnimationFrame(loop);"
+"var gp=navigator.getGamepads?navigator.getGamepads():[],seen={},i,k;"
+"for(i=0;i<gp.length;i++){var g=gp[i];if(!g||g.connected===false)continue;seen[g.index]=1;"
+"if(!P[g.index]){P[g.index]={name:short(g.id),ws:null,open:false};link(g.index);draw();}"
+"var p=P[g.index];if(p.open){try{p.ws.send(frame(g));}catch(e){}}}"
+"for(k in P)if(!seen[k])drop(k);}"
+"draw();requestAnimationFrame(loop);"
 "</script></body></html>";
 
 static const char NOTFOUND[] =
@@ -262,15 +271,62 @@ static void close_fd(int i)
 
 /* Takes the lowest free virtual-pad slot (USB takes them from the top, so the
  * two do not collide until all four are in use). -1 if none is free. */
-static int claim_slot(void)
+static int claim_slot(const char *name)
 {
+    char label[40];
     int s, got = -1;
 
+    /* "network", or "network:<name>": the menu shows the name, and that it
+     * came over the network. */
+    snprintf(label, sizeof label, name[0] ? "network:%s" : "network", name);
     pthread_mutex_lock(&g_slot_mtx);
     for (s = 0; s < MAX_PADS; s++)
-        if (vpad_add(s)) { vpad_label(s, "network"); got = s; break; }
+        if (vpad_add(s)) { vpad_label(s, label); got = s; break; }
     pthread_mutex_unlock(&g_slot_mtx);
     return got;
+}
+
+static int hexval(int c)
+{
+    return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? c - 'a' + 10 :
+           c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1;
+}
+
+/* The controller's name the page sends with the connection, /ws?n=<name>
+ * percent-encoded, into out (at most max - 1 bytes; "" if none). Control
+ * characters, quotes and backslashes are dropped, and a UTF-8 character cut
+ * by the length limit is left out whole. */
+static void name_from_request(const char *req, char *out, size_t max)
+{
+    const char *p = req, *eol = strstr(req, "\r\n");
+    size_t n = 0, i;
+
+    out[0] = '\0';
+    if (!eol) return;
+    while (p < eol && *p != ' ') p++;                   /* the path, on the request line */
+    for (p++; p < eol && *p != ' '; p++)
+        if ((*p == '?' || *p == '&') && strncmp(p + 1, "n=", 2) == 0) break;
+    if (p >= eol || *p == ' ') return;
+    for (p += 3; p < eol && *p != ' ' && *p != '&' && n < max - 1; p++) {
+        int c = (unsigned char)*p;
+        if (c == '%' && hexval(p[1]) >= 0 && hexval(p[2]) >= 0) {
+            c = hexval(p[1]) * 16 + hexval(p[2]);
+            p += 2;
+        } else if (c == '+') {
+            c = ' ';
+        }
+        if (c < 0x20 || c == 0x7F || c == '"' || c == '\\') continue;
+        out[n++] = (char)c;
+    }
+    i = n;                                              /* a cut UTF-8 sequence at the end */
+    while (i > 0 && ((unsigned char)out[i - 1] & 0xC0) == 0x80) i--;
+    if (i > 0 && (unsigned char)out[i - 1] >= 0xC0) {
+        unsigned lead = (unsigned char)out[i - 1];
+        size_t need = lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : 2;
+        if (n - (i - 1) < need) n = i - 1;
+    }
+    while (n > 0 && out[n - 1] == ' ') n--;
+    out[n] = '\0';
 }
 
 /* Reads the HTTP request head into buf (NUL-terminated). Returns its length,
@@ -310,9 +366,9 @@ static int header(const char *req, const char *name, char *out, size_t max)
     return 0;
 }
 
-static void run_pad(int fd, int i)
+static void run_pad(int fd, int i, const char *name)
 {
-    int slot = claim_slot();
+    int slot = claim_slot(name);
     pad_state st;
     uint8_t msg[256];
     int op, len, announced = 0;
@@ -324,7 +380,7 @@ static void run_pad(int fd, int i)
     pthread_mutex_lock(&g_mtx);
     g_cli[i].slot = slot;
     pthread_mutex_unlock(&g_mtx);
-    log_line("netpad: client on slot %d", slot);
+    log_line("netpad: client on slot %d%s%s", slot, name[0] ? ": " : "", name);
 
     while (g_run) {
         len = ws_recv(fd, &op, msg, sizeof msg);
@@ -353,7 +409,7 @@ static void *client_main(void *arg)
 {
     int i = (int)(intptr_t)arg;
     int fd;
-    char req[4096], key[128], accept_b64[40];
+    char req[4096], key[128], accept_b64[40], name[32];
 
     pthread_detach(pthread_self());
     pthread_mutex_lock(&g_mtx);
@@ -377,8 +433,9 @@ static void *client_main(void *arg)
                      "HTTP/1.1 101 Switching Protocols\r\n"
                      "Upgrade: websocket\r\nConnection: Upgrade\r\n"
                      "Sec-WebSocket-Accept: %s\r\n\r\n", accept_b64);
+        name_from_request(req, name, sizeof name);
         if (send_all(fd, resp, (size_t)n) == 0)
-            run_pad(fd, i);
+            run_pad(fd, i, name);
     } else if (strncmp(req, "GET / ", 6) == 0 || strncmp(req, "GET /index.html ", 16) == 0) {
         send_all(fd, PAGE, sizeof PAGE - 1);
     } else {
