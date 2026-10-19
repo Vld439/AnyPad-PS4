@@ -9,8 +9,10 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
-## Unreleased
+## 0.2.0-beta (18 October 2026 / 18 octubre 2026)
 
+- The DualShock 3 (PS3) by USB. It was left to the console with Sony's other pads, but the PS4 does not take it, so it did nothing. It is woken with its feature report 0xF2, read as report 0x01 (Select is the touchpad, L2 and R2 analog) and its player LED lit. Not yet tried with a real one.
+  El DualShock 3 (PS3) por USB. Se dejaba a la consola con los demás mandos de Sony, pero la PS4 no lo admite, así que no hacía nada. Se despierta con su informe 0xF2, se lee su informe 0x01 (Select es el panel, L2 y R2 analógicos) y se enciende su LED de jugador. Aún sin probar con uno real.
 - The network controller's page has a touch area that acts as the DualShock 4's touchpad: one or two fingers, each a new contact as the pad numbers them, and a button to press the touchpad. It goes to the first controller in the phone's list.
   La página del mando por red tiene una zona táctil que hace de panel del DualShock 4: uno o dos dedos, cada uno un contacto nuevo como los numera el mando, y un botón para pulsar el panel. Va al primer mando de la lista del móvil.
 - The touchpad's click over the network: a PlayStation controller's touchpad button (its SHARE stays SHARE), and the View button of the others, as by USB. Before, the network controller had no way to press it.
