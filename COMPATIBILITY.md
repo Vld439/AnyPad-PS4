@@ -14,6 +14,7 @@ Probado en una PS4 con firmware 13.52. ✅ probado · ⚠️ implementado, sin p
 | Xbox One / Series (GIP) controllers | class `ff/47/d0` | GIP, powered on by AnyPad | ⚠️ |
 | Other HID controllers with a profile (Switch Pro, DualShock 4 clones by other brands…) | see `src/profiles.c` | their profile | ⚠️ |
 | Any other HID gamepad | — | generic profile, from its report descriptor; buttons and axes can be fixed with `/data/anypad/maps/VVVV_PPPP.map` | ⚠️ |
+| Sony DualShock 3 (PS3) | `054c:0268` | HID, DualShock 3 profile (woken with its feature report `0xF2`; LEDs by SET_REPORT) | ⚠️ |
 | Sony DualShock 4, DualSense | `054c:…` | left to the console: it keeps them for itself and they work natively / se los deja a la consola: se los reserva y ya funcionan de forma nativa | ❌ |
 
 The GameSir G8 Plus picks its USB mode by itself when plugged in; both modes work. Its own PS4 mode is a native console controller and does not go through AnyPad.

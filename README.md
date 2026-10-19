@@ -34,6 +34,7 @@ Probado en una PS4 con firmware 13.52.
 | **GameSir G8 Plus** por USB, en su modo Xbox 360 o Switch | ✅ probado |
 | **Mando por red** desde el navegador de un móvil o PC | ✅ probado con un móvil real (GameSir y DualSense) |
 | Mandos de **Sony** (DualShock 4, DualSense) por USB a través de AnyPad | ❌ la consola se los reserva (y ya funcionan de forma nativa) |
+| **DualShock 3** (PS3) por USB | ⚠️ implementado, sin probar todavía en PS4 |
 | Mandos de **Sony** por el mando por red | ✅ probado (DualSense) |
 | Mandos por el **Bluetooth de la propia consola** | ❌ el sistema es el dueño de esa radio. Para jugar sin cable, usa el mando por red |
 
@@ -64,6 +65,7 @@ En `http://<IP de tu consola>:8095/`: los mandos conectados con su nombre y sus 
 
 | Problema | Qué hacer |
 | --- | --- |
+| El navegador busca en internet en vez de abrir la página | Escribe la dirección **completa, con `http://` delante**, en la barra de direcciones: `http://<IP de la consola>:8096/`. La IP es la **de la consola** (la de la notificación de AnyPad), no la del móvil, y AnyPad tiene que estar en marcha. |
 | La página no abre en el móvil | El móvil tiene que estar en la **misma red Wi-Fi** que la consola: no con datos móviles ni en una red de invitados (suelen aislar los dispositivos entre sí). Comprueba la dirección en la notificación de AnyPad. |
 | Antes funcionaba y ahora la página no abre | El router le dio **otra IP a la consola**. AnyPad lo detecta en unos segundos y muestra una notificación con las direcciones nuevas. Si la página del móvil no llega a la consola en 15 s, muestra un recuadro para escribir la IP nueva y te lleva a ella. Para que no cambie, **reserva una IP para la consola en tu router** (reserva DHCP o IP fija). |
 | La página dice «Esperando mandos» | Pulsa un botón del mando: los navegadores no muestran un mando hasta su primera pulsación. |
@@ -131,6 +133,7 @@ Tested on a PS4 with firmware 13.52.
 | **GameSir G8 Plus** by USB, in its Xbox 360 or Switch mode | ✅ tested |
 | **Network controller** from a phone or PC browser | ✅ tested with a real phone (GameSir and DualSense) |
 | **Sony** controllers (DualShock 4, DualSense) by USB through AnyPad | ❌ the console keeps them for itself (and they already work natively) |
+| **DualShock 3** (PS3) by USB | ⚠️ implemented, not tested on a PS4 yet |
 | **Sony** controllers through the network controller | ✅ tested (DualSense) |
 | Controllers over the **console's own Bluetooth** | ❌ the system owns that radio. For wireless play, use the network controller |
 
@@ -161,6 +164,7 @@ At `http://<your console's IP>:8095/`: the connected controllers with their name
 
 | Problem | What to do |
 | --- | --- |
+| The browser searches the web instead of opening the page | Type the **full address, with `http://` in front**, in the address bar: `http://<console IP>:8096/`. The IP is **the console's** (the one in AnyPad's notification), not the phone's, and AnyPad must be running. |
 | The page does not open on the phone | The phone must be on the **same Wi-Fi network** as the console: not on mobile data nor on a guest network (they usually keep devices apart). Check the address in AnyPad's notification. |
 | It worked before and now the page does not open | The router gave the console **another IP**. AnyPad notices within seconds and shows a notification with the new addresses. If the phone's page cannot reach the console for 15 s, it shows a box to type the new IP and takes you there. To keep it from changing, **reserve an IP for the console in your router** (DHCP reservation or a static IP). |
 | The page says «Esperando mandos…» (waiting for controllers) | Press a button on the controller: browsers do not show a controller until it is first pressed. |
