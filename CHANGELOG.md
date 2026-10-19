@@ -9,6 +9,11 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
+## 0.2.1-beta (18 October 2026 / 18 octubre 2026)
+
+- DualShock 3: Select is SHARE, the button in its place on the DualShock 4 (in 0.2.0-beta it was the touchpad).
+  DualShock 3: Select es SHARE, el botón que ocupa su lugar en el DualShock 4 (en la 0.2.0-beta era el panel táctil).
+
 ## 0.2.0-beta (18 October 2026 / 18 octubre 2026)
 
 - The DualShock 3 (PS3) by USB. It was left to the console with Sony's other pads, but the PS4 does not take it, so it did nothing. It is woken with its feature report 0xF2, read as report 0x01 (Select is the touchpad, L2 and R2 analog) and its player LED lit. Not yet tried with a real one.
