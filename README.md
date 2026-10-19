@@ -42,7 +42,7 @@ La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
 
 ## Uso
 
-1. **Descarga** `AnyPad-PS4-<versión>.elf` de [Releases](https://github.com/Vld439/AnyPad-PS4/releases), **cópialo en `/data/payloads`** de la consola y lánzalo.
+1. **Descarga** `AnyPad-PS4-<versión>.elf` de [Releases](https://github.com/Vld439/AnyPad-PS4/releases), **cópialo en `/data/payloads`** de la consola y lánzalo. Si usas **Payload Guest**, descarga el **`.bin`**: es el mismo archivo, con la extensión que esa app muestra.
 2. Aparece una notificación con dos direcciones, con la IP de tu consola: la del **menú** (`http://<IP de tu consola>:8095/`) y la del **mando por red** (`http://<IP de tu consola>:8096/`). AnyPad también se añade a la fila de multimedia, para abrir el menú desde la consola.
 3. **Por USB**: conecta el mando. En cuanto envía su primer dato, la consola recibe un DualShock 4 virtual.
 4. **Por red**: abre la dirección del mando por red en el navegador de un móvil o un PC conectado a la **misma red** que la consola. Conecta allí el mando (por cable o emparejado por Bluetooth con el móvil) y **pulsa un botón**. Toca la pantalla una vez: la página la mantiene encendida mientras juegas; baja el brillo para ahorrar batería. Puedes conectar **varios mandos al mismo móvil**: cada uno llega a la consola como un mando distinto, con su nombre.
@@ -141,7 +141,7 @@ The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 
 ## Use
 
-1. **Download** `AnyPad-PS4-<version>.elf` from [Releases](https://github.com/Vld439/AnyPad-PS4/releases), **copy it to `/data/payloads`** on the console and run it.
+1. **Download** `AnyPad-PS4-<version>.elf` from [Releases](https://github.com/Vld439/AnyPad-PS4/releases), **copy it to `/data/payloads`** on the console and run it. If you use **Payload Guest**, download the **`.bin`**: the same file, with the extension that app lists.
 2. A notification shows two addresses, with your console's IP: the **menu** (`http://<your console's IP>:8095/`) and the **network controller** (`http://<your console's IP>:8096/`). AnyPad also adds itself to the media row, to open the menu from the console.
 3. **By USB**: plug the controller in. As soon as it sends its first report, the console gets a virtual DualShock 4.
 4. **Over the network**: open the network controller's address in the browser of a phone or PC on the **same network** as the console. Connect the controller there (by cable, or paired to the phone by Bluetooth) and **press a button**. Tap the screen once: the page keeps it on while you play; turn the brightness down to save battery. You can connect **several controllers to the same phone**: each one reaches the console as a separate controller, with its name.

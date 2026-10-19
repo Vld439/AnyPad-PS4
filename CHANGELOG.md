@@ -9,6 +9,11 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
+## Unreleased
+
+- Every release also brings the same file as `.bin`, for Payload Guest, which only lists `.bin` payloads.
+  Cada versión trae también el mismo archivo como `.bin`, para Payload Guest, que solo muestra payloads `.bin`.
+
 ## 0.2.1-beta (18 October 2026 / 18 octubre 2026)
 
 - DualShock 3: Select is SHARE, the button in its place on the DualShock 4 (in 0.2.0-beta it was the touchpad).

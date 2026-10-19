@@ -24,9 +24,12 @@ STUB_LD ?= $(PS4_PAYLOAD_SDK)/bin/ld.lld
 STUB_CFLAGS := -ffreestanding -fno-builtin -nostdlib -fPIC -target x86_64-scie-ps4 -fno-plt \
                -fno-stack-protector -Wall -Werror -fvisibility-nodllstorageclass=default
 
+# The same file as .bin too: Payload Guest only lists .bin payloads (and
+# hands them to GoldHEN's BinLoader, which takes the ELF as it is).
 $(ELF): $(OBJS) $(STUBS)
 	@mkdir -p dist
 	$(CC) $(LDFLAGS) -L$(BUILD)/stubs -o $@ $(OBJS) $(LDLIBS)
+	cp $@ $(@:.elf=.bin)
 
 # The commit it is built from, in its log's first line (written by the Makefile).
 $(BUILD)/ps4_main.o: $(wildcard build/build_id.h)
