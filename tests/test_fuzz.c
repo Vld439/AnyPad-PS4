@@ -23,6 +23,7 @@ int main(void)
 {
     static const uint16_t ids[][2] = {
         { 0x054C, 0x05C4 }, { 0x054C, 0x0CE6 }, { 0x045E, 0x0B13 }, { 0x057E, 0x2009 },
+        { 0x054C, 0x0268 }, { 0x3537, 0x1097 },
     };
     unsigned char buf[600], ctx[PROFILE_CTX_MAX];
     long i;
@@ -50,7 +51,7 @@ int main(void)
                 generic_profile.parse(ctx, rep, m, &st);
             }
         }
-        for (p = 0; p < 4; p++) {
+        for (p = 0; p < (int)(sizeof ids / sizeof ids[0]); p++) {
             const pad_profile *prof = profile_find(ids[p][0], ids[p][1]);
             memset(ctx, 0, sizeof ctx);
             if (prof->setup) prof->setup(ctx, ids[p][0], ids[p][1]);

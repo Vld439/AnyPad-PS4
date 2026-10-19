@@ -944,18 +944,90 @@ static int gamesir_parse(void *ctx, const uint8_t *r, int n, pad_state *st)
     return PARSE_OK;
 }
 
+/* ---- DualShock 3 (USB) --------------------------------------------------
+ *
+ * The PS4 does not take it, so it is not left to the console as Sony's other
+ * pads are. Silent until asked for its feature report 0xF2 (done when it is
+ * opened). Report 0x01, as Linux's hid-sony reads it:
+ *   [2] Select L3 R3 Start Up Right Down Left   [3] L2 R2 L1 R1 Tri Cir Cross Sq
+ *   [4] PS   [6..9] LX LY RX RY   [18] [19] L2 R2 pressure
+ * Select is the touchpad, as View and Back are on the other pads. Output
+ * report 0x01 (36 bytes, by SET_REPORT): rumble, then the player LEDs. */
+
+static const uint16_t ds3_ids[][2] = {
+    { 0x054C, 0x0268 },     /* DualShock 3 / Sixaxis */
+};
+
+static int ds3_parse(void *ctx, const uint8_t *r, int n, pad_state *st)
+{
+    uint32_t b = 0;
+
+    (void)ctx;
+    if (n < 20 || r[0] != 0x01) return PARSE_NONE;
+    if (r[2] & 0x01) b |= PAD_TOUCHPAD;     /* Select */
+    if (r[2] & 0x02) b |= PAD_L3;
+    if (r[2] & 0x04) b |= PAD_R3;
+    if (r[2] & 0x08) b |= PAD_OPTIONS;      /* Start */
+    if (r[2] & 0x10) b |= PAD_UP;
+    if (r[2] & 0x20) b |= PAD_RIGHT;
+    if (r[2] & 0x40) b |= PAD_DOWN;
+    if (r[2] & 0x80) b |= PAD_LEFT;
+    if (r[3] & 0x01) b |= PAD_L2;
+    if (r[3] & 0x02) b |= PAD_R2;
+    if (r[3] & 0x04) b |= PAD_L1;
+    if (r[3] & 0x08) b |= PAD_R1;
+    if (r[3] & 0x10) b |= PAD_TRIANGLE;
+    if (r[3] & 0x20) b |= PAD_CIRCLE;
+    if (r[3] & 0x40) b |= PAD_CROSS;
+    if (r[3] & 0x80) b |= PAD_SQUARE;
+    if (r[4] & 0x01) b |= PAD_PS;
+    st->buttons = b;
+    st->lx = r[6];
+    st->ly = r[7];
+    st->rx = r[8];
+    st->ry = r[9];
+    st->l2 = r[18];
+    st->r2 = r[19];
+    return PARSE_FULL;
+}
+
+static int ds3_output(void *ctx, const pad_output *out, uint8_t *buf, int max)
+{
+    static const uint8_t led[5] = { 0xFF, 0x27, 0x10, 0x00, 0x32 };    /* always on */
+    int i;
+
+    (void)ctx;
+    if (max < 36) return 0;
+    memset(buf, 0, 36);
+    buf[0] = 0x01;
+    buf[2] = out->weak ? 0xFF : 0;          /* right (small) motor: duration, on */
+    buf[3] = out->weak ? 1 : 0;
+    buf[4] = out->strong ? 0xFF : 0;        /* left (big) motor: duration, force */
+    buf[5] = out->strong;
+    buf[10] = (uint8_t)(out->player >= 1 && out->player <= 4 ? 1 << out->player : 0x02);
+    for (i = 0; i < 4; i++) memcpy(buf + 11 + i * 5, led, sizeof led);
+    return 36;
+}
+
+/* Lights its player LED once it is awake, so it stops blinking. */
+static int ds3_init(void *ctx, int step, const pad_output *out, uint8_t *buf, int max)
+{
+    return step == 0 ? ds3_output(ctx, out, buf, max) : 0;
+}
+
 /* ---- the table --------------------------------------------------------- */
 
 #define IDS(t) t, (int)(sizeof t / sizeof t[0])
 
 static const pad_profile k_profiles[] = {
-    { "DualShock 4", IDS(ds4_ids),    ds4_parse,    ds4_output,  ds4_init,    1, 0, NULL, 0x05 },
-    { "DualSense",   IDS(ds5_ids),    ds5_parse,    ds5_output,  ds5_init,    1, 0, NULL, 0 },
-    { "Xbox",        IDS(xbox_ids),   xbox_parse,   xbox_output, NULL,        0, 0, xbox_setup, 0 },
-    { "Switch Pro",  IDS(switch_ids), switch_parse, NULL,        switch_init, 1, 0, NULL, 0 },
-    { "Joy-Con",     IDS(joycon_ids), joycon_parse, NULL,        joycon_init, 1, 0, joycon_setup, 0 },
-    { "Wii",         IDS(wii_ids),    wii_parse,    NULL,        wii_init,    1, 0, NULL, 0 },
-    { "GameSir",     IDS(gamesir_ids),gamesir_parse,NULL,        NULL,        0, 0, NULL, 0 },
+    { "DualShock 4", IDS(ds4_ids),    ds4_parse,    ds4_output,  ds4_init,    1, 0, NULL, 0x05, 0 },
+    { "DualSense",   IDS(ds5_ids),    ds5_parse,    ds5_output,  ds5_init,    1, 0, NULL, 0, 0 },
+    { "Xbox",        IDS(xbox_ids),   xbox_parse,   xbox_output, NULL,        0, 0, xbox_setup, 0, 0 },
+    { "Switch Pro",  IDS(switch_ids), switch_parse, NULL,        switch_init, 1, 0, NULL, 0, 0 },
+    { "Joy-Con",     IDS(joycon_ids), joycon_parse, NULL,        joycon_init, 1, 0, joycon_setup, 0, 0 },
+    { "Wii",         IDS(wii_ids),    wii_parse,    NULL,        wii_init,    1, 0, NULL, 0, 0 },
+    { "GameSir",     IDS(gamesir_ids),gamesir_parse,NULL,        NULL,        0, 0, NULL, 0, 0 },
+    { "DualShock 3", IDS(ds3_ids),    ds3_parse,    ds3_output,  ds3_init,    0, 0, NULL, 0xF2, 1 },
 };
 
 const pad_profile *profile_find(uint16_t vid, uint16_t pid)

@@ -339,6 +339,45 @@ static void test_generic(void)
     }
 }
 
+static void test_ds3(void)
+{
+    const pad_profile *p = profile_find(0x054C, 0x0268);
+    unsigned char ctx[PROFILE_CTX_MAX], r[49], out[64];
+    pad_output o = { 0, 0, 0, 0, 0, 3 };
+    pad_state st;
+    int n;
+
+    printf("DualShock 3 (USB): report 0x01, Select as the touchpad, LEDs by SET_REPORT\n");
+    CHECK(p && strcmp(p->name, "DualShock 3") == 0);
+    CHECK(p && p->wake_feature == 0xF2 && p->out_control == 1);
+    if (!p) return;
+    memset(ctx, 0, sizeof ctx);
+    memset(r, 0, sizeof r);
+    r[0] = 0x01;
+    r[2] = 0x01 | 0x08 | 0x10;              /* Select, Start, Up */
+    r[3] = 0x40 | 0x04;                     /* Cross, L1 */
+    r[4] = 0x01;                            /* PS */
+    r[6] = 0x00; r[7] = 0xFF; r[8] = 0x80; r[9] = 0x7F;
+    r[18] = 0x40; r[19] = 0xC0;             /* L2, R2 pressure */
+    pad_state_reset(&st);
+    CHECK(p->parse(ctx, r, sizeof r, &st) == PARSE_FULL);
+    CHECK(st.buttons == (PAD_TOUCHPAD | PAD_OPTIONS | PAD_UP | PAD_CROSS | PAD_L1 | PAD_PS));
+    CHECK(st.lx == 0x00 && st.ly == 0xFF && st.rx == 0x80 && st.ry == 0x7F);
+    CHECK(st.l2 == 0x40 && st.r2 == 0xC0);
+    r[0] = 0x02;
+    CHECK(p->parse(ctx, r, sizeof r, &st) == PARSE_NONE);    /* not its input report */
+    CHECK(p->parse(ctx, r, 10, &st) == PARSE_NONE);          /* too short */
+
+    /* The wake-up: one step, the player LED (player 3: bit 3), then done. */
+    n = p->init_report(ctx, 0, &o, out, sizeof out);
+    CHECK(n == 36 && out[0] == 0x01 && out[10] == 0x08);
+    CHECK(out[11] == 0xFF && out[12] == 0x27 && out[15] == 0x32);
+    CHECK(p->init_report(ctx, 1, &o, out, sizeof out) == 0);
+    o.strong = 200; o.weak = 10;
+    n = p->build_output(ctx, &o, out, sizeof out);
+    CHECK(n == 36 && out[3] == 1 && out[5] == 200);
+}
+
 int main(void)
 {
     test_crc();
@@ -348,6 +387,7 @@ int main(void)
     test_xbox();
     test_switch();
     test_generic();
+    test_ds3();
     printf(g_fail ? "%d check(s) failed\n" : "all profile checks passed\n", g_fail);
     return g_fail != 0;
 }

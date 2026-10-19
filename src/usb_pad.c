@@ -529,9 +529,14 @@ static int out_send(usb_dev_t *d, const uint8_t *p, int len)
     uint8_t buf[REPORT_MAX];
     int done = 0, r;
 
-    if (!d->ep_out || len <= 0 || len > (int)sizeof buf) return 0;
+    if (len <= 0 || len > (int)sizeof buf) return 0;
     memcpy(buf, p, (size_t)len);
-    r = U.intr(d->h, d->ep_out, buf, len, &done, 200);
+    if (d->profile && d->profile->out_control)          /* HID SET_REPORT, output, its report id */
+        r = U.ctrl(d->h, 0x21, 0x09, (uint16_t)(0x0200 | buf[0]), (uint16_t)d->iface, buf, (uint16_t)len, 200);
+    else if (!d->ep_out)
+        return 0;
+    else
+        r = U.intr(d->h, d->ep_out, buf, len, &done, 200);
     if (r < 0 && d->errors++ < 5) log_line("usb_pad: %s: send %#x", d->path, (unsigned)r);
     return r >= 0;
 }
@@ -607,7 +612,9 @@ static int probe_usbd(usb_dev_t *d, usbd_dev *dev)
     d->vid = le16(dd + 8);
     d->pid = le16(dd + 10);
     if (dd[4] == 0x09) return 0;                    /* hub */
-    if (d->vid == 0x054C) {
+    /* Sony's pads are the console's (it keeps their data endpoints), except
+     * the DualShock 3, which the PS4 does not take. */
+    if (d->vid == 0x054C && d->pid != 0x0268) {
         log_line("usb_pad: %s (%04x:%04x): Sony pad, left to the console", d->path, d->vid, d->pid);
         return 0;
     }
@@ -677,6 +684,15 @@ static int probe_usbd(usb_dev_t *d, usbd_dev *dev)
         U.close(d->h);
         d->h = NULL;
         return 0;
+    }
+    /* A pad silent until asked for a feature report (the DualShock 3: 0xF2):
+     * HID GET_REPORT on the control channel. */
+    if (d->profile && d->profile->wake_feature) {
+        uint8_t feat[64];
+
+        r = U.ctrl(d->h, 0xA1, 0x01, (uint16_t)(0x0300 | d->profile->wake_feature), (uint16_t)d->iface,
+                   feat, 17, 500);
+        log_line("usb_pad: %s: feature report %#x asked: %d", d->path, d->profile->wake_feature, r);
     }
     pthread_mutex_init(&d->lock, NULL);
     if (pthread_create(&d->thread, NULL, reader, d) != 0) {

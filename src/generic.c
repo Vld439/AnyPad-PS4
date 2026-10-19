@@ -518,5 +518,5 @@ static int generic_parse(void *ctx, const uint8_t *rep, int len, pad_state *st)
 }
 
 const pad_profile generic_profile = {
-    "Generic HID", NULL, 0, generic_parse, NULL, NULL, 0, 0, NULL, 0,
+    "Generic HID", NULL, 0, generic_parse, NULL, NULL, 0, 0, NULL, 0, 0,
 };

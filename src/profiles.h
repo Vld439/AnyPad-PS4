@@ -53,6 +53,9 @@ typedef struct pad_profile {
      * the repeat rounds, for pads that only switch to their full report
      * then, as some DualShock 4 clones do. 0: none. */
     uint8_t wake_feature;
+    /* Output reports go as HID SET_REPORT on the control channel, not to the
+     * interrupt OUT endpoint (the DualShock 3 by USB). */
+    uint8_t out_control;
 } pad_profile;
 
 const pad_profile *profile_find(uint16_t vid, uint16_t pid);
