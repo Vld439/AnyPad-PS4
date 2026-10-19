@@ -11,6 +11,8 @@ project and in this repository's git history.
 
 ## Unreleased
 
+- A new icon of its own (in the media row and the README), instead of a photo of Sony's controller; the README says the project is unofficial.
+  Un icono propio (en la fila de multimedia y el README), en vez de una foto del mando de Sony; el README dice que el proyecto no es oficial.
 - Every release also brings the same file as `.bin`, for Payload Guest, which only lists `.bin` payloads.
   Cada versión trae también el mismo archivo como `.bin`, para Payload Guest, que solo muestra payloads `.bin`.
 

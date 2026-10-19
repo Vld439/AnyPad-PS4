@@ -10,6 +10,9 @@
 AnyPad PS4 es un port, exclusivo para PS4, de [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-ps5) de **elmonomalvad0**.
 AnyPad PS4 is a PS4-only port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-ps5) by **elmonomalvad0**.
 
+*Proyecto no oficial, sin relación con Sony Interactive Entertainment. PlayStation, PS4, DualShock y DualSense son marcas de Sony Interactive Entertainment.*
+*Unofficial project, not affiliated with Sony Interactive Entertainment. PlayStation, PS4, DualShock and DualSense are trademarks of Sony Interactive Entertainment.*
+
 ---
 
 <a name="español"></a>
