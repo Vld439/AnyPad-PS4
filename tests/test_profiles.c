@@ -347,7 +347,7 @@ static void test_ds3(void)
     pad_state st;
     int n;
 
-    printf("DualShock 3 (USB): report 0x01, Select as the touchpad, LEDs by SET_REPORT\n");
+    printf("DualShock 3 (USB): report 0x01, Select as SHARE, LEDs by SET_REPORT\n");
     CHECK(p && strcmp(p->name, "DualShock 3") == 0);
     CHECK(p && p->wake_feature == 0xF2 && p->out_control == 1);
     if (!p) return;
@@ -361,7 +361,7 @@ static void test_ds3(void)
     r[18] = 0x40; r[19] = 0xC0;             /* L2, R2 pressure */
     pad_state_reset(&st);
     CHECK(p->parse(ctx, r, sizeof r, &st) == PARSE_FULL);
-    CHECK(st.buttons == (PAD_TOUCHPAD | PAD_OPTIONS | PAD_UP | PAD_CROSS | PAD_L1 | PAD_PS));
+    CHECK(st.buttons == (PAD_CREATE | PAD_OPTIONS | PAD_UP | PAD_CROSS | PAD_L1 | PAD_PS));
     CHECK(st.lx == 0x00 && st.ly == 0xFF && st.rx == 0x80 && st.ry == 0x7F);
     CHECK(st.l2 == 0x40 && st.r2 == 0xC0);
     r[0] = 0x02;

@@ -951,7 +951,7 @@ static int gamesir_parse(void *ctx, const uint8_t *r, int n, pad_state *st)
  * opened). Report 0x01, as Linux's hid-sony reads it:
  *   [2] Select L3 R3 Start Up Right Down Left   [3] L2 R2 L1 R1 Tri Cir Cross Sq
  *   [4] PS   [6..9] LX LY RX RY   [18] [19] L2 R2 pressure
- * Select is the touchpad, as View and Back are on the other pads. Output
+ * Select is SHARE, the button in its place on the DualShock 4. Output
  * report 0x01 (36 bytes, by SET_REPORT): rumble, then the player LEDs. */
 
 static const uint16_t ds3_ids[][2] = {
@@ -964,7 +964,7 @@ static int ds3_parse(void *ctx, const uint8_t *r, int n, pad_state *st)
 
     (void)ctx;
     if (n < 20 || r[0] != 0x01) return PARSE_NONE;
-    if (r[2] & 0x01) b |= PAD_TOUCHPAD;     /* Select */
+    if (r[2] & 0x01) b |= PAD_CREATE;       /* Select: SHARE */
     if (r[2] & 0x02) b |= PAD_L3;
     if (r[2] & 0x04) b |= PAD_R3;
     if (r[2] & 0x08) b |= PAD_OPTIONS;      /* Start */
