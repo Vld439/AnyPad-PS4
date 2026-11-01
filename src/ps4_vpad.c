@@ -122,6 +122,9 @@ static long g_t_add, g_t_match, g_next_add;
 static int g_matches;
 static uint64_t g_match_dev;
 static int g_log_fd = -1, g_log_is_dev;
+static int g_log_fd2 = -1;   /* /dev/klog, only when the server sends nothing */
+static long g_t_open;
+static int g_log_got;
 static char g_line[LINE_MAX_LEN];
 static size_t g_line_len;
 
@@ -159,6 +162,10 @@ static int log_source_open(void)
     struct sockaddr_in sin;
     int fd = socket(AF_INET, SOCK_STREAM, 0);
 
+    g_t_open = now_ms();
+    g_log_got = 0;
+    g_log_fd2 = -1;
+
     if (fd >= 0) {
         memset(&sin, 0, sizeof sin);
         sin.sin_family = AF_INET;
@@ -183,7 +190,8 @@ static int log_source_open(void)
 static void log_source_close(void)
 {
     if (g_log_fd >= 0) close(g_log_fd);
-    g_log_fd = -1;
+    if (g_log_fd2 >= 0) close(g_log_fd2);
+    g_log_fd = g_log_fd2 = -1;
     g_line_len = 0;
 }
 
@@ -218,33 +226,59 @@ static uint64_t virtual_device_in(const char *line)
     return hex_after(line, "DeviceId");
 }
 
-/* Reads what the log has, a bounded amount per call. */
+/* The bytes of a read: lines are cut and looked at. */
+static void log_feed(const char *buf, ssize_t n)
+{
+    ssize_t i;
+
+    for (i = 0; i < n; i++) {
+        uint64_t dev;
+        if (buf[i] != '\n' && g_line_len < sizeof g_line - 1) {
+            g_line[g_line_len++] = buf[i];
+            continue;
+        }
+        g_line[g_line_len] = '\0';
+        g_line_len = 0;
+        if (g_log_is_dev || strstr(g_line, "DEVICE_ADDED") || strstr(g_line, "MBUS")) {
+            log_line("klog: %s", g_line);
+        }
+        dev = virtual_device_in(g_line);
+        if (!dev || g_pending < 0) continue;
+        if (g_matches == 0) {
+            g_match_dev = dev;
+            g_t_match = now_ms();
+        }
+        if (g_matches == 0 || dev != g_match_dev) g_matches++;
+    }
+}
+
+/* Reads what the log has, a bounded amount per call. A HEN's log server takes
+ * the connection and hands out nothing when another payload got the log first
+ * (PS4Mount keeps it): if no line comes in a second and a half, the device is
+ * opened too, for this identification only, and both are read. */
 static void log_source_read(void)
 {
     char buf[1024];
-    int rounds;
+    int rounds, k;
 
-    for (rounds = 0; rounds < 8 && g_log_fd >= 0; rounds++) {
-        ssize_t n = read(g_log_fd, buf, sizeof buf), i;
-        if (n <= 0) return;
-        for (i = 0; i < n; i++) {
-            uint64_t dev;
-            if (buf[i] != '\n' && g_line_len < sizeof g_line - 1) {
-                g_line[g_line_len++] = buf[i];
-                continue;
-            }
-            g_line[g_line_len] = '\0';
-            g_line_len = 0;
-            if (g_log_is_dev || strstr(g_line, "DEVICE_ADDED") || strstr(g_line, "MBUS")) {
-                log_line("klog: %s", g_line);
-            }
-            dev = virtual_device_in(g_line);
-            if (!dev || g_pending < 0) continue;
-            if (g_matches == 0) {
-                g_match_dev = dev;
-                g_t_match = now_ms();
-            }
-            if (g_matches == 0 || dev != g_match_dev) g_matches++;
+    if (g_log_fd2 < 0 && g_matches == 0 && g_pending >= 0 && now_ms() - g_t_add > 1000) {
+        /* the server hands out its lines to one reader (PS4Mount keeps it): the
+         * line of the device just added never came, so the device is read too,
+         * for the rest of this identification */
+        g_log_fd2 = open("/dev/klog", O_RDONLY | O_NONBLOCK);
+        if (g_log_fd2 >= 0) {
+            g_log_is_dev = 1;
+            log_line("vpad: no device line from the log server, /dev/klog read too");
+        }
+    }
+    for (k = 0; k < 2; k++) {
+        int fd = k ? g_log_fd2 : g_log_fd;
+        if (fd < 0) continue;
+        for (rounds = 0; rounds < 8; rounds++) {
+            ssize_t n = read(fd, buf, sizeof buf);
+            if (n <= 0) break;
+            g_log_got += (int)n;
+            log_feed(buf, n);
         }
     }
 }
