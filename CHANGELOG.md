@@ -9,6 +9,11 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
+## 0.2.2-beta (31 October 2026 / 31 de octubre de 2026)
+
+- **A virtual pad is identified with PS4Mount loaded too.** GoldHEN's log server hands its lines to one reader, and PS4Mount keeps the kernel log: the `DEVICE_ADDED` line of the pad never arrived and the pad was left unidentified (`0 candidates`). When no device line comes in the first second of an identification, `/dev/klog` is opened as well and both are read, for the rest of that identification only.
+  **Un pad virtual se identifica también con PS4Mount cargado.** El servidor de log de GoldHEN entrega sus líneas a un solo lector y PS4Mount se queda con el log del kernel: la línea `DEVICE_ADDED` del pad nunca llegaba y el pad quedaba sin identificar (`0 candidates`). Si en el primer segundo de una identificación no llega la línea del dispositivo, se abre también `/dev/klog` y se leen los dos, solo durante esa identificación.
+
 ## Unreleased
 
 - A new icon of its own (in the media row and the README), instead of a photo of Sony's controller; the README says the project is unofficial.
