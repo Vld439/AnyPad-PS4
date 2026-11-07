@@ -71,6 +71,9 @@ typedef struct {
     long next_wake;
     int hs_step, init_step, init_rounds, init_done, full;   /* HID profiles' wake-up */
     int rx_logged, errors;
+    uint8_t rum_strong, rum_weak;   /* the rumble last sent */
+    long rum_sent;                  /* ms; 0: none sent yet */
+    int rum_logged;
     usbd_handle *h;
     pthread_t thread;
     int thread_on;
@@ -811,12 +814,83 @@ void usb_pad_poll(usb_pad_mgr_t *mgr, long now)
         if (mgr->devs[i].active) poll_dev(mgr, &mgr->devs[i], now);
 }
 
+/* ---- rumble --------------------------------------------------------------- */
+
+#define RUMBLE_REFRESH_MS 1000      /* a running rumble is resent this often */
+#define RUMBLE_LOG_MAX 10
+
+/* The rumble report for `d`, or 0 if it has none. Not before the wake-up
+ * sequence, which the reader thread sends, is done. */
+static int rumble_report(usb_dev_t *d, uint8_t strong, uint8_t weak, uint8_t *buf, int max)
+{
+    if (d->kind == KIND_X360) {
+        /* 00 08 00 <large> <small> 00 00 00 */
+        if (max < 8) return 0;
+        memset(buf, 0, 8);
+        buf[1] = 0x08;
+        buf[3] = strong;
+        buf[4] = weak;
+        return 8;
+    }
+    if (d->kind == KIND_HID && d->profile && d->profile->build_output) {
+        pad_output o;
+
+        if (d->profile->init_report && !d->init_done) return 0;
+        memset(&o, 0, sizeof o);
+        o.strong = strong;
+        o.weak = weak;
+        o.player = (uint8_t)(MAX_PADS - d->slot);
+        return d->profile->build_output(d->pctx.bytes, &o, buf, max);
+    }
+    return 0;
+}
+
+static void rumble_send(usb_dev_t *d, uint8_t strong, uint8_t weak, long now)
+{
+    uint8_t buf[REPORT_MAX];
+    int n;
+
+    memset(buf, 0, sizeof buf);
+    n = rumble_report(d, strong, weak, buf, sizeof buf);
+    if (n <= 0) return;
+    if (!out_send(d, buf, n)) return;
+    if ((strong != d->rum_strong || weak != d->rum_weak || !d->rum_sent) && d->rum_logged < RUMBLE_LOG_MAX) {
+        log_line("usb_pad: %s: rumble %u/%u", d->path, strong, weak);
+        d->rum_logged++;
+    }
+    d->rum_strong = strong;
+    d->rum_weak = weak;
+    d->rum_sent = now ? now : 1;
+}
+
+void usb_pad_rumble(usb_pad_mgr_t *mgr, int slot, uint8_t strong, uint8_t weak, long now)
+{
+    int i, refresh;
+
+    if (!mgr) return;
+    for (i = 0; i < MAX_USB_DEVS; i++) {
+        usb_dev_t *d = &mgr->devs[i];
+
+        if (!d->active || !d->announced || d->slot != slot || d->gone) continue;
+        refresh = d->profile && d->profile->rumble_refresh_ms ? d->profile->rumble_refresh_ms : RUMBLE_REFRESH_MS;
+        if (d->rum_sent && strong == d->rum_strong && weak == d->rum_weak &&
+            (!(strong || weak) || now - d->rum_sent < refresh))
+            continue;
+        rumble_send(d, strong, weak, now);
+    }
+}
+
 void usb_pad_close(usb_pad_mgr_t *mgr)
 {
     int i;
 
     if (!mgr) return;
-    for (i = 0; i < MAX_USB_DEVS; i++)
-        if (mgr->devs[i].active) drop(mgr, &mgr->devs[i], "closed");
+    for (i = 0; i < MAX_USB_DEVS; i++) {
+        usb_dev_t *d = &mgr->devs[i];
+
+        if (!d->active) continue;
+        if (d->rum_strong || d->rum_weak) rumble_send(d, 0, 0, now_ms());
+        drop(mgr, d, "closed");
+    }
     free(mgr);
 }

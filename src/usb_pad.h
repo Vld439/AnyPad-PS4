@@ -12,6 +12,10 @@ usb_pad_mgr_t *usb_pad_init(usb_pad_feed_fn on_feed,
                              usb_pad_attach_fn on_attach,
                              usb_pad_detach_fn on_detach);
 void usb_pad_poll(usb_pad_mgr_t *mgr, long now);
+
+/* Rumble for the USB pad on `slot` (0..255 per motor): sent on change and
+ * refreshed while on. */
+void usb_pad_rumble(usb_pad_mgr_t *mgr, int slot, uint8_t strong, uint8_t weak, long now);
 void usb_pad_close(usb_pad_mgr_t *mgr);
 
 #endif
