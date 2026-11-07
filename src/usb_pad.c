@@ -83,7 +83,7 @@ typedef struct {
 
 struct usb_pad_mgr_s {
     usb_dev_t devs[MAX_USB_DEVS];
-    char seen[MAX_SEEN][32];        /* devices looked at and left alone */
+    char seen[MAX_SEEN][48];        /* devices left alone, as path/vid:pid */
     usb_pad_feed_fn on_feed;
     usb_pad_attach_fn on_attach;
     usb_pad_detach_fn on_detach;
@@ -707,7 +707,7 @@ static int probe_usbd(usb_dev_t *d, usbd_dev *dev)
 
 static void scan_usb(usb_pad_mgr_t *mgr)
 {
-    char keys[32][32];
+    char keys[32][48], paths[32][32];
     usbd_dev **list = NULL;
     long n, i;
     int k, nkeys = 0;
@@ -720,13 +720,24 @@ static void scan_usb(usb_pad_mgr_t *mgr)
     }
     for (i = 0; i < n; i++) {
         usb_dev_t *d;
-        char path[32];
+        char path[32], key[48];
+        uint8_t dd[64];
 
         snprintf(path, sizeof path, "usb:%u.%u", U.bus(list[i]), U.addr(list[i]));
-        if (nkeys < 32) snprintf(keys[nkeys++], sizeof keys[0], "%s", path);
+        /* A device can come back at the same address with other ids. */
+        memset(dd, 0, sizeof dd);
+        if (U.get_desc(list[i], dd) >= 0)
+            snprintf(key, sizeof key, "%s/%04x:%04x", path, le16(dd + 8), le16(dd + 10));
+        else
+            snprintf(key, sizeof key, "%s", path);
+        if (nkeys < 32) {
+            snprintf(paths[nkeys], sizeof paths[0], "%s", path);
+            snprintf(keys[nkeys++], sizeof keys[0], "%s", key);
+        }
+        if (seen(mgr, key)) continue;
         if (!(d = new_dev(mgr, path))) continue;
         if (!probe_usbd(d, list[i])) {
-            mark_seen(mgr, path);
+            mark_seen(mgr, key);
             continue;
         }
         d->active = 1;
@@ -747,7 +758,7 @@ static void scan_usb(usb_pad_mgr_t *mgr)
         int there = 0;
 
         if (!d->active) continue;
-        for (k = 0; k < nkeys && !there; k++) there = strcmp(keys[k], d->path) == 0;
+        for (k = 0; k < nkeys && !there; k++) there = strcmp(paths[k], d->path) == 0;
         if (!there) drop(mgr, d, "disconnected");
     }
 }
