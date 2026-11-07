@@ -37,6 +37,10 @@ int  vpad_get(int slot, char *label, size_t max, pad_state *st);
 
 void vpad_update(int slot, const pad_state *st);
 
+/* The rumble asked of a live slot (0..255 per motor). Returns 0 if the slot
+ * is not live or the read fails. */
+int  vpad_rumble(int slot, uint8_t *strong, uint8_t *weak);
+
 /* Holds PS on the virtual pad for `ms` milliseconds (the menu's PS button).
  * 0 if the slot has no live virtual pad. */
 int  vpad_press_ps(int slot, int ms);
