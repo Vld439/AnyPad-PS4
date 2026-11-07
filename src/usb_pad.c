@@ -360,6 +360,14 @@ static int parse_gip(usb_dev_t *d, const uint8_t *r, int n, pad_state *st)
     return PARSE_OK;
 }
 
+/* Asks for the virtual pad of a pad that has sent input. */
+static void announce(usb_pad_mgr_t *mgr, usb_dev_t *d)
+{
+    d->announced = 1;
+    log_line("usb_pad: %s speaks, virtual pad on slot %d", d->path, d->slot);
+    if (mgr->on_attach) mgr->on_attach(d->slot, d->profile ? d->profile->name : k_kind[d->kind]);
+}
+
 static void handle(usb_pad_mgr_t *mgr, usb_dev_t *d, const uint8_t *r, int n)
 {
     pad_state st = d->st;
@@ -384,11 +392,7 @@ static void handle(usb_pad_mgr_t *mgr, usb_dev_t *d, const uint8_t *r, int n)
     d->got_input = 1;
     d->st = st;
     if (!d->announced && now_ms() - d->opened_at < SETTLE_MS) return;
-    if (!d->announced) {
-        d->announced = 1;
-        log_line("usb_pad: %s speaks, virtual pad on slot %d", d->path, d->slot);
-        if (mgr->on_attach) mgr->on_attach(d->slot, d->profile ? d->profile->name : k_kind[d->kind]);
-    }
+    if (!d->announced) announce(mgr, d);
     if (mgr->on_feed) mgr->on_feed(d->slot, &d->st);
 }
 
@@ -756,7 +760,6 @@ static void poll_dev(usb_pad_mgr_t *mgr, usb_dev_t *d, long now)
 {
     uint8_t buf[REPORT_MAX];
 
-    (void)now;
     for (;;) {
         int n = 0;
 
@@ -771,7 +774,16 @@ static void poll_dev(usb_pad_mgr_t *mgr, usb_dev_t *d, long now)
         if (n <= 0) break;
         handle(mgr, d, buf, n);
     }
-    if (d->gone) drop(mgr, d, "stopped answering");
+    if (d->gone) {
+        drop(mgr, d, "stopped answering");
+        return;
+    }
+    /* Pads that report only changes may have sent their only report while
+     * the console was settling. */
+    if (!d->announced && d->got_input && now - d->opened_at >= SETTLE_MS) {
+        announce(mgr, d);
+        if (mgr->on_feed) mgr->on_feed(d->slot, &d->st);
+    }
 }
 
 static void backend_init(void)
