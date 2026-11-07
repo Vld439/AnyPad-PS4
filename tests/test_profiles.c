@@ -337,6 +337,27 @@ static void test_generic(void)
         static const unsigned char junk[] = { 0x05, 0x01, 0x09 };
         CHECK(!generic_setup(ctx, junk, sizeof junk, 1, 2, NULL));
     }
+    {   /* A mouse: five buttons, X, Y and a wheel. Not a pad. */
+        static const unsigned char mouse[] = {
+            0x05, 0x01, 0x09, 0x02, 0xA1, 0x01,             /* Generic Desktop, Mouse, App */
+            0x09, 0x01, 0xA1, 0x00,                         /* Pointer, Physical */
+            0x05, 0x09, 0x19, 0x01, 0x29, 0x05, 0x15, 0x00, 0x25, 0x01,
+            0x95, 0x05, 0x75, 0x01, 0x81, 0x02,             /* buttons 1-5 */
+            0x95, 0x01, 0x75, 0x03, 0x81, 0x03,             /* padding */
+            0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x09, 0x38,
+            0x15, 0x81, 0x25, 0x7F, 0x75, 0x08, 0x95, 0x03, 0x81, 0x06,    /* X Y wheel, relative */
+            0xC0, 0xC0,
+        };
+        CHECK(!generic_setup(ctx, mouse, sizeof mouse, 0x1234, 0x0001, NULL));
+    }
+    {   /* A pad whose descriptor also has a keyboard collection: still a pad. */
+        unsigned char both[sizeof k_desc + 8];
+        static const unsigned char kbd[] = { 0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0xC0 };
+
+        memcpy(both, k_desc, sizeof k_desc);
+        memcpy(both + sizeof k_desc, kbd, sizeof kbd);
+        CHECK(generic_setup(ctx, both, (int)(sizeof k_desc + sizeof kbd), 0x1234, 0x5678, NULL));
+    }
 }
 
 static void test_ds3(void)
