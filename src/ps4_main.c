@@ -105,6 +105,20 @@ static void on_usb_detach(int slot)
     vpad_remove(slot);
 }
 
+/* Passes the virtual pads' rumble on to the USB pads. */
+#define RUMBLE_POLL_MS 10
+static void rumble_tick(long now)
+{
+    static long last;
+    uint8_t strong, weak;
+    int slot;
+
+    if (!g_usb_pads || now - last < RUMBLE_POLL_MS) return;
+    last = now;
+    for (slot = 0; slot < MAX_PADS; slot++)
+        if (vpad_rumble(slot, &strong, &weak)) usb_pad_rumble(g_usb_pads, slot, strong, weak, now);
+}
+
 /* The menu's PS button: the same as holding PS on that pad. */
 #define PS_HOLD_MS 700
 static int web_press_ps(int slot)
@@ -229,6 +243,7 @@ int main(void)
         if (g_vpad_ok) {
             vpad_poll(now);
             if (g_usb_pads) usb_pad_poll(g_usb_pads, now);
+            rumble_tick(now);
             if (g_vpad_test && vpad_live(0)) {
                 pad_state idle;
 

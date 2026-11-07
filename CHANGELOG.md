@@ -20,6 +20,8 @@ project and in this repository's git history.
   Un icono propio (en la fila de multimedia y el README), en vez de una foto del mando de Sony; el README dice que el proyecto no es oficial.
 - Every release also brings the same file as `.bin`, for Payload Guest, which only lists `.bin` payloads.
   Cada versión trae también el mismo archivo como `.bin`, para Payload Guest, que solo muestra payloads `.bin`.
+- Rumble: what the console asks of a virtual pad is read with `scePadVirtualDeviceGetRemoteSetting` and sent to the USB pad (Xbox 360 pads, and HID profiles with an output report).
+  Vibración: lo que la consola pide a un mando virtual se lee con `scePadVirtualDeviceGetRemoteSetting` y se envía al mando USB (mandos Xbox 360 y perfiles HID con informe de salida).
 
 ## 0.2.1-beta (18 October 2026 / 18 octubre 2026)
 
