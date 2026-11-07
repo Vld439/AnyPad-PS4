@@ -20,6 +20,8 @@ project and in this repository's git history.
   Un icono propio (en la fila de multimedia y el README), en vez de una foto del mando de Sony; el README dice que el proyecto no es oficial.
 - Every release also brings the same file as `.bin`, for Payload Guest, which only lists `.bin` payloads.
   Cada versión trae también el mismo archivo como `.bin`, para Payload Guest, que solo muestra payloads `.bin`.
+- USB: a device left alone is looked at again when it comes back at the same address with other ids.
+  USB: un dispositivo descartado se vuelve a examinar si reaparece en la misma dirección con otros ids.
 
 ## 0.2.1-beta (18 October 2026 / 18 octubre 2026)
 
