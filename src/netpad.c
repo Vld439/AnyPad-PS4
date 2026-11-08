@@ -11,12 +11,17 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <netinet/in.h>
 #include <sys/socket.h>
+
+#include "bearssl.h"
+#include "netpad_cert.h"
 
 /* ---- SHA-1 (RFC 3174), only for the WebSocket handshake ------------------- */
 
@@ -171,7 +176,7 @@ static const char PAGE[] =
  * it). The page cannot find it by itself. */
 "var lastOk=Date.now(),lost=document.getElementById('lost'),ipIn=document.getElementById('ip');"
 "function go(){var v=ipIn.value.trim();if(!/^\\d{1,3}(\\.\\d{1,3}){3}$/.test(v))return;"
-"location.href='http://'+v+':'+(location.port||'8096')+'/';}"
+"location.href=(location.protocol==='https:'?'https://':'http://')+v+':'+(location.port||'8096')+'/';}"
 "document.getElementById('go').onclick=go;ipIn.onkeydown=function(e){if(e.key==='Enter')go();};"
 "function watch(){var k,n=0,on=0;for(k in P){n++;if(P[k].open)on++;}if(on||!n)lastOk=Date.now();"
 "var show=n>0&&!on&&Date.now()-lastOk>15000;if(show&&lost.hidden&&!ipIn.value)ipIn.value=location.hostname;lost.hidden=!show;}"
@@ -184,7 +189,8 @@ static const char PAGE[] =
 /* A connection not open in 4 s is given up and tried again: one tried while
  * the console had no network hangs for about a minute, and browsers open one
  * connection to an address at a time, so it held back the other pads. */
-"function link(i){var p=P[i];if(!p||p.ws)return;var ws=new WebSocket('ws://'+location.host+'/ws?n='+encodeURIComponent(p.name));ws.binaryType='arraybuffer';p.ws=ws;"
+"function link(i){var p=P[i];if(!p||p.ws)return;var proto=location.protocol==='https:'?'wss://':'ws://';"
+"var ws=new WebSocket(proto+location.host+'/ws?n='+encodeURIComponent(p.name));ws.binaryType='arraybuffer';p.ws=ws;"
 "var t=setTimeout(function(){if(p.open||p.ws!==ws)return;ws.onclose=ws.onerror=null;try{ws.close()}catch(e){}"
 "p.ws=null;if(P[i]===p)setTimeout(function(){link(i);},500);},4000);"
 "ws.onopen=function(){clearTimeout(t);p.open=true;draw();};"
@@ -240,6 +246,40 @@ static const char NOTFOUND[] =
 
 /* ---- socket helpers ------------------------------------------------------- */
 
+static void entropy(uint8_t *p, size_t n)
+{
+    arc4random_buf(p, n);
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    for (size_t i = 0; i < sizeof(ts) && i < n; i++)
+        p[i] ^= ((uint8_t *)&ts)[i];
+}
+
+static int sock_read(void *ctx, unsigned char *buf, size_t len)
+{
+    int fd = *(int *)ctx;
+    ssize_t r = recv(fd, buf, len, 0);
+    return r <= 0 ? -1 : (int)r;
+}
+
+static int sock_write(void *ctx, const unsigned char *buf, size_t len)
+{
+    int fd = *(int *)ctx;
+    ssize_t w = send(fd, buf, len, 0);
+    return w <= 0 ? -1 : (int)w;
+}
+
+typedef struct {
+    br_ssl_server_context sc;
+    br_sslio_context io;
+    unsigned char iobuf[BR_SSL_BUFSIZE_BIDI];
+} netpad_tls_t;
+
+typedef struct {
+    int fd;
+    netpad_tls_t *tls;
+} conn_t;
+
 static int read_n(int fd, void *buf, size_t n)
 {
     uint8_t *p = buf;
@@ -264,42 +304,58 @@ static int send_all(int fd, const void *buf, size_t n)
     return 0;
 }
 
+static int conn_read_n(conn_t *c, void *buf, size_t n)
+{
+    if (c->tls)
+        return br_sslio_read_all(&c->tls->io, buf, n) == 0 ? 0 : -1;
+    return read_n(c->fd, buf, n);
+}
+
+static int conn_send_all(conn_t *c, const void *buf, size_t n)
+{
+    if (c->tls) {
+        if (br_sslio_write_all(&c->tls->io, buf, n) != 0) return -1;
+        return br_sslio_flush(&c->tls->io) == 0 ? 0 : -1;
+    }
+    return send_all(c->fd, buf, n);
+}
+
 /* One WebSocket data frame from the client (always masked). Returns the
  * payload length and its opcode, or -1 on error / close. Fragmented or
  * over-long frames are treated as errors; browsers send neither here. */
-static int ws_recv(int fd, int *opcode, uint8_t *out, size_t max)
+static int ws_recv(conn_t *c, int *opcode, uint8_t *out, size_t max)
 {
     uint8_t hdr[2], mask[4];
     uint64_t len;
     size_t i;
 
-    if (read_n(fd, hdr, 2) != 0) return -1;
+    if (conn_read_n(c, hdr, 2) != 0) return -1;
     *opcode = hdr[0] & 0x0f;
     if (!(hdr[1] & 0x80)) return -1;            /* client frames must be masked */
     len = hdr[1] & 0x7f;
     if (len == 126) {
         uint8_t e[2];
-        if (read_n(fd, e, 2) != 0) return -1;
+        if (conn_read_n(c, e, 2) != 0) return -1;
         len = (uint64_t)e[0] << 8 | e[1];
     } else if (len == 127) {
         return -1;                              /* far larger than anything we read */
     }
-    if (read_n(fd, mask, 4) != 0) return -1;
+    if (conn_read_n(c, mask, 4) != 0) return -1;
     if (len > max) return -1;
-    if (len && read_n(fd, out, (size_t)len) != 0) return -1;
+    if (len && conn_read_n(c, out, (size_t)len) != 0) return -1;
     for (i = 0; i < len; i++) out[i] ^= mask[i & 3];
     return (int)len;
 }
 
-static int ws_send(int fd, int opcode, const void *data, size_t len)
+static int ws_send(conn_t *c, int opcode, const void *data, size_t len)
 {
     uint8_t hdr[2];
 
     if (len > 125) return -1;                   /* all we ever send is tiny */
     hdr[0] = 0x80 | (uint8_t)opcode;
     hdr[1] = (uint8_t)len;
-    if (send_all(fd, hdr, 2) != 0) return -1;
-    return len ? send_all(fd, data, len) : 0;
+    if (conn_send_all(c, hdr, 2) != 0) return -1;
+    return len ? conn_send_all(c, data, len) : 0;
 }
 
 /* ---- clients -------------------------------------------------------------- */
@@ -386,12 +442,18 @@ static void name_from_request(const char *req, char *out, size_t max)
 
 /* Reads the HTTP request head into buf (NUL-terminated). Returns its length,
  * or -1. Stops at the blank line that ends the headers. */
-static int read_request(int fd, char *buf, size_t max)
+static int read_request(conn_t *c, char *buf, size_t max)
 {
     size_t n = 0;
 
     while (n < max - 1) {
-        ssize_t r = recv(fd, buf + n, 1, 0);
+        int r;
+        if (c->tls) {
+            r = br_sslio_read(&c->tls->io, buf + n, 1);
+        } else {
+            ssize_t s = recv(c->fd, buf + n, 1, 0);
+            r = s <= 0 ? -1 : 1;
+        }
         if (r <= 0) return -1;
         n++;
         if (n >= 4 && memcmp(buf + n - 4, "\r\n\r\n", 4) == 0) break;
@@ -421,7 +483,7 @@ static int header(const char *req, const char *name, char *out, size_t max)
     return 0;
 }
 
-static void run_pad(int fd, int i, const char *name)
+static void run_pad(conn_t *c, int i, const char *name)
 {
     int slot = claim_slot(name);
     pad_state st;
@@ -438,10 +500,10 @@ static void run_pad(int fd, int i, const char *name)
     log_line("netpad: client on slot %d%s%s", slot, name[0] ? ": " : "", name);
 
     while (g_run) {
-        len = ws_recv(fd, &op, msg, sizeof msg);
+        len = ws_recv(c, &op, msg, sizeof msg);
         if (len < 0) break;
         if (op == 0x8) break;                       /* close */
-        if (op == 0x9) { ws_send(fd, 0xA, msg, (size_t)len); continue; }   /* ping -> pong */
+        if (op == 0x9) { ws_send(c, 0xA, msg, (size_t)len); continue; }   /* ping -> pong */
         if (op != 0x2 || len < 10) continue;        /* only our binary state */
 
         pad_state_reset(&st);
@@ -478,15 +540,32 @@ static void run_pad(int fd, int i, const char *name)
 static void *client_main(void *arg)
 {
     int i = (int)(intptr_t)arg;
-    int fd;
+    conn_t c = {0};
     char req[4096], key[128], accept_b64[40], name[32];
+    uint8_t peek = 0;
 
     pthread_detach(pthread_self());
     pthread_mutex_lock(&g_mtx);
-    fd = g_cli[i].fd;
+    c.fd = g_cli[i].fd;
     pthread_mutex_unlock(&g_mtx);
 
-    if (read_request(fd, req, sizeof req) < 0) goto done;
+    /* Peek at first byte to see if this is a TLS ClientHello (0x16) */
+    ssize_t pr = recv(c.fd, &peek, 1, MSG_PEEK);
+    if (pr > 0 && peek == 0x16) {
+        c.tls = malloc(sizeof *c.tls);
+        if (!c.tls) goto done;
+        br_x509_certificate xc = { (unsigned char *)netpad_cert_der, sizeof netpad_cert_der };
+        br_ec_private_key sk = { BR_EC_secp256r1, (unsigned char *)netpad_key_raw, sizeof netpad_key_raw };
+        br_ssl_server_init_full_ec(&c.tls->sc, &xc, 1, BR_KEYTYPE_EC, &sk);
+        br_ssl_engine_set_buffer(&c.tls->sc.eng, c.tls->iobuf, sizeof c.tls->iobuf, 1);
+        uint8_t seed[32];
+        entropy(seed, sizeof seed);
+        br_ssl_engine_inject_entropy(&c.tls->sc.eng, seed, sizeof seed);
+        br_ssl_server_reset(&c.tls->sc);
+        br_sslio_init(&c.tls->io, &c.tls->sc.eng, sock_read, &c.fd, sock_write, &c.fd);
+    }
+
+    if (read_request(&c, req, sizeof req) < 0) goto done;
 
     if (header(req, "Sec-WebSocket-Key", key, sizeof key)) {
         sha1_t s;
@@ -504,15 +583,16 @@ static void *client_main(void *arg)
                      "Upgrade: websocket\r\nConnection: Upgrade\r\n"
                      "Sec-WebSocket-Accept: %s\r\n\r\n", accept_b64);
         name_from_request(req, name, sizeof name);
-        if (send_all(fd, resp, (size_t)n) == 0)
-            run_pad(fd, i, name);
+        if (conn_send_all(&c, resp, (size_t)n) == 0)
+            run_pad(&c, i, name);
     } else if (strncmp(req, "GET / ", 6) == 0 || strncmp(req, "GET /index.html ", 16) == 0) {
-        send_all(fd, PAGE, sizeof PAGE - 1);
+        conn_send_all(&c, PAGE, sizeof PAGE - 1);
     } else {
-        send_all(fd, NOTFOUND, sizeof NOTFOUND - 1);
+        conn_send_all(&c, NOTFOUND, sizeof NOTFOUND - 1);
     }
 
 done:
+    if (c.tls) free(c.tls);
     close_fd(i);
     pthread_mutex_lock(&g_mtx);
     g_cli[i].active = 0;

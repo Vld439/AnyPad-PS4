@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 static int g_fail;
@@ -56,7 +57,11 @@ int main(void)
 
     snprintf(text, sizeof text, "%d %ld\n", (int)dead_pid(), boot);
     write_lock(text);
-    CHECK(lock_take(LOCK));                         /* its process is gone: stale */
+    CHECK(!lock_take(LOCK));                        /* its id is dead, but it said "here" a moment ago */
+    old[0].tv_sec = old[1].tv_sec = time(NULL) - 10; /* a crashed copy stops saying it */
+    old[0].tv_usec = old[1].tv_usec = 0;
+    utimes(LOCK, old);
+    CHECK(lock_take(LOCK));                         /* its process is gone and it is not fresh: stale */
     lock_release();
 
     snprintf(text, sizeof text, "%d %ld\n", (int)getppid(), boot - 100);

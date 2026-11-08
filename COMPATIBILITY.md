@@ -15,7 +15,7 @@ Probado en una PS4 con firmware 13.52. ✅ probado · ⚠️ implementado, sin p
 | Other HID controllers with a profile (Switch Pro, DualShock 4 clones by other brands…) | see `src/profiles.c` | their profile | ⚠️ |
 | Any other HID gamepad | — | generic profile, from its report descriptor; buttons and axes can be fixed with `/data/anypad/maps/VVVV_PPPP.map` | ⚠️ |
 | Sony DualShock 3 (PS3) | `054c:0268` | HID, DualShock 3 profile (woken with its feature report `0xF2`; LEDs by SET_REPORT) | ⚠️ |
-| Sony DualShock 4, DualSense | `054c:…` | left to the console: it keeps them for itself and they work natively / se los deja a la consola: se los reserva y ya funcionan de forma nativa | ❌ |
+| Sony DualShock 4, DualSense | `054c:…` | left to the console: console kernel refuses USB endpoints (0x802400ff); use network controller via phone/PC / el kernel bloquea endpoints por USB; usar por red vía móvil/PC | ❌ |
 
 The GameSir G8 Plus picks its USB mode by itself when plugged in; both modes work. Its own PS4 mode is a native console controller and does not go through AnyPad.
 El GameSir G8 Plus elige solo su modo USB al conectarlo; los dos modos funcionan. Su modo PS4 propio es un mando nativo de la consola y no pasa por AnyPad.
@@ -35,8 +35,12 @@ La página `http://<ip>:8096/` envía el mando que lea el navegador del móvil o
 
 ## Over the console's Bluetooth / Por el Bluetooth de la consola
 
-❌ The system owns the console's Bluetooth radio and its controller connections; a payload cannot read them. For wireless play, pair the controller to a phone and use the network controller.
-❌ El sistema es el dueño de la radio Bluetooth de la consola y de sus conexiones de mandos; un payload no puede leerlas. Para jugar sin cable, empareja el mando con un móvil y usa el mando por red.
+✅ Only a DualSense already paired to the console, and only with the menu's option on (firmware 13.52): AnyPad patches the driver while it runs and puts it back when the option is turned off. Tested on a PS4 (13.52): sticks, buttons, touchpad, light bar and player LED, and the console sees a DualShock 4. Rumble from games does not reach it yet (AnyPad has no game output). Do not use it together with OneFamily, which patches the same words.
+✅ Solo un DualSense ya emparejado con la consola, y solo con la opción del menú encendida (firmware 13.52): AnyPad parchea el driver mientras está en marcha y lo deja como estaba al apagar la opción. Probado en una PS4 (13.52): sticks, botones, panel táctil, barra de luz y LED de jugador, y la consola lo ve como DualShock 4. El rumble de los juegos aún no llega (AnyPad no recibe salida). No lo uses a la vez que OneFamily, que parchea las mismas palabras.
+
+| Controller / Mando | Id | Status / Estado |
+| --- | --- | --- |
+| Sony DualSense, over the console's radio / por la radio de la consola | `054c:0ce6` | ✅ |
 
 ## Reporting a controller / Informar de un mando
 

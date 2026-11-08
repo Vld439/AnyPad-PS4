@@ -7,6 +7,10 @@
 
 uint32_t crc32_calc(const uint8_t *data, size_t len);
 
+/* The CRC a Bluetooth HID report carries: over the HID header byte `prefix`
+ * (0xA1 on input, 0xA2 on output) followed by the report, id first. */
+uint32_t crc32_hid(uint8_t prefix, const uint8_t *report, size_t len);
+
 /* Appends the CRC a Bluetooth output report carries: computed over the HID
  * header byte 0xA2 followed by the report (id first), stored little-endian
  * in the report's last four bytes. `len` counts those four bytes. */

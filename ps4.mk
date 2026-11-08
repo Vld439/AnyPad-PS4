@@ -6,7 +6,10 @@ VERSION := $(shell sed -n 's/^\#define ANYPAD_VERSION "\(.*\)"/\1/p' src/version
 ELF   := dist/AnyPad-PS4-$(VERSION).elf
 BUILD := build/ps4
 
-CFLAGS  := -std=c11 -Wall -Wextra -Werror -O2 -Isrc -Ibuild
+.PHONY: all
+all: $(ELF)
+
+CFLAGS  := -std=c11 -Wall -Wextra -Werror -O2 -Isrc -Ibuild -Ithird_party/bearssl/inc
 # libSceMbus: nothing of it is called, but libScePad needs it loaded first,
 # as it was when this was tested on a console.
 LDLIBS  += -lScePad -lSceMbus -lSceUsbd -lSceUserService -lSceSystemService -lpthread
@@ -14,8 +17,21 @@ LDLIBS  += -lScePad -lSceMbus -lSceUsbd -lSceUserService -lSceSystemService -lpt
 SRCS := src/util.c src/log.c src/crc32.c src/profiles.c src/generic.c src/web.c \
         src/web_page.c src/lock.c src/netinfo.c src/ps4_power.c src/ps4_ui.c \
         src/ps4_apps.c src/ps4_sysinfo.c src/launcher.c src/icon_data.c src/ps4_vpad.c \
-        src/usb_pad.c src/netpad.c src/ps4_main.c
+        src/usb_pad.c src/netpad.c src/bt_pad.c src/bt_proto.c src/ps4_main.c
 OBJS := $(patsubst src/%.c,$(BUILD)/%.o,$(SRCS))
+
+BR_FLAGS := -O2 -w -maes -mpclmul -mssse3 -msse4.1 -DBR_RDRAND=0 -Ithird_party/bearssl/inc -Ithird_party/bearssl/src
+BR_SRCS  := $(wildcard third_party/bearssl/src/*.c third_party/bearssl/src/*/*.c)
+BR_OBJS  := $(patsubst third_party/bearssl/src/%.c,$(BUILD)/bearssl/%.o,$(BR_SRCS))
+BR_LIB   := $(BUILD)/libbearssl.a
+
+$(BUILD)/bearssl/%.o: third_party/bearssl/src/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(BR_FLAGS) -c -o $@ $<
+
+$(BR_LIB): $(BR_OBJS)
+	@mkdir -p $(dir $@)
+	$(AR) rcs $@ $^
 
 # Link stubs for the system libraries the SDK has none for (names only; the
 # payload loader resolves them), built the way the SDK builds its own.
@@ -26,9 +42,9 @@ STUB_CFLAGS := -ffreestanding -fno-builtin -nostdlib -fPIC -target x86_64-scie-p
 
 # The same file as .bin too: Payload Guest only lists .bin payloads (and
 # hands them to GoldHEN's BinLoader, which takes the ELF as it is).
-$(ELF): $(OBJS) $(STUBS)
+$(ELF): $(OBJS) $(STUBS) $(BR_LIB)
 	@mkdir -p dist
-	$(CC) $(LDFLAGS) -L$(BUILD)/stubs -o $@ $(OBJS) $(LDLIBS)
+	$(CC) $(LDFLAGS) -L$(BUILD)/stubs -o $@ $(OBJS) $(BR_LIB) $(LDLIBS)
 	cp $@ $(@:.elf=.bin)
 
 # The commit it is built from, in its log's first line (written by the Makefile).

@@ -60,6 +60,11 @@ typedef struct pad_profile {
 
 const pad_profile *profile_find(uint16_t vid, uint16_t pid);
 
+/* DualSense over Bluetooth: the 0x31 report as it comes over USB plus its
+ * CRC, and a 10-byte 0x01 with one button byte fewer than the USB form. The
+ * caller checks the report's CRC; returns PARSE_* as a profile's parse(). */
+int ds5_bt_parse(const uint8_t *rep, int len, pad_state *st);
+
 /* Major class 5 (peripheral) with a gamepad or joystick minor class. */
 int profile_class_is_gamepad(uint32_t class_of_device);
 

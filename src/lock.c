@@ -25,6 +25,19 @@
 static int g_fd = -1;
 static char g_path[256];
 
+/* A copy touches the lock once a second while it runs. A lock updated a moment
+ * ago belongs to a copy that is still starting up, even when its process id
+ * cannot be checked (that is how two copies once ran together: the second one
+ * saw the id as dead because kill() could not tell). */
+#define LOCK_FRESH_S 4
+
+static int lock_is_fresh(const struct stat *st)
+{
+    time_t now = time(NULL);
+
+    return (long)(now - st->st_mtime) < LOCK_FRESH_S;
+}
+
 static int port_8095_open(void)
 {
     struct sockaddr_in sin;
@@ -86,6 +99,7 @@ static int lock_is_live(const char *path, long boot)
         return 0;                       /* an older lock (id only), written before this boot */
     }
 
+    if (stat(path, &st) == 0 && lock_is_fresh(&st)) return 1;
     if (kill((pid_t)pid, 0) == 0) return 1;
     if (errno == EPERM) return port_8095_open();
     return 0;
@@ -116,6 +130,12 @@ int lock_take(const char *path)
         unlink(path);
     }
     return 0;
+}
+
+void lock_keepalive(void)
+{
+    if (g_fd < 0 || !g_path[0]) return;
+    (void)utimes(g_path, NULL);         /* both times to now: "still here" */
 }
 
 void lock_release(void)

@@ -22,6 +22,7 @@ AnyPad PS4 es un payload que hace que la consola vea mandos de otras marcas como
 
 - **Por USB**, en los puertos de la consola.
 - **Por la red local**: un móvil o un PC abre una página, su navegador lee el mando conectado a *ese* dispositivo (por cable o emparejado por **Bluetooth** con el móvil) y lo envía a la consola. Así se juega sin cable sin usar el Bluetooth de la consola.
+- **Por el Bluetooth de la consola**, solo un **DualSense** (o Edge) ya emparejado con ella, y solo si lo enciendes en el menú (*Bluetooth de la consola*). Parchea el driver mientras AnyPad está en marcha y lo deja como estaba al apagarlo.
 
 Probado en una PS4 con firmware 13.52.
 
@@ -39,7 +40,7 @@ Probado en una PS4 con firmware 13.52.
 | Mandos de **Sony** (DualShock 4, DualSense) por USB a través de AnyPad | ❌ la consola se los reserva (y ya funcionan de forma nativa) |
 | **DualShock 3** (PS3) por USB | ⚠️ implementado, sin probar todavía en PS4 |
 | Mandos de **Sony** por el mando por red | ✅ probado (DualSense) |
-| Mandos por el **Bluetooth de la propia consola** | ❌ el sistema es el dueño de esa radio. Para jugar sin cable, usa el mando por red |
+| **DualSense** por el **Bluetooth de la propia consola** (opción del menú, fw 13.52) | ✅ probado (sticks, botones, panel táctil, barra de luz). No lo uses a la vez que OneFamily |
 
 La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -50,8 +51,9 @@ La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
 3. **Por USB**: conecta el mando. En cuanto envía su primer dato, la consola recibe un DualShock 4 virtual.
 4. **Por red**: abre la dirección del mando por red en el navegador de un móvil o un PC conectado a la **misma red** que la consola. Conecta allí el mando (por cable o emparejado por Bluetooth con el móvil) y **pulsa un botón**. Toca la pantalla una vez: la página la mantiene encendida mientras juegas; baja el brillo para ahorrar batería. Puedes conectar **varios mandos al mismo móvil**: cada uno llega a la consola como un mando distinto, con su nombre.
 5. Cuando la consola pregunte **quién usa el mando**, elige tu usuario. Si el mando no tiene botón PS, usa **Pulsar PS** en el menú.
+6. **Por el Bluetooth de la consola** (solo DualSense/Edge ya emparejado con ella): en el menú, enciende **Bluetooth de la consola** y enciende el mando. Al apagar AnyPad o esa opción, el driver vuelve a como estaba.
 
-Hasta 4 mandos a la vez, contando los USB y los de red.
+Hasta 4 mandos a la vez, contando los USB, los de red y los de Bluetooth.
 
 ### Panel táctil
 
@@ -107,6 +109,7 @@ Necesitas el [ps4-payload-sdk](https://github.com/ps4-payload-dev/sdk) (con clan
 - **[MissionControl](https://github.com/ndeadly/MissionControl)** (ndeadly): perfiles por fabricante y modelo, y el formato de los reports de muchos mandos.
 - **[SplashDown](https://github.com/seregonwar/SplashDown)** (seregonwar) y **[shadPS4](https://github.com/shadps4-emu/shadPS4)**: la secuencia del pad virtual y el formato de sus datos.
 - **[NoSleep.js](https://github.com/richtr/NoSleep.js)** (Rich Tibbett, MIT): los vídeos que mantienen despierta la pantalla del móvil.
+- **[OneFamily](https://github.com/ChiricoG/OneFamily)** (ChiricoG, MIT; sobre DualSense-PS4 de Diramix): el protocolo del driver de Bluetooth de la consola y el informe de salida del DualSense.
 
 ## Licencia
 
@@ -121,6 +124,7 @@ AnyPad PS4 is a payload that makes the console see controllers from other brands
 
 - **By USB**, on the console's ports.
 - **Over the local network**: a phone or PC opens a page, its browser reads the controller connected to *that* device (by cable, or paired to the phone by **Bluetooth**) and sends it to the console. That gives wireless play without the console's own Bluetooth.
+- **Over the console's Bluetooth**: only a **DualSense** (or Edge) already paired to it, and only if you turn it on in the menu (*Console Bluetooth*). It patches the driver while AnyPad runs and puts it back when turned off.
 
 Tested on a PS4 with firmware 13.52.
 
@@ -138,7 +142,7 @@ Tested on a PS4 with firmware 13.52.
 | **Sony** controllers (DualShock 4, DualSense) by USB through AnyPad | ❌ the console keeps them for itself (and they already work natively) |
 | **DualShock 3** (PS3) by USB | ⚠️ implemented, not tested on a PS4 yet |
 | **Sony** controllers through the network controller | ✅ tested (DualSense) |
-| Controllers over the **console's own Bluetooth** | ❌ the system owns that radio. For wireless play, use the network controller |
+| **DualSense** over the **console's own Bluetooth** (menu option, fw 13.52) | ✅ tested (sticks, buttons, touchpad, light bar). Do not use it together with OneFamily |
 
 The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 
@@ -149,8 +153,9 @@ The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 3. **By USB**: plug the controller in. As soon as it sends its first report, the console gets a virtual DualShock 4.
 4. **Over the network**: open the network controller's address in the browser of a phone or PC on the **same network** as the console. Connect the controller there (by cable, or paired to the phone by Bluetooth) and **press a button**. Tap the screen once: the page keeps it on while you play; turn the brightness down to save battery. You can connect **several controllers to the same phone**: each one reaches the console as a separate controller, with its name.
 5. When the console asks **who is using the controller**, choose your user. If the controller has no PS button, use **Press PS** in the menu.
+6. **Over the console's Bluetooth** (only a DualSense/Edge already paired to it): in the menu, turn on **Console Bluetooth** and turn the controller on. When AnyPad or that option is turned off, the driver goes back to how it was.
 
-Up to 4 controllers at once, counting USB and network ones together.
+Up to 4 controllers at once, counting the USB, network and Bluetooth ones.
 
 ### Touchpad
 
@@ -206,6 +211,7 @@ You need the [ps4-payload-sdk](https://github.com/ps4-payload-dev/sdk) (with cla
 - **[MissionControl](https://github.com/ndeadly/MissionControl)** (ndeadly): profiles by vendor and model, and the report layouts of many controllers.
 - **[SplashDown](https://github.com/seregonwar/SplashDown)** (seregonwar) and **[shadPS4](https://github.com/shadps4-emu/shadPS4)**: the virtual pad sequence and its data layout.
 - **[NoSleep.js](https://github.com/richtr/NoSleep.js)** (Rich Tibbett, MIT): the clips that keep the phone's screen awake.
+- **[OneFamily](https://github.com/ChiricoG/OneFamily)** (ChiricoG, MIT; on Diramix's DualSense-PS4): the console Bluetooth driver protocol and the DualSense output report.
 
 ## License
 

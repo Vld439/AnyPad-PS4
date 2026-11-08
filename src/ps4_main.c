@@ -37,6 +37,7 @@
 #include "ps4_power.h"
 #include "ps4_sysinfo.h"
 #include "ps4_ui.h"
+#include "bt_pad.h"
 #include "ps4_vpad.h"
 #include "usb_pad.h"
 #include "util.h"
@@ -58,6 +59,7 @@
 #define NO_ICON_FLAG STATE_DIR "/no_icon"          /* do not put AnyPad in the media row */
 #define VPAD_TEST_FLAG STATE_DIR "/vpad_test"      /* one idle virtual pad on slot 0, to test them alone */
 #define RM_ICON_FLAG STATE_DIR "/remove_icon"      /* take it out, once */
+#define BT_FLAG      STATE_DIR "/bt"               /* DualSense over the console's Bluetooth, opt-in */
 
 /* Findable in the binary: strings AnyPad-PS4-*.elf | grep anypad-version */
 /* The commit the ELF was built from, written by tools/build-elf-ps4-docker.sh. */
@@ -77,6 +79,7 @@ static volatile int g_web_stop;         /* the menu's stop button */
 
 static web_t *g_web;
 static usb_pad_mgr_t *g_usb_pads;
+static bt_pad_mgr_t *g_bt_pads;         /* only while the Bluetooth option is on */
 static int g_vpad_test;                 /* VPAD_TEST_FLAG was there */
 static int g_vpad_ok;                   /* virtual pads are possible */
 static char g_net_url[64];              /* the network controller's page, for the menu */
@@ -103,6 +106,77 @@ static void on_usb_detach(int slot)
 {
     log_line("usb_pad: detached slot %d", slot);
     vpad_remove(slot);
+}
+
+/* ---- Bluetooth (opt-in) ---------------------------------------------------- */
+
+/* The pad's slot was reserved by bt_pad itself (vpad_add); here it only gets
+ * its name, as the USB path labels a pad it reserved. */
+static void on_bt_attach(int slot, const char *name)
+{
+    log_line("bt_pad: attached %s to slot %d", name, slot);
+    vpad_label(slot, name);
+}
+
+static void on_bt_detach(int slot)
+{
+    log_line("bt_pad: detached slot %d", slot);
+    vpad_remove(slot);
+}
+
+/* Starts or stops the module to match the flag the menu writes. The kernel
+ * patch and the driver registrations live only while it runs. A failed start
+ * is tried again in a while, not every second (bt_pad_init logs why). */
+#define BT_RETRY_MS 10000
+static void bt_apply(void)
+{
+    static long next_try;
+    static int said;
+    long now = now_ms();
+    int want = access(BT_FLAG, F_OK) == 0;
+
+    if (!want) {
+        next_try = 0;
+        said = 0;
+        if (g_bt_pads) {
+            bt_pad_close(g_bt_pads);
+            g_bt_pads = NULL;
+            log_line("bt_pad: off");
+        }
+        return;
+    }
+    if (g_bt_pads || now < next_try) return;
+
+    g_bt_pads = bt_pad_init(on_usb_feed, on_bt_attach, on_bt_detach);
+    if (g_bt_pads) {
+        log_line("bt_pad: on");
+        return;
+    }
+    next_try = now + BT_RETRY_MS;
+    if (!said) {
+        said = 1;
+        notify(TR("AnyPad PS4: no se pudo abrir el Bluetooth.\nVer el log",
+                  "AnyPad PS4: could not start Bluetooth.\nSee the log"));
+    }
+}
+
+/* The menu's option. The flag is what the module follows, so the change
+ * happens in the main loop like any other. */
+static int web_bt_get(void)
+{
+    return g_bt_pads != NULL;
+}
+
+static int web_bt_set(int on)
+{
+    if (on) {
+        FILE *f = fopen(BT_FLAG, "w");
+        if (!f) return 0;
+        fclose(f);
+    } else {
+        unlink(BT_FLAG);
+    }
+    return 1;
 }
 
 /* The menu's PS button: the same as holding PS on that pad. */
@@ -137,6 +211,8 @@ static void check_flags(long now)
         unlink(STOP_FLAG);
         g_stop = 1;
     }
+    lock_keepalive();                   /* "still here", so a second copy keeps off */
+    if (g_vpad_ok) bt_apply();          /* the menu's Bluetooth option, when it changes */
 }
 
 int main(void)
@@ -169,7 +245,7 @@ int main(void)
 
     /* The menu first: it is what explains everything that follows. */
     local_ip(ip);
-    snprintf(g_net_url, sizeof g_net_url, "http://%s:%d/", ip, NETPAD_PORT);
+    snprintf(g_net_url, sizeof g_net_url, "https://%s:%d/", ip, NETPAD_PORT);
     memset(&wc, 0, sizeof wc);
     wc.stop = &g_web_stop;
     wc.log_path = LOG_PATH;
@@ -179,6 +255,8 @@ int main(void)
     wc.net_clients = netpad_clients;
     wc.pad_get = vpad_get;
     wc.press_ps = web_press_ps;
+    wc.bt_get = web_bt_get;
+    wc.bt_set = web_bt_set;
     g_web = web_start(&wc, WEB_PORT);
 
     snprintf(url, sizeof url, "http://%s:%d/", ip, WEB_PORT);
@@ -206,13 +284,14 @@ int main(void)
         notify(TR("AnyPad PS4: no se pueden crear mandos virtuales.\nVer el log", "AnyPad PS4: cannot create virtual controllers.\nSee the log"));
     } else {
         g_usb_pads = usb_pad_init(on_usb_feed, on_usb_attach, on_usb_detach);
+        bt_apply();                     /* opt-in: only if /data/anypad/bt is there */
         /* Controllers over the network (a phone/PC as the pad, the way
          * Control4Free does it): its own port and thread, feeding the same
          * virtual pads. Gives wireless pads without the console's own radio. */
         g_net_up = netpad_start(NETPAD_PORT);
         if (g_net_up)
-            notify(TR("AnyPad PS4: mando por red en %s (abre esa pagina en el movil)",
-                      "AnyPad PS4: network controller at %s (open that page on your phone)"), g_net_url);
+            notify(TR("AnyPad PS4: mando por red en %s (abre en PS4 o movil)",
+                      "AnyPad PS4: network controller at %s (open on PS4 or phone)"), g_net_url);
         if (access(VPAD_TEST_FLAG, F_OK) == 0) {
             log_line("vpad test: one idle virtual pad on slot 0");
             if (vpad_add(0)) vpad_label(0, "test");
@@ -229,6 +308,7 @@ int main(void)
         if (g_vpad_ok) {
             vpad_poll(now);
             if (g_usb_pads) usb_pad_poll(g_usb_pads, now);
+            if (g_bt_pads) bt_pad_poll(g_bt_pads, now);
             if (g_vpad_test && vpad_live(0)) {
                 pad_state idle;
 
@@ -252,7 +332,7 @@ int main(void)
             if (changed) {
                 log_line("network: address changed from %s to %s", ip, nip);
                 snprintf(ip, sizeof ip, "%s", nip);
-                snprintf(g_net_url, sizeof g_net_url, "http://%s:%d/", ip, NETPAD_PORT);
+                snprintf(g_net_url, sizeof g_net_url, "https://%s:%d/", ip, NETPAD_PORT);
             }
             if (changed || !g_web || !web_alive(g_web, WEB_PORT)) {
                 if (g_web && !changed) log_line("network: the menu stopped answering; serving it again");
@@ -293,6 +373,10 @@ int main(void)
     log_line("stopping: %s", why);
     signal(SIGALRM, on_stop_timeout);
     alarm(T_STOP_MAX_S);
+    if (g_bt_pads) {                    /* gives the links back and restores the allowlist */
+        bt_pad_close(g_bt_pads);
+        g_bt_pads = NULL;
+    }
     if (g_usb_pads) {
         usb_pad_close(g_usb_pads);
         g_usb_pads = NULL;

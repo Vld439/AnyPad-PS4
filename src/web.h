@@ -30,6 +30,10 @@ typedef struct {
     int (*pad_get)(int slot, char *label, size_t max, pad_state *st);
     /* Presses PS on pad `slot` (0-based). Returns 1 if done. NULL: not available. */
     int (*press_ps)(int slot);
+    /* The Bluetooth option: 1 while on. NULL: the page hides it. */
+    int (*bt_get)(void);
+    /* Turns it on (1) or off (0). Returns 1 if done. NULL: not available. */
+    int (*bt_set)(int on);
 } web_cfg;
 
 /* Listens on `port` on every interface. Returns NULL if it cannot. */

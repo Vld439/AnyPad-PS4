@@ -39,6 +39,10 @@ static int fake_pad_get(int slot, char *label, size_t max, pad_state *st)
 static int g_clients = 1;
 static int fake_net_clients(void) { return g_clients; }
 
+static int g_bt;
+static int fake_bt_get(void) { return g_bt; }
+static int fake_bt_set(int on) { g_bt = on ? 1 : 0; return 1; }
+
 static int g_ps_calls, g_ps_slot = -1;
 static int fake_press_ps(int slot)
 {
@@ -99,6 +103,8 @@ int main(void)
     wc.net_clients = fake_net_clients;
     wc.pad_get = fake_pad_get;
     wc.press_ps = fake_press_ps;
+    wc.bt_get = fake_bt_get;
+    wc.bt_set = fake_bt_set;
     log_open(wc.log_path);
     g_web = web_start(&wc, g_port);
     CHECK(g_web != NULL);
@@ -115,6 +121,7 @@ int main(void)
     printf("state: version, network controller, live pads only\n");
     call("GET", "/api/state", out, sizeof out);
     CHECK(strstr(out, "\"version\":\"9.9.9-test\"") != NULL);
+    CHECK(strstr(out, "\"bt\":0") != NULL);
     CHECK(strstr(out, "\"net\":{\"url\":\"http://192.168.1.50:8096/\",\"clients\":1}") != NULL);
     CHECK(strstr(out, "{\"slot\":1,\"label\":\"network\"") != NULL);
     CHECK(strstr(out, "{\"slot\":4,\"label\":\"Switch Pro\",\"lx\":255,") != NULL);
@@ -141,8 +148,18 @@ int main(void)
     call("POST", "/api/ps?slot=2", out, sizeof out);
     CHECK(strstr(out, "404") != NULL && g_ps_slot == 1);            /* no pad there */
 
-    printf("stop\n");
-    CHECK(stop == 0);
+    printf("console Bluetooth: the option in the state and its switch\n");
+    CHECK(g_bt == 0);
+    call("POST", "/api/bt?on=1", out, sizeof out);
+    CHECK(strstr(out, "200") != NULL && g_bt == 1);
+    call("GET", "/api/state", out, sizeof out);
+    CHECK(strstr(out, "\"bt\":1") != NULL);
+    call("POST", "/api/bt?on=0", out, sizeof out);
+    CHECK(strstr(out, "200") != NULL && g_bt == 0);
+    request("POST /api/bt?on=1 HTTP/1.1\r\nHost: 192.168.1.50:8095\r\n\r\n", out, sizeof out);
+    CHECK(strstr(out, "403") != NULL && g_bt == 0);         /* without X-AnyPad */
+
+    printf("stop\n");    CHECK(stop == 0);
     call("POST", "/api/stop", out, sizeof out);
     CHECK(strstr(out, "200") != NULL && stop == 1);
 

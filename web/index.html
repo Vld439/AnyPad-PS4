@@ -54,6 +54,9 @@ button.solid { background: var(--accent); border-color: var(--accent); color: #1
 button.blue { background: #0070d1; border-color: #0070d1; color: #fff; font-weight: 700; }
 button.danger { border-color: rgba(255,77,94,.55); color: var(--bad); background: rgba(255,77,94,.06); }
 button:disabled { opacity: .45; cursor: default; box-shadow: none; }
+/* ---- console Bluetooth ---- */
+.btrow { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.btrow input { width: 20px; height: 20px; accent-color: var(--accent); cursor: pointer; }
 /* ---- network controller ---- */
 .neturl { font-size: 22px; font-weight: 700; color: var(--accent); direction: ltr; word-break: break-all; margin: 2px 0 6px; }
 /* ---- pads ---- */
@@ -109,6 +112,14 @@ pre { margin: 12px 0 0; max-height: 360px; overflow: auto; font-size: 12px; colo
       <div id="netstate" class="hint"></div>
       <div class="hint" style="margin-top:10px" data-t="netintro" data-html="1"></div>
     </div>
+    <div class="card">
+      <h2 data-t="bttitle"></h2>
+      <div class="row">
+        <label class="btrow"><input type="checkbox" id="bt"> <span data-t="btuse"></span></label>
+        <span id="btstate" class="hint"></span>
+      </div>
+      <div class="hint" style="margin-top:10px" data-t="bthint" data-html="1"></div>
+    </div>
     <h2 data-t="connected"></h2>
     <div id="pads" class="pads"></div>
     <div class="hint" style="margin-top:14px" data-t="usbhint" data-html="1"></div>
@@ -148,6 +159,11 @@ const TEXT = {
     netclients: (n) => n === 0 ? "Ningún dispositivo conectado." : n === 1 ? "1 dispositivo conectado." : n + " dispositivos conectados.",
     connected: "Mandos conectados",
     nopads: "Ninguno. Conecta un mando por USB o abre la página del mando por red.",
+    bttitle: "Bluetooth de la consola",
+    btuse: "Usar el Bluetooth de la consola",
+    bton: "encendido",
+    btoff: "apagado",
+    bthint: "Para un <b>DualSense</b> (o Edge) emparejado con la consola: enciende esta opción y enciende el mando. AnyPad parchea el driver de Bluetooth mientras está en marcha; al apagarlo lo deja como estaba. No la uses a la vez que OneFamily. Los mandos de Sony por USB siguen siendo de la consola.",
     usbhint: "Por USB: mandos Xbox 360, Xbox One y HID (GameSir, Switch Pro…). Los mandos de Sony los maneja la propia consola. Cuando la consola pregunte quién usa el mando, elige tu usuario.",
     pressps: "Pulsar PS",
     presspshint: "Para mandos sin botón PS: es como mantener pulsado PS",
@@ -174,6 +190,11 @@ const TEXT = {
     netclients: (n) => n === 0 ? "No device connected." : n === 1 ? "1 device connected." : n + " devices connected.",
     connected: "Connected controllers",
     nopads: "None. Plug a controller in by USB or open the network controller page.",
+    bttitle: "Console Bluetooth",
+    btuse: "Use the console's Bluetooth",
+    bton: "on",
+    btoff: "off",
+    bthint: "For a <b>DualSense</b> (or Edge) paired to the console: turn this on and turn the controller on. AnyPad patches the Bluetooth driver while it runs and puts it back when turned off. Do not use it together with OneFamily. Sony's controllers over USB stay the console's.",
     usbhint: "By USB: Xbox 360, Xbox One and HID controllers (GameSir, Switch Pro…). Sony's own controllers are handled by the console. When the console asks who is using the controller, choose your user.",
     pressps: "Press PS",
     presspshint: "For controllers without a PS button: like holding PS",
@@ -445,8 +466,11 @@ function renderPads(pads) {
     ico.innerHTML = PAD_SVG;
     /* "network" or "network:<the name its browser gave>"; a USB pad: its profile */
     const net = p.label === "network" || p.label.startsWith("network:");
+    /* How it is connected, as the pad's label says: the network page, the
+     * console's Bluetooth, or a cable. */
+    const how = net ? L.nettitle : p.label.includes("Bluetooth") ? "Bluetooth" : "USB";
     top.append(ico, el("span", "name", net ? p.label.slice(8) || L.nettitle : p.label), el("span", "slot", L.pl + p.slot));
-    c.append(top, el("div", "meta", net ? L.nettitle : "USB"));
+    c.append(top, el("div", "meta", how));
     const viz = el("div", "viz");
     viz.append(trigger(p.l2), stick(p.lx, p.ly), stick(p.rx, p.ry), trigger(p.r2));
     c.appendChild(viz);
@@ -472,6 +496,8 @@ async function refresh() {
     $("status").className = "on";
     $("neturl").textContent = s.net && s.net.url ? s.net.url : "";
     $("netstate").textContent = L.netclients(s.net ? s.net.clients : 0);
+    $("bt").checked = !!s.bt;
+    $("btstate").textContent = s.bt ? L.bton : L.btoff;
     renderPads(s.pads || []);
   } catch (e) {
     $("status").textContent = L.offline;
@@ -485,6 +511,10 @@ $("exit").onclick = () => {
   try { window.close(); } catch (e) {}
   setTimeout(() => { if (history.length > 1) history.back(); }, 250);
   setTimeout(() => { $("exithint").textContent = L.exitfail; }, 800);
+};
+$("bt").onchange = async (e) => {
+  try { await api("POST", "/api/bt?on=" + (e.target.checked ? 1 : 0)); } catch (err) { e.target.checked = !e.target.checked; }
+  refresh();
 };
 $("stop").onclick = async () => {
   if (!confirm(L.stopq)) return;

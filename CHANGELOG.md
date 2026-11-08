@@ -14,8 +14,10 @@ project and in this repository's git history.
 - **A virtual pad is identified with PS4Mount loaded too.** GoldHEN's log server hands its lines to one reader, and PS4Mount keeps the kernel log: the `DEVICE_ADDED` line of the pad never arrived and the pad was left unidentified (`0 candidates`). When no device line comes in the first second of an identification, `/dev/klog` is opened as well and both are read, for the rest of that identification only.
   **Un pad virtual se identifica también con PS4Mount cargado.** El servidor de log de GoldHEN entrega sus líneas a un solo lector y PS4Mount se queda con el log del kernel: la línea `DEVICE_ADDED` del pad nunca llegaba y el pad quedaba sin identificar (`0 candidates`). Si en el primer segundo de una identificación no llega la línea del dispositivo, se abre también `/dev/klog` y se leen los dos, solo durante esa identificación.
 
-## Unreleased
+## 0.3.0-beta (8 November 2026 / 8 noviembre de 2026)
 
+- A DualSense (or Edge) over the console's own Bluetooth, as an option in the menu: AnyPad patches the Bluetooth driver's allowlist while it runs, registers the controller, raises its link's output capacity and feeds a virtual DualShock 4. Tried on a PS4 (13.52): sticks, buttons, touchpad, light bar and player LED, and the console sees a DualShock 4. Rumble from games does not reach it yet. Do not use it together with OneFamily. Firmware 13.52 only.
+  Un DualSense (o Edge) por el Bluetooth de la propia consola, como opción del menú: AnyPad parchea el allowlist del driver de Bluetooth mientras está en marcha, registra el mando, sube la capacidad de salida de su enlace y alimenta un DualShock 4 virtual. Probado en una PS4 (13.52): sticks, botones, panel táctil, barra de luz y LED de jugador, y la consola lo ve como DualShock 4. El rumble de los juegos aún no llega. No se debe usar a la vez que OneFamily. Solo firmware 13.52.
 - A new icon of its own (in the media row and the README), instead of a photo of Sony's controller; the README says the project is unofficial.
   Un icono propio (en la fila de multimedia y el README), en vez de una foto del mando de Sony; el README dice que el proyecto no es oficial.
 - Every release also brings the same file as `.bin`, for Payload Guest, which only lists `.bin` payloads.

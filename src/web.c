@@ -165,8 +165,9 @@ static void api_state(web_t *w, int fd)
                       if (k_ > 0) n += (size_t)k_ < sizeof out - n ? (size_t)k_ : sizeof out - n - 1; } while (0)
 
     json_text(url, sizeof url, w->cfg.net_url);
-    PUT("{\"version\":\"%s\",\"lang\":\"%s\",\"net\":{\"url\":\"%s\",\"clients\":%d},\"pads\":[",
-        w->cfg.version, w->cfg.lang ? w->cfg.lang : "es", url,
+    PUT("{\"version\":\"%s\",\"lang\":\"%s\",\"bt\":%d,\"net\":{\"url\":\"%s\",\"clients\":%d},\"pads\":[",
+        w->cfg.version, w->cfg.lang ? w->cfg.lang : "es",
+        w->cfg.bt_get ? w->cfg.bt_get() : 0, url,
         w->cfg.net_clients ? w->cfg.net_clients() : 0);
     for (i = 0; w->cfg.pad_get && i < MAX_PADS; i++) {
         pad_state st;
@@ -284,8 +285,11 @@ static void handle(web_t *w, int fd, char *req)
         if (n < 1 || n > MAX_PADS) respond_text(fd, 400, "{\"error\":\"slot\"}");
         else if (!w->cfg.press_ps || !w->cfg.press_ps(n - 1)) respond_text(fd, 404, "{\"error\":\"no pad\"}");
         else respond_text(fd, 200, "{\"ok\":true}");
-    } else if (strcmp(method, "POST") == 0 && strcmp(path, "/api/stop") == 0) {
-        log_line("web: stop requested");
+    } else if (strcmp(method, "POST") == 0 && strncmp(path, "/api/bt?on=", 11) == 0) {
+        int on = atoi(path + 11) ? 1 : 0;
+        if (!w->cfg.bt_set || !w->cfg.bt_set(on)) respond_text(fd, 404, "{\"error\":\"bt\"}");
+        else respond_text(fd, 200, "{\"ok\":true}");
+    } else if (strcmp(method, "POST") == 0 && strcmp(path, "/api/stop") == 0) {        log_line("web: stop requested");
         *w->cfg.stop = 1;
         respond_text(fd, 200, "{\"ok\":true}");
     } else {

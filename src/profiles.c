@@ -233,6 +233,28 @@ static int ds5_init(void *ctx, int step, const pad_output *o, uint8_t *b, int ma
     return step == 0 ? ds5_output(ctx, o, b, max) : 0;
 }
 
+/* Over Bluetooth the pad sends 0x31 as over USB (GCrc32 appended, checked by
+ * the caller) and, until an output report switches it, a 10-byte 0x01:
+ *   [1..4] sticks  [5..7] buttons  [8] L2  [9] R2
+ * one button byte fewer than the USB short report, which carries four. */
+int ds5_bt_parse(const uint8_t *r, int n, pad_state *st)
+{
+    uint8_t usb[11];
+
+    if (r[0] == 0x31) return n >= 78 ? ds5_parse(NULL, r, n, st) : PARSE_NONE;
+    if (r[0] != 0x01 || n != 10) return PARSE_NONE;
+
+    usb[0] = 0x01;
+    memcpy(usb + 1, r + 1, 4);
+    usb[5] = r[5];
+    usb[6] = r[6];
+    usb[7] = r[7];
+    usb[8] = 0;                         /* no fourth button byte over Bluetooth */
+    usb[9] = r[8];                      /* L2 */
+    usb[10] = r[9];                     /* R2 */
+    return ds5_parse(NULL, usb, (int)sizeof usb, st);
+}
+
 /* ---- Xbox One / Series ------------------------------------------------------
  *
  * The same reports over Bluetooth Classic (older firmware) and Bluetooth LE

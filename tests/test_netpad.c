@@ -270,6 +270,15 @@ int main(int argc, char **argv)
         netpad_stop();
     }
 
+    printf("https: page served securely over TLS\n");
+    {
+        CHECK(netpad_start(g_port) == 1);
+        char cmd[256];
+        snprintf(cmd, sizeof cmd, "curl -k -s https://127.0.0.1:%d/ | grep -q 'AnyPad'", g_port);
+        CHECK(system(cmd) == 0);
+        netpad_stop();
+    }
+
     printf(g_fail ? "test_netpad: %d FAILED\n" : "test_netpad: all passed\n", g_fail);
     return g_fail != 0;
 }
