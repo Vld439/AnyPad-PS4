@@ -33,6 +33,8 @@ project and in this repository's git history.
   Un icono propio (en la fila de multimedia y el README), en vez de una foto del mando de Sony; el README dice que el proyecto no es oficial.
 - Every release also brings the same file as `.bin`, for Payload Guest, which only lists `.bin` payloads.
   Cada versión trae también el mismo archivo como `.bin`, para Payload Guest, que solo muestra payloads `.bin`.
+- Generic HID: a device whose descriptor names a mouse or a keyboard and no game controller is not taken for a pad.
+  HID genérico: un dispositivo cuyo descriptor indica un ratón o un teclado y ningún mando no se toma por un mando.
 
 ## 0.2.1-beta (18 October 2026 / 18 octubre 2026)
 

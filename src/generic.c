@@ -49,6 +49,7 @@ typedef struct {
     field button[MAX_BUTTONS];      /* usage n at index n - 1 */
     field home, back;               /* consumer page: AC Home, AC Back */
     int nbuttons;
+    uint8_t app_pad, app_mouse, app_keyboard;   /* application collections */
 
     uint8_t role[ROLE_N];           /* AX_* per role */
     uint8_t invert[ROLE_N];
@@ -179,6 +180,15 @@ static int parse_descriptor(generic_ctx *g, const uint8_t *d, int n)
                 }
                 *off = (uint16_t)(*off + bits);
             } else if (tag == 9 || tag == 11) { /* output, feature: other reports */
+            } else if (tag == 10 && val == 1 && nusages) {      /* application collection */
+                uint16_t pg = usages[0] >> 16 ? (uint16_t)(usages[0] >> 16) : gl.page;
+                uint16_t u = (uint16_t)usages[0];
+
+                if (pg == 0x01) {
+                    if (u == 0x04 || u == 0x05 || u == 0x08) g->app_pad = 1;   /* joystick, game pad, multi-axis */
+                    else if (u == 0x02) g->app_mouse = 1;
+                    else if (u == 0x06 || u == 0x07) g->app_keyboard = 1;      /* keyboard, keypad */
+                }
             }
             nusages = 0;
             has_range = 0;
@@ -405,6 +415,11 @@ int generic_setup(void *ctx, const uint8_t *desc, int len,
     }
     if (!g->axis[AX_X].present && !g->axis[AX_HAT].present && g->nbuttons < 4) {
         log_line("generic %04x:%04x: no gamepad controls in the descriptor", vid, pid);
+        return 0;
+    }
+    /* Mice and keyboards also have buttons and X/Y. */
+    if (!g->app_pad && (g->app_mouse || g->app_keyboard)) {
+        log_line("generic %04x:%04x: a %s, not a gamepad", vid, pid, g->app_mouse ? "mouse" : "keyboard");
         return 0;
     }
     default_mapping(g);
