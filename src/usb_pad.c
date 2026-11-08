@@ -776,6 +776,7 @@ static void poll_dev(usb_pad_mgr_t *mgr, usb_dev_t *d, long now)
 
 static void backend_init(void)
 {
+    if (U.ok) return;                   /* the manager started again after a rest */
     if (!usbd_load()) log_line("usb_pad: libSceUsbd not available, no USB pads");
 }
 

@@ -498,6 +498,10 @@ static void finish_identification(long now)
         /* Unknown or ambiguous: nothing is bound, inserted into or deleted. */
         log_line("slot %d: virtual pad not identified (%d candidates), left alone", slot, g_matches);
         v->st = VP_FAILED;
+        if (v->remove_when_found) {
+            memset(v, 0, sizeof *v);
+            return;
+        }
         /* No line in T_IDENTIFY: most likely no device. Asked again once
          * only: if a device was made after all and its line lost, every new
          * try leaves one more pad on the console that nobody drives. */
@@ -514,6 +518,7 @@ static void finish_identification(long now)
     v->dev = g_match_dev;
     v->handle = (int32_t)(g_match_dev & 0xFFFFFFFFu);
     if (v->remove_when_found) {
+        vpad_creds_raise();             /* restored if the pad left for rest mode */
         scePadVirtualDeviceDeleteDevice(v->handle);
         log_line("slot %d: device %#llx removed: its pad left meanwhile", slot,
                  (unsigned long long)v->dev);
@@ -544,6 +549,11 @@ void vpad_poll(long now)
             start_identification(i);
             return;
         }
+}
+
+int vpad_identifying(void)
+{
+    return g_pending >= 0;
 }
 
 int vpad_live(int slot)

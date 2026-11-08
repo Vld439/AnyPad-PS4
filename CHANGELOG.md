@@ -9,6 +9,11 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
+## Unreleased
+
+- Rest mode: AnyPad releases its pads before the sleep, stays running and takes them again after waking, instead of exiting and relying on being started again.
+  Modo reposo: AnyPad suelta sus mandos antes de dormir, sigue en marcha y los vuelve a tomar al despertar, en vez de salir y depender de que alguien lo lance de nuevo.
+
 ## 0.2.2-beta (31 October 2026 / 31 de octubre de 2026)
 
 - **A virtual pad is identified with PS4Mount loaded too.** GoldHEN's log server hands its lines to one reader, and PS4Mount keeps the kernel log: the `DEVICE_ADDED` line of the pad never arrived and the pad was left unidentified (`0 candidates`). When no device line comes in the first second of an identification, `/dev/klog` is opened as well and both are read, for the rest of that identification only.

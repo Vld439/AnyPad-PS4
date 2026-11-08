@@ -24,10 +24,12 @@
  * media row.
  *
  * Stopping: the menu's button, or create /data/anypad/stop. It releases its
- * pads, removes its virtual pads, puts back its credentials, and exits. It
- * does the same by itself when the console starts going to rest mode (read
- * from SceSystemStateMgrInfo), so nothing of it is left half-way across a
- * sleep.
+ * pads, removes its virtual pads, puts back its credentials, and exits.
+ *
+ * Rest mode (read from SceSystemStateMgrInfo): the same is done when the
+ * console starts going to it, so nothing of it is left half-way across a
+ * sleep, but the process stays and takes the pads again on waking: nothing is
+ * sure to start it again then.
  */
 #include "lock.h"
 #include "log.h"
@@ -85,6 +87,7 @@ static int g_vpad_test;                 /* VPAD_TEST_FLAG was there */
 static int g_vpad_ok;                   /* virtual pads are possible */
 static char g_net_url[64];              /* the network controller's page, for the menu */
 static int g_net_up;                    /* the network controller is being served */
+static int g_resting;                   /* the pads were released for rest mode */
 
 /* The console's language decides the texts: Spanish, or English for any other. */
 static int g_spanish = 1;
@@ -264,6 +267,41 @@ static void on_signal(int sig)
     g_stop = 1;
 }
 
+/* After waking, USB devices are still coming back: one probed too early could
+ * be left alone for good. */
+#define WAKE_SETTLE_MS 3000
+
+static void start_pads(void)
+{
+    g_usb_pads = usb_pad_init(on_usb_feed, on_usb_attach, on_usb_detach);
+    bt_apply();                         /* opt-in: only if /data/anypad/bt is there */
+    /* Controllers over the network (a phone/PC as the pad, the way
+     * Control4Free does it): its own port and thread, feeding the same
+     * virtual pads. Gives wireless pads without the console's own radio. */
+    g_net_up = netpad_start(NETPAD_PORT);
+    if (g_vpad_test && vpad_add(0)) vpad_label(0, "test");
+}
+
+static void stop_pads(void)
+{
+    int i;
+
+    if (g_bt_pads) {                    /* gives the links back and restores the allowlist */
+        bt_pad_close(g_bt_pads);
+        g_bt_pads = NULL;
+    }
+    if (g_usb_pads) {
+        usb_pad_close(g_usb_pads);
+        g_usb_pads = NULL;
+    }
+    netpad_stop();                      /* drops network clients before their pads go */
+    g_net_up = 0;
+    if (g_vpad_ok) {
+        for (i = 0; i < MAX_PADS; i++) vpad_remove(i);    /* the test, USB and network ones */
+        vpad_creds_restore();           /* leave the credentials as found */
+    }
+}
+
 static void check_flags(long now)
 {
     static long last_second;
@@ -275,7 +313,7 @@ static void check_flags(long now)
         g_stop = 1;
     }
     lock_keepalive();                   /* "still here", so a second copy keeps off */
-    if (g_vpad_ok) bt_apply();          /* the menu's Bluetooth option, when it changes */
+    if (g_vpad_ok && !g_resting) bt_apply();    /* the menu's Bluetooth option, when it changes */
 }
 
 int main(void)
@@ -283,7 +321,7 @@ int main(void)
     web_cfg wc;
     char ip[16], url[64];
     const char *why = "stop requested";
-    long last_power = 0, last_net = 0;
+    long last_power = 0, last_net = 0, wake_at = 0;
     int lang;
 
     mkdir(STATE_DIR, 0755);
@@ -348,20 +386,14 @@ int main(void)
     if (!g_vpad_ok) {
         notify(TR("AnyPad PS4: no se pueden crear mandos virtuales.\nVer el log", "AnyPad PS4: cannot create virtual controllers.\nSee the log"));
     } else {
-        g_usb_pads = usb_pad_init(on_usb_feed, on_usb_attach, on_usb_detach);
-        bt_apply();                     /* opt-in: only if /data/anypad/bt is there */
-        /* Controllers over the network (a phone/PC as the pad, the way
-         * Control4Free does it): its own port and thread, feeding the same
-         * virtual pads. Gives wireless pads without the console's own radio. */
-        g_net_up = netpad_start(NETPAD_PORT);
+        if (access(VPAD_TEST_FLAG, F_OK) == 0) {
+            log_line("vpad test: one idle virtual pad on slot 0");
+            g_vpad_test = 1;
+        }
+        start_pads();
         if (g_net_up)
             notify(TR("AnyPad PS4: mando por red en %s (abre en PS4 o movil)",
                       "AnyPad PS4: network controller at %s (open on PS4 or phone)"), g_net_url);
-        if (access(VPAD_TEST_FLAG, F_OK) == 0) {
-            log_line("vpad test: one idle virtual pad on slot 0");
-            if (vpad_add(0)) vpad_label(0, "test");
-            g_vpad_test = 1;
-        }
     }
 
     while (!g_stop && !g_web_stop) {
@@ -374,7 +406,7 @@ int main(void)
             vpad_poll(now);
             if (g_usb_pads) usb_pad_poll(g_usb_pads, now);
             if (g_bt_pads) bt_pad_poll(g_bt_pads, now);
-            if (g_vpad_test && vpad_live(0)) {
+            if (g_vpad_test && !g_resting && vpad_live(0)) {
                 pad_state idle;
 
                 pad_state_reset(&idle);
@@ -405,8 +437,8 @@ int main(void)
                 g_web = web_start(&wc, WEB_PORT);
             }
             /* Its clients went with the old address: they open the new one. */
-            net_dead = g_vpad_ok && !netpad_alive();
-            if (g_vpad_ok && (changed || net_dead)) {
+            net_dead = g_vpad_ok && !g_resting && !netpad_alive();
+            if (g_vpad_ok && !g_resting && (changed || net_dead)) {
                 /* Only if it was up: one that never started (its port taken)
                  * is tried again quietly. */
                 if (net_dead && !changed && g_net_up)
@@ -419,14 +451,32 @@ int main(void)
                           "AnyPad PS4: new address\nMenu: http://%s:%d/\nNetwork controller: %s"), nip, WEB_PORT, g_net_url);
         }
 
-        /* Rest mode on its way: leave cleanly before it, not after. */
+        /* Rest mode on its way: let go cleanly before it, not after. */
         if (now - last_power >= 200) {
             int ps = power_state();
             last_power = now;
             if (ps == POWER_GOING_TO_REST || ps == POWER_IN_REST) {
-                why = "rest mode";
-                notify(TR("AnyPad PS4: parado por el modo reposo.\nLanzalo de nuevo al despertar", "AnyPad PS4: stopped by rest mode.\nRun it again after waking up"));
-                break;
+                wake_at = 0;
+                if (!g_resting) {
+                    log_line("rest mode: releasing the pads");
+                    signal(SIGALRM, on_stop_timeout);
+                    alarm(T_STOP_MAX_S);
+                    stop_pads();
+                    alarm(0);
+                    g_resting = 1;
+                }
+            } else if (g_resting && ps == POWER_WORKING) {
+                if (!wake_at) {
+                    log_line("awake: taking the pads again in %d ms", WAKE_SETTLE_MS);
+                    wake_at = now + WAKE_SETTLE_MS;
+                } else if (now >= wake_at && !vpad_identifying()) {
+                    if (g_vpad_ok) {
+                        vpad_creds_raise();
+                        start_pads();
+                    }
+                    g_resting = 0;
+                    wake_at = 0;
+                }
             }
         }
 
@@ -438,22 +488,8 @@ int main(void)
     log_line("stopping: %s", why);
     signal(SIGALRM, on_stop_timeout);
     alarm(T_STOP_MAX_S);
-    if (g_bt_pads) {                    /* gives the links back and restores the allowlist */
-        bt_pad_close(g_bt_pads);
-        g_bt_pads = NULL;
-    }
-    if (g_usb_pads) {
-        usb_pad_close(g_usb_pads);
-        g_usb_pads = NULL;
-    }
-    netpad_stop();                      /* drops network clients before their pads go */
+    stop_pads();
     web_stop(g_web);
-    if (g_vpad_ok) {
-        int i;
-
-        for (i = 0; i < MAX_PADS; i++) vpad_remove(i);    /* the test, USB and network ones */
-        vpad_creds_restore();           /* leave the credentials as found */
-    }
     lock_release();
     log_line("stopped");
     log_close();
