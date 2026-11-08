@@ -69,6 +69,7 @@ int32_t scePadSetProcessPrivilege(int32_t privilege);
 int32_t scePadVirtualDeviceAddDevice(void *param, int32_t deviceType);
 int32_t scePadVirtualDeviceInsertData(int32_t handle, const void *data);
 int32_t scePadVirtualDeviceDeleteDevice(int32_t handle);
+int32_t scePadVirtualDeviceGetRemoteSetting(int32_t handle, void *setting);
 
 /* From the payload SDK (ps4/kernel.h). */
 uint64_t kernel_get_ucred_authid(pid_t pid);
@@ -606,6 +607,36 @@ void vpad_update(int slot, const pad_state *st)
     if (!vpad_live(slot)) return;
     g_slot[slot].last = *st;
     send_frame(slot, st);
+}
+
+/* Remote setting: byte 3 is the large motor, byte 4 the small one. */
+#define RUMBLE_LOG_MAX 20
+
+int vpad_rumble(int slot, uint8_t *strong, uint8_t *weak)
+{
+    static int logged[MAX_PADS], fails[MAX_PADS];
+    static uint8_t last_s[MAX_PADS], last_w[MAX_PADS];
+    uint8_t s[128];
+    int32_t r;
+
+    if (!vpad_live(slot)) return 0;
+    memset(s, 0, sizeof s);
+    r = scePadVirtualDeviceGetRemoteSetting(g_slot[slot].handle, s);
+    if (r != 0) {
+        if (fails[slot]++ < 3)
+            log_line("slot %d: GetRemoteSetting %#x (handle %#x)", slot, (unsigned)r, (unsigned)g_slot[slot].handle);
+        return 0;
+    }
+    if (logged[slot] == 0 || ((s[3] != last_s[slot] || s[4] != last_w[slot]) && logged[slot] < RUMBLE_LOG_MAX)) {
+        log_line("slot %d: remote setting %02x %02x %02x %02x %02x %02x %02x %02x (rumble %u/%u)", slot,
+                 s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7], s[3], s[4]);
+        logged[slot]++;
+    }
+    last_s[slot] = s[3];
+    last_w[slot] = s[4];
+    *strong = s[3];
+    *weak = s[4];
+    return 1;
 }
 
 /* Holds PS on a virtual pad for `ms`, as pressing the PS button on the pad

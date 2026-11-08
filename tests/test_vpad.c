@@ -39,6 +39,7 @@ int32_t scePadSetProcessPrivilege(int32_t v)
 int32_t scePadVirtualDeviceAddDevice(void *p, int32_t t) { (void)p; (void)t; g_adds++; return 0; }
 int32_t scePadVirtualDeviceInsertData(int32_t h, const void *d) { (void)h; (void)d; return 0; }
 int32_t scePadVirtualDeviceDeleteDevice(int32_t h) { (void)h; return 0; }
+int32_t scePadVirtualDeviceGetRemoteSetting(int32_t h, void *s) { (void)h; (void)s; return 0; }
 uint64_t kernel_get_ucred_authid(pid_t pid) { (void)pid; return g_authid; }
 int32_t kernel_set_ucred_authid(pid_t pid, uint64_t a) { (void)pid; g_authid = a; return 0; }
 int32_t kernel_get_ucred_caps(pid_t pid, uint8_t c[16]) { (void)pid; memcpy(c, g_caps, 16); return 0; }
