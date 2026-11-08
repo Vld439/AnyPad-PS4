@@ -29,6 +29,7 @@ int  vpad_init(void);
 int  vpad_add(int slot);
 void vpad_poll(long now);
 int  vpad_live(int slot);
+int  vpad_identifying(void);    /* a new device's kernel log line is being waited for */
 
 /* What drives the slot, for the menu. Set after vpad_add, which clears it. */
 void vpad_label(int slot, const char *label);

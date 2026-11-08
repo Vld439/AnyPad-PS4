@@ -1,9 +1,13 @@
 /* The instance lock: live, dead, from another boot, and in the old format. */
 #include "../src/lock.h"
 
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -68,6 +72,27 @@ int main(void)
     write_lock(text);
     CHECK(lock_take(LOCK));                         /* a live id, but from another boot: stale */
     lock_release();
+
+    snprintf(text, sizeof text, "%d %ld\n", (int)getppid(), boot + 1);
+    write_lock(text);
+    CHECK(!lock_take(LOCK));                        /* a second off between the clocks: the same boot */
+
+    {
+        struct sockaddr_in sin;
+        int on = 1, fd = socket(AF_INET, SOCK_STREAM, 0);
+
+        memset(&sin, 0, sizeof sin);
+        sin.sin_family = AF_INET;
+        sin.sin_port = htons(8095);
+        sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof on);
+        CHECK(bind(fd, (struct sockaddr *)&sin, sizeof sin) == 0 && listen(fd, 4) == 0);
+        snprintf(text, sizeof text, "%d %ld\n", (int)getppid(), boot + 3600);
+        write_lock(text);
+        CHECK(!lock_take(LOCK));                    /* the wall clock was set, its menu up: live */
+        close(fd);
+        unlink(LOCK);
+    }
 
     snprintf(text, sizeof text, "%d\n", (int)getppid());
     write_lock(text);                               /* old format, written just now */

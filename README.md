@@ -65,7 +65,7 @@ Hasta 4 mandos a la vez, contando los USB, los de red y los de Bluetooth.
 
 En `http://<IP de tu consola>:8095/`: los mandos conectados con su nombre y sus botones, sticks y gatillos en vivo; la dirección del mando por red y cuántos dispositivos lo usan; **Pulsar PS** por mando; el log; y **Apagar AnyPad**.
 
-**Apaga AnyPad antes de volver a cargar el ELF** (botón del menú, o crea el fichero vacío `/data/anypad/stop`). Al entrar la consola en reposo, AnyPad se para solo: vuelve a cargarlo al despertar.
+**Apaga AnyPad antes de volver a cargar el ELF** (botón del menú, o crea el fichero vacío `/data/anypad/stop`). Al entrar la consola en reposo, AnyPad suelta los mandos, y al despertar los vuelve a tomar solo.
 
 ### Problemas frecuentes
 
@@ -168,7 +168,7 @@ Up to 4 controllers at once, counting the USB, network and Bluetooth ones.
 
 At `http://<your console's IP>:8095/`: the connected controllers with their name and their buttons, sticks and triggers live; the network controller's address and how many devices use it; **Press PS** per controller; the log; and **Stop AnyPad**.
 
-**Stop AnyPad before loading the ELF again** (the menu's button, or create the empty file `/data/anypad/stop`). When the console goes to rest mode, AnyPad stops by itself: load it again after waking up.
+**Stop AnyPad before loading the ELF again** (the menu's button, or create the empty file `/data/anypad/stop`). When the console goes to rest mode, AnyPad lets go of the controllers, and takes them again by itself after waking up.
 
 ### Troubleshooting
 

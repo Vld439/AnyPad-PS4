@@ -22,6 +22,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+#define BOOT_TOLERANCE_S 2
+
 static int g_fd = -1;
 static char g_path[256];
 
@@ -47,10 +49,9 @@ static int port_8095_open(void)
     sin.sin_family = AF_INET;
     sin.sin_port = htons(8095);
     sin.sin_addr.s_addr = inet_addr("127.0.0.1");
-    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
     int res = connect(fd, (struct sockaddr *)&sin, sizeof sin);
     close(fd);
-    return res == 0 || errno == EINPROGRESS || errno == EALREADY;
+    return res == 0;
 }
 
 long lock_boot_time(void)
@@ -94,7 +95,9 @@ static int lock_is_live(const char *path, long boot)
     if (fields < 1 || pid <= 0 || pid == (long)getpid()) return 0;
 
     if (fields == 2) {
-        if (boot && lock_boot != boot) return 0;        /* from another boot */
+        /* The boot time comes from two clocks: it can be a second off, and
+         * further once the wall clock is set. A running copy serves its menu. */
+        if (boot && labs(lock_boot - boot) > BOOT_TOLERANCE_S) return port_8095_open();
     } else if (boot && stat(path, &st) == 0 && (long)st.st_mtime < boot) {
         return 0;                       /* an older lock (id only), written before this boot */
     }
