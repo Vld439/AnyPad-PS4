@@ -33,6 +33,8 @@ project and in this repository's git history.
   Un icono propio (en la fila de multimedia y el README), en vez de una foto del mando de Sony; el README dice que el proyecto no es oficial.
 - Every release also brings the same file as `.bin`, for Payload Guest, which only lists `.bin` payloads.
   Cada versión trae también el mismo archivo como `.bin`, para Payload Guest, que solo muestra payloads `.bin`.
+- USB: a pad that sent a report while the console was settling gets its virtual pad when the settling ends, without waiting for the next report.
+  USB: un mando que envió un informe mientras la consola se asentaba recibe su mando virtual al terminar la espera, sin esperar al siguiente informe.
 
 ## 0.2.1-beta (18 October 2026 / 18 octubre 2026)
 
