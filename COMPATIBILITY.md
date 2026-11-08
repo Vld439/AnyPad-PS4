@@ -35,12 +35,13 @@ La página `http://<ip>:8096/` envía el mando que lea el navegador del móvil o
 
 ## Over the console's Bluetooth / Por el Bluetooth de la consola
 
-✅ Only a DualSense already paired to the console, and only with the menu's option on (firmware 13.52): AnyPad patches the driver while it runs and puts it back when the option is turned off. Tested on a PS4 (13.52): sticks, buttons, touchpad, light bar and player LED, and the console sees a DualShock 4. Rumble from games does not reach it yet (AnyPad has no game output). Do not use it together with OneFamily, which patches the same words.
-✅ Solo un DualSense ya emparejado con la consola, y solo con la opción del menú encendida (firmware 13.52): AnyPad parchea el driver mientras está en marcha y lo deja como estaba al apagar la opción. Probado en una PS4 (13.52): sticks, botones, panel táctil, barra de luz y LED de jugador, y la consola lo ve como DualShock 4. El rumble de los juegos aún no llega (AnyPad no recibe salida). No lo uses a la vez que OneFamily, que parchea las mismas palabras.
+✅ A DualSense or a Switch Pro already linked to the console, with the menu's option on (firmware 13.52): AnyPad patches the driver while it runs and puts it back when the option is turned off. Pads are chosen by families (the driver's list holds six ids, one family at a time: `sony` by default, `switch` for the Switch Pro, written in `/data/anypad/bt`). Tested on a PS4 (13.52): the DualSense gives sticks, buttons, touchpad, light bar and player LED; the Switch Pro gives sticks, d-pad, buttons and triggers, with A as the cross. The pad has to connect after the option is on. Rumble from games does not reach either of them yet. Do not use it together with OneFamily, which patches the same words. Xbox pads are out: they use Bluetooth LE and the console's radio is classic.
+✅ Un DualSense o un Switch Pro ya enlazados con la consola, con la opción del menú encendida (firmware 13.52): AnyPad parchea el driver mientras está en marcha y lo deja como estaba al apagar la opción. Los mandos van por familias (la lista del driver tiene seis identificadores, una familia a la vez: `sony` por defecto, `switch` para el Switch Pro, escrito en `/data/anypad/bt`). Probado en una PS4 (13.52): el DualSense da sticks, botones, panel táctil, barra de luz y LED de jugador; el Switch Pro da sticks, cruceta, botones y gatillos, con A como cruz. El mando tiene que conectarse después de encender la opción. El rumble de los juegos aún no llega a ninguno. No lo uses a la vez que OneFamily, que parchea las mismas palabras. Los mandos Xbox quedan fuera: usan Bluetooth LE y la radio de la consola es clásica.
 
 | Controller / Mando | Id | Status / Estado |
 | --- | --- | --- |
 | Sony DualSense, over the console's radio / por la radio de la consola | `054c:0ce6` | ✅ |
+| Nintendo Switch Pro, over the console's radio / por la radio de la consola | `057e:2009` | ✅ |
 
 ## Reporting a controller / Informar de un mando
 

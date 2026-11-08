@@ -26,6 +26,7 @@
 #ifndef ANYPAD_BT_PAD_H
 #define ANYPAD_BT_PAD_H
 
+#include "bt_proto.h"
 #include "pad.h"
 
 typedef struct bt_pad_mgr_s bt_pad_mgr_t;
@@ -33,10 +34,13 @@ typedef void (*bt_pad_feed_fn)(int slot, const pad_state *st);
 typedef void (*bt_pad_attach_fn)(int slot, const char *name);
 typedef void (*bt_pad_detach_fn)(int slot);
 
-/* Opens /dev/bt, patches the driver's list and registers the DualSense. NULL
- * if the console cannot do it (firmware other than 13.52, no /dev/bt, patch
- * refused), with the reason in the log. */
-bt_pad_mgr_t *bt_pad_init(bt_pad_feed_fn on_feed,
+/* Opens /dev/bt, patches the driver's list and registers the ids of `family`
+ * (NULL: the default one, the DualSense). Only one family at a time: the
+ * driver names a device by address only, never by vendor and product id.
+ * NULL if the console cannot do it (firmware other than 13.52, no /dev/bt,
+ * patch refused), with the reason in the log. */
+bt_pad_mgr_t *bt_pad_init(const bt_family *family,
+                          bt_pad_feed_fn on_feed,
                           bt_pad_attach_fn on_attach,
                           bt_pad_detach_fn on_detach);
 

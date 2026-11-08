@@ -56,4 +56,27 @@ typedef struct {
  * Returns 78, or 0 if `max` is too small. */
 int bt_output_build(bt_out *o, const pad_output *out, uint8_t *buf, int max);
 
+/* A family of pads the console's Bluetooth driver can be asked to accept: the
+ * ids to allow (the driver's list has room for six), how to tell a report it
+ * could have sent, and how to read it. One family runs at a time: the driver
+ * hands over reports by device address only, not by vendor and product id, so
+ * the pad's model has to be known beforehand. */
+#define BT_FAMILY_IDS 6
+
+typedef struct bt_family {
+    const char *name;                       /* what the flag file says */
+    const char *label;                      /* what the menu calls the pad */
+    int nids;
+    uint16_t ids[BT_FAMILY_IDS][2];
+    int has_output;                         /* the 0x31 output report applies */
+    int (*accept)(const uint8_t *rep, int len);
+    int (*parse)(const uint8_t *rep, int len, pad_state *st);
+} bt_family;
+
+/* The family used when the flag file names none. */
+const bt_family *bt_family_default(void);
+
+/* The family called `name`, or NULL. */
+const bt_family *bt_family_find(const char *name);
+
 #endif

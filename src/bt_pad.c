@@ -69,9 +69,13 @@ typedef struct {
 /* The four functions compare a device's vendor and product id against the
  * Thrustmaster and Guillemot entries; swapping those for Sony's lets the
  * DualSense through. Offsets from this console's 13.52 dump, in pairs. */
+#define BT_PAIRS 6              /* ids the driver's list has room for */
+
 typedef struct {
     int restore;
     uint32_t fw;
+    uint16_t ids[BT_PAIRS][2];  /* the ids the driver should accept */
+    int nids;
     int rc;                     /* 0, or what failed */
 } bt_patch_req;
 
@@ -106,7 +110,7 @@ static int bt_kernel_patch(void *td, void *args)
     bt_patch_req *r = (bt_patch_req *)ka->arg1;
     uint64_t base, flags, cr0;
     uint32_t lo, hi;
-    int i, original = 0, patched = 0;
+    int i, original = 0, patched = 0, same = 0;
 
     (void)td;
 
@@ -122,21 +126,31 @@ static int bt_kernel_patch(void *td, void *args)
     {
         uint32_t sig = *(volatile uint32_t *)(base + 0x5B1616);
 
-        if (sig != 0x0000044F && sig != 0x0000054C) { r->rc = 0xE3; return 22; }
+        if (sig != 0x0000044F && sig != 0x0000054C) {
+            int k, known = 0;
+
+            for (k = 0; k < r->nids; k++)
+                if (sig == r->ids[k][0]) known = 1;
+            if (!known) { r->rc = 0xE3; return 22; }
+        }
     }
 
     for (i = 0; i < 12; i++) {
         uint32_t v = *(volatile uint32_t *)(base + off[i]);
         uint32_t want = (i & 1) ? 0x1000 : 0x044F;
-        uint32_t done = (i & 1) ? 0x0CE6 : 0x054C;
+        uint32_t sony = (i & 1) ? 0x0CE6 : 0x054C;   /* us, or OneFamily */
+        int pair = (i / 2) < r->nids ? (i / 2) : r->nids - 1;
+        uint32_t done = (i & 1) ? r->ids[pair][1] : r->ids[pair][0];
 
+        if (r->nids < 1) { r->rc = 0xE4; return 22; }
         if (v == want) original++;
-        else if (v == done) patched++;
+        else if (v == sony || v == done) patched++;
         else { r->rc = 0x100 + (uint32_t)i; return 22; }
+        if (v == done) same++;
     }
 
-    /* All in one state already: nothing to write, and remember which. */
-    if (!r->restore ? patched == 12 : original == 12) {
+    /* Nothing to write: already the requested pair, or already restored. */
+    if (!r->restore ? same == 12 : original == 12) {
         r->rc = (int)(patched << 8 | original);
         return 0;
     }
@@ -147,7 +161,8 @@ static int bt_kernel_patch(void *td, void *args)
     __asm__ volatile("mov %0, %%cr0" :: "r"(cr0 & ~(1UL << 16)) : "memory");
     for (i = 0; i < 12; i++) {
         uint32_t want = (i & 1) ? 0x1000 : 0x044F;
-        uint32_t done = (i & 1) ? 0x0CE6 : 0x054C;
+        int pair = (i / 2) < r->nids ? (i / 2) : r->nids - 1;
+        uint32_t done = (i & 1) ? r->ids[pair][1] : r->ids[pair][0];
 
         *(volatile uint32_t *)(base + off[i]) = r->restore ? want : done;
     }
@@ -284,7 +299,9 @@ struct bt_pad_mgr_s {
     int kq;
     int patched;                /* we patched the driver's list */
     int inherited;              /* it was patched before we started */
-    int reg_ds5, reg_edge;
+    const bt_family *fam;       /* which pads were asked for */
+    int registered[BT_FAMILY_IDS];
+    int nreg;
     uint32_t fw;
     bt_dev devs[BT_MAX_DEVS];
     bt_pad_feed_fn on_feed;
@@ -362,7 +379,7 @@ static void dev_attach(bt_pad_mgr_t *m, bt_dev *d)
 
     d->slot = slot;
     d->live = 1;
-    snprintf(d->name, sizeof d->name, "DualSense (Bluetooth)");
+    snprintf(d->name, sizeof d->name, "%s", m->fam->label);
     if (m->on_attach) m->on_attach(slot, d->name);
     log_line("bt_pad: %012llx: %s on slot %d", (unsigned long long)d->address, d->name, slot);
 }
@@ -401,6 +418,7 @@ static void dev_output(bt_pad_mgr_t *m, bt_dev *d, const pad_output *out)
     long rc;
 
     if (!d->connected || d->out_unsupported) return;
+    if (!m->fam->has_output) return;
 
     /* The driver sizes the link for a 22-byte pad; a 78-byte report through
      * it makes the DualSense drop the link. */
@@ -455,7 +473,7 @@ static void dev_deliver(bt_pad_mgr_t *m, bt_dev *d, const uint8_t *rep, int len,
     pad_state st;
 
     pad_state_reset(&st);
-    if (ds5_bt_parse(rep, len, &st) == PARSE_NONE) return;
+    if (!m->fam->accept(rep, len) || m->fam->parse(rep, len, &st) == PARSE_NONE) return;
 
     if (!d->live) {
         dev_attach(m, d);
@@ -504,7 +522,24 @@ static void dev_drain(bt_pad_mgr_t *m, uint64_t address, long now, int fresh)
             return;
 
         len = bt_report_unwrap(buf, (int)n, &rep);
-        if (!len || !bt_input_ok(rep, len)) continue;
+        if (!len) continue;
+        if (!m->fam->accept(rep, len)) {
+            /* A report this family does not send. Show a few, so a family for
+             * another pad can be written from what the console really gets. */
+            static int shown;
+
+            if (shown < 12) {
+                char hex[3 * 24 + 1];
+                int j, used = 0;
+
+                shown++;
+                for (j = 0; j < len && j < 24; j++)
+                    used += snprintf(hex + used, sizeof hex - (size_t)used, "%02X ", rep[j]);
+                log_line("bt_pad: %012llx: not %s (%d bytes): %s", (unsigned long long)address,
+                         m->fam->name, len, hex);
+            }
+            continue;
+        }
 
         d = dev_acquire(m, address);
         if (!d) {
@@ -580,7 +615,9 @@ static void dev_feed_idle(bt_pad_mgr_t *m, long now)
         bt_dev *d = &m->devs[i];
 
         if (!d->address || !d->live || !m->on_feed) continue;
-        if (d->connected && now - d->last_input < 500) continue;
+        /* Every 16 ms, report or not: some pads (the Switch Pro) send a report
+         * only when something changes, and the console wants a steady stream
+         * to keep the virtual pad's state. */
         if (d->last_feed && now - d->last_feed < BT_FEED_MS) continue;
         d->last_feed = now;
         m->on_feed(d->slot, &d->st);
@@ -673,7 +710,8 @@ static void bt_unregister(bt_pad_mgr_t *m, uint16_t vid, uint16_t pid)
     syscall(SYS_ioctl, m->fd, IOCTL_BT_UNREGISTER, &pair, 0, 0, 0);
 }
 
-bt_pad_mgr_t *bt_pad_init(bt_pad_feed_fn on_feed,
+bt_pad_mgr_t *bt_pad_init(const bt_family *family,
+                          bt_pad_feed_fn on_feed,
                           bt_pad_attach_fn on_attach,
                           bt_pad_detach_fn on_detach)
 {
@@ -685,6 +723,7 @@ bt_pad_mgr_t *bt_pad_init(bt_pad_feed_fn on_feed,
     m = calloc(1, sizeof *m);
     if (!m) return NULL;
     m->fd = m->kq = -1;
+    m->fam = family ? family : bt_family_default();
     m->on_feed = on_feed;
     m->on_attach = on_attach;
     m->on_detach = on_detach;
@@ -724,6 +763,8 @@ bt_pad_mgr_t *bt_pad_init(bt_pad_feed_fn on_feed,
 
     memset(&req, 0, sizeof req);
     req.fw = m->fw;
+    req.nids = m->fam->nids;
+    memcpy(req.ids, m->fam->ids, sizeof req.ids);
     if (bt_kernel_run(bt_kernel_patch, &req) != 0) {
         log_line("bt_pad: allowlist patch failed: rc 0x%x", req.rc);
         close(m->kq);
@@ -744,17 +785,28 @@ bt_pad_mgr_t *bt_pad_init(bt_pad_feed_fn on_feed,
         log_line("bt_pad: the allowlist was already patched; it will be left as found");
     } else {
         m->patched = 1;
-        log_line("bt_pad: allowlist patched for 054C:0CE6");
+        log_line("bt_pad: allowlist patched for %04X:%04X", req.ids[0][0], req.ids[0][1]);
     }
 
-    if (bt_register(m, SONY_VID, DS5_PID)) {
-        m->reg_ds5 = 1;
-    } else {
-        log_line("bt_pad: register 054C:0CE6 refused: %s", strerror(errno));
+    /* Every id of the family is offered to the driver; one id per model, and
+     * only the connected one can be registered (the rest answer ENOENT). */
+    for (i = 0; i < m->fam->nids; i++) {
+        uint16_t vid = m->fam->ids[i][0], pid = m->fam->ids[i][1];
+
+        if (bt_register(m, vid, pid)) {
+            m->registered[i] = 1;
+            m->nreg++;
+            continue;
+        }
+        log_line("bt_pad: register %04X:%04X refused: %s", vid, pid, strerror(errno));
+    }
+    if (m->nreg == 0) {
         if (m->patched) {
             memset(&req, 0, sizeof req);
             req.restore = 1;
             req.fw = m->fw;
+            req.nids = m->fam->nids;
+            memcpy(req.ids, m->fam->ids, sizeof req.ids);
             bt_kernel_run(bt_kernel_patch, &req);
         }
         close(m->kq);
@@ -762,14 +814,8 @@ bt_pad_mgr_t *bt_pad_init(bt_pad_feed_fn on_feed,
         free(m);
         return NULL;
     }
-    /* The Edge answers to a product id of its own. */
-    if (bt_register(m, SONY_VID, EDGE_PID)) {
-        m->reg_edge = 1;
-    } else {
-        log_line("bt_pad: register 054C:0DF2 refused: %s", strerror(errno));
-    }
 
-    log_line("bt_pad: ready (firmware 0x%04X, up to %d pads)", m->fw, BT_MAX_DEVS);
+    log_line("bt_pad: ready (%s, firmware 0x%04X, up to %d pads)", m->fam->name, m->fw, BT_MAX_DEVS);
     return m;
 }
 
@@ -787,8 +833,9 @@ void bt_pad_close(bt_pad_mgr_t *m)
     for (i = 0; i < BT_MAX_DEVS; i++)
         if (m->devs[i].live && m->on_detach) m->on_detach(m->devs[i].slot);
 
-    if (m->reg_edge) bt_unregister(m, SONY_VID, EDGE_PID);
-    if (m->reg_ds5) bt_unregister(m, SONY_VID, DS5_PID);
+    for (i = m->fam->nids - 1; i >= 0; i--)
+        if (m->registered[i])
+            bt_unregister(m, m->fam->ids[i][0], m->fam->ids[i][1]);
 
     if (m->patched) {
         bt_patch_req req;
@@ -796,6 +843,8 @@ void bt_pad_close(bt_pad_mgr_t *m)
         memset(&req, 0, sizeof req);
         req.restore = 1;
         req.fw = m->fw;
+        req.nids = m->fam->nids;
+        memcpy(req.ids, m->fam->ids, sizeof req.ids);
         /* rc says what happened in kernel space: the syscall itself returning
          * 0 only means the function ran. */
         if (bt_kernel_run(bt_kernel_patch, &req) != 0 || req.rc != 0)

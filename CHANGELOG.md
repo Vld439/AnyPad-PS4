@@ -14,6 +14,15 @@ project and in this repository's git history.
 - **A virtual pad is identified with PS4Mount loaded too.** GoldHEN's log server hands its lines to one reader, and PS4Mount keeps the kernel log: the `DEVICE_ADDED` line of the pad never arrived and the pad was left unidentified (`0 candidates`). When no device line comes in the first second of an identification, `/dev/klog` is opened as well and both are read, for the rest of that identification only.
   **Un pad virtual se identifica también con PS4Mount cargado.** El servidor de log de GoldHEN entrega sus líneas a un solo lector y PS4Mount se queda con el log del kernel: la línea `DEVICE_ADDED` del pad nunca llegaba y el pad quedaba sin identificar (`0 candidates`). Si en el primer segundo de una identificación no llega la línea del dispositivo, se abre también `/dev/klog` y se leen los dos, solo durante esa identificación.
 
+## 0.3.1-beta (8 November 2026 / 8 noviembre de 2026)
+
+- **A Switch Pro Controller over the console's own Bluetooth**, with the same menu option (firmware 13.52). It shows up as `Switch Pro (Bluetooth)`: sticks, d-pad, buttons and triggers, with the buttons where a PlayStation pad has them (A is the cross). Tried on a PS4. The pads are chosen in families: the driver's list has room for six ids, and one family runs at a time (`/data/anypad/bt` holds its name; `sony` is the default). No rumble or light bar for it yet.
+  **Un Switch Pro por el Bluetooth de la propia consola**, con la misma opción del menú (firmware 13.52). Aparece como `Switch Pro (Bluetooth)`: sticks, cruceta, botones y gatillos, con los botones donde los tiene un mando de PlayStation (A es la cruz). Probado en una PS4. Los mandos se eligen por familias: la lista del driver tiene sitio para seis identificadores y solo corre una familia a la vez (`/data/anypad/bt` lleva su nombre; `sony` es la de por defecto). Aún sin rumble ni barra de luz.
+- Fixed: the Bluetooth allowlist was always patched with the DualSense's id, whatever pad had been asked for, so any other pad was dropped by the driver (`register ... No such file or directory`).
+  Corregido: el allowlist de Bluetooth se parcheaba siempre con el id del DualSense, fuera cual fuera el mando pedido, así que el driver tiraba cualquier otro (`register ... No such file or directory`).
+- The virtual pad behind a Bluetooth controller is fed every 16 ms even when the pad sends nothing, because some pads only send a report when something changes.
+  El pad virtual de un mando Bluetooth se alimenta cada 16 ms aunque el mando no envíe nada, porque algunos solo mandan un informe cuando cambia algo.
+
 ## 0.3.0-beta (8 November 2026 / 8 noviembre de 2026)
 
 - A DualSense (or Edge) over the console's own Bluetooth, as an option in the menu: AnyPad patches the Bluetooth driver's allowlist while it runs, registers the controller, raises its link's output capacity and feeds a virtual DualShock 4. Tried on a PS4 (13.52): sticks, buttons, touchpad, light bar and player LED, and the console sees a DualShock 4. Rumble from games does not reach it yet. Do not use it together with OneFamily. Firmware 13.52 only.

@@ -53,6 +53,66 @@ mandos, un registro por mando); #39 cortes en 12.00; #25 reconocido sin entrada 
   código de retorno del kernel.
 - Pendiente de esa prueba: el rumble de los juegos (AnyPad no recibe salida todavía) y el Edge
   (`054C:0DF2` se rechaza con ENOENT, sin investigar).
+## Otros mandos (2026-11-08)
+
+**Funciona el Switch Pro por Bluetooth de la consola** (probado en 13.52):
+
+- El fallo que lo bloqueaba era nuestro: `bt_kernel_patch()` escribía siempre `054C:0CE6` en el
+  allowlist, aunque la familia pidiera otro id; el registro ya usaba los ids de la familia. Ahora el
+  parche lleva `req.vid/req.pid` y reconoce como "ya parcheado" tanto el par de Sony (nuestro o de
+  OneFamily) como el pedido.
+- `ENOENT` al registrar **no** es un fallo del driver: significa que no hay ningún mando conectado
+  con ese id (por eso el Edge daba ENOENT: no había un Edge). Con el Switch Pro enlazado y el
+  allowlist a `057E:2009`, `register` responde 0.
+- El driver **sí entrega informes de mandos ajenos**: el Switch Pro manda su informe HID estándar
+  `0x3F` de 49 bytes (`3F 00 00 08 00 80 00 80 …`, sticks a 0x8000, hat 8 = neutro).
+- La familia `switch` reutiliza el perfil USB de `profiles.c` (mismo parser de `0x3F`), así que se
+  engancha como `Switch Pro (Bluetooth)` y los sticks llegan centrados.
+- El mando tiene que **reconectarse después** de que arranque el módulo: si ya estaba conectado, el
+  driver no anuncia su dirección al nuevo suscriptor y no llega nada (con el DualSense pasa igual).
+- **Funciona en consola (2026-11-08)**: se juega y se navega con el Switch Pro. Dos ajustes que lo
+  hicieron falta, además del parche: (1) el pad virtual se alimenta **cada 16 ms** aunque el mando no
+  mande informes (el Switch Pro solo manda al cambiar algo, y con el flujo a saltos la consola no
+  seguía el estado); (2) los botones se remapean al estilo PlayStation (A = cruz/confirmar, B =
+  círculo, X/Y en su sitio), porque en el mando de Nintendo la A está a la derecha.
+- **Xbox: no es viable por ahora.** Los mandos en modo Xbox se presentan como Xbox Series, que es
+  **Bluetooth LE**, y la radio de la PS4 (y su stack) es Bluetooth clásico: no se pueden emparejar
+  (no salen ni en el escáner). La familia `xbox` pide los ids clásicos y de Series; en la prueba
+  `045E:02FD` registró porque quedaba un enlace viejo en la consola, pero no llegó ningún informe.
+  Para mandos ajenos, el camino es un modo que use Bluetooth clásico HID (Switch, o el modo PS4 si
+  el mando lo tiene, que la consola acepta directamente).
+- Falta: rumble y luz para la familia `switch` (no se manda ningún informe de salida).
+
+## Otros mandos, notas del plan original (2026-11-08, sustituido)
+
+Lo que se sabe y lo que falta:
+
+- El allowlist tiene sitio para **6 pares VID/PID**; el parche escribe los 12 dwords, así que se
+  pueden habilitar como mucho seis identificadores a la vez (AnyPad tiene ~40 perfiles). No caben
+  todos: se elige una **familia**.
+- El driver entrega los informes **por dirección**, nunca por VID/PID: no se puede saber de qué
+  mando es un informe. Por eso el módulo trabaja con una sola familia a la vez (`bt_family` en
+  `bt_proto.c`: ids, `accept()` y `parse()`). El fichero `/data/anypad/bt` puede llevar el nombre
+  de la familia (`sony` por defecto; vacío = `sony`), que es lo que lee `ps4_main.c`.
+- Implementado ya: `bt_family`, registro de los ids de la familia, y un volcado en el log de los
+  primeros informes que una familia no reconoce (`bt_pad: <addr>: not <familia> (n bytes): HEX`),
+  para poder escribir el parser de otro mando con datos reales.
+- **Familias de descubrimiento** (añadidas 2026-11-08): `watch_accept()` no acepta ningún informe, así
+  que `bt_pad.c` escribe en el log lo que llegue (`bt_pad: <addr>: not <familia> (n bytes): HEX`) y no
+  se crea ningún pad. `xbox` pide solo `045E:0B13` y `switch` solo `057E:2009`: un id por familia, un
+  solo cambio a la vez. Todo el camino (parche validado dword a dword, registro, lectura) es el mismo
+  código ya probado con el DualSense; revertir es escribir `sony` en `/data/anypad/bt`.
+  **Sin probar en consola.** No usar la sonda `bt2.bin`: escribe el kernel a ciegas y congeló la
+  consola (2026-11-08).
+- **Sin comprobar todavía** (bloqueado por el cargador de payloads): si el driver entrega informes
+  de un mando que no es Sony, y sobre todo si la consola **empareja** un mando ajeno (el parche
+  solo deja que el driver acepte un enlace ya emparejado; el menú de Bluetooth de la PS4 no ofrece
+  mandos que no sean de Sony). Sonda lista: `/data/payloads/bt2.bin`
+  (fuente `/tmp/opencode/btprobe2/probe.c`, tabla `g_ids` para cambiar los ids), que parchea,
+  registra y vuelca eventos + informes en `/data/anypad/anypad.log`.
+- Si el enlace no llega a formarse, hace falta emparejar por otra vía (tocar el stack de Bluetooth
+  de la consola), que es un trabajo aparte y bastante mayor.
+
 - **Una sola instancia**: con otro AnyPad autoarrancado (`/data/GoldHEN/payloads.ini`) el segundo
   proceso se queda con `/dev/bt` y el mando no entra. El mando, además, tiene que encenderse
   **después** del módulo: si quedó enlazado del arranque anterior no reconecta solo.

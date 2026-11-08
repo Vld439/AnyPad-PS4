@@ -5,6 +5,6 @@
 #ifndef ANYPAD_VERSION_H
 #define ANYPAD_VERSION_H
 
-#define ANYPAD_VERSION "0.3.0-beta"
+#define ANYPAD_VERSION "0.3.1-beta"
 
 #endif

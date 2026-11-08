@@ -174,8 +174,78 @@ static void test_ds5_bt(void)
     CHECK(ds5_bt_parse(r, 78, &st) == PARSE_NONE);
 }
 
+/* One family runs at a time, and the default is the DualSense. */
+static void test_family(void)
+{
+    const bt_family *fam = bt_family_default();
+
+    CHECK(fam != NULL);
+    CHECK(strcmp(fam->name, "sony") == 0);
+    CHECK(strcmp(fam->label, "DualSense (Bluetooth)") == 0);
+    CHECK(fam->nids == 2);
+    CHECK(fam->has_output);
+    CHECK(fam->ids[0][0] == 0x054C && fam->ids[0][1] == 0x0CE6);
+    CHECK(fam->ids[1][0] == 0x054C && fam->ids[1][1] == 0x0DF2);
+    CHECK(bt_family_find("sony") == fam);
+    CHECK(bt_family_find("nope") == NULL);
+    CHECK(bt_family_find("") == NULL);
+    CHECK(bt_family_find(NULL) == NULL);
+    /* Discovery families: one id, and they accept nothing, so the reports
+     * they get are logged instead of parsed. */
+    {
+        const bt_family *x = bt_family_find("xbox");
+        const bt_family *w = bt_family_find("switch");
+
+        CHECK(x != NULL && x->nids == 6 && !x->has_output);
+        CHECK(strcmp(x->label, "Xbox (Bluetooth)") == 0);
+        CHECK(x->ids[0][0] == 0x045E && x->ids[0][1] == 0x0B13);
+        CHECK(w != NULL && w->nids == 1);
+        CHECK(strcmp(w->label, "Switch Pro (Bluetooth)") == 0);
+        CHECK(w->ids[0][0] == 0x057E && w->ids[0][1] == 0x2009);
+        CHECK(!x->accept((const uint8_t *)"\x01\0\0\0\0\0\0\0\0\0", 10));
+        /* The Switch Pro's real 0x3F report, as the console handed it over:
+         * sticks at 0x8000 (centred), hat 8 (nothing pressed). */
+        {
+            static const uint8_t rep[49] = {
+                0x3F, 0x00, 0x00, 0x08, 0x00, 0x80, 0x00, 0x80,
+                0x00, 0x80, 0x00, 0x80,
+            };
+            pad_state st;
+
+            CHECK(w->accept(rep, 49));
+            pad_state_reset(&st);
+            CHECK(w->parse(rep, 49, &st) == PARSE_OK);
+            CHECK(st.buttons == 0);
+            CHECK(st.lx == 128 && st.ly == 128 && st.rx == 128 && st.ry == 128);
+            /* B (bottom, Nintendo's cancel) comes out as the circle, and A
+             * (right, confirm) as the cross: the labels people press. */
+            {
+                uint8_t b[49];
+                memcpy(b, rep, sizeof b);
+                b[1] = 0x01;
+                CHECK(w->accept(b, 49));
+                pad_state_reset(&st);
+                CHECK(w->parse(b, 49, &st) == PARSE_OK);
+                CHECK(st.buttons == PAD_CIRCLE);
+                b[1] = 0x02;
+                pad_state_reset(&st);
+                CHECK(w->parse(b, 49, &st) == PARSE_OK);
+                CHECK(st.buttons == PAD_CROSS);
+                b[1] = 0x04;                        /* Y (left) */
+                pad_state_reset(&st);
+                CHECK(w->parse(b, 49, &st) == PARSE_OK);
+                CHECK(st.buttons == PAD_TRIANGLE);
+            }
+        }
+    }
+    /* It accepts what a DualSense sends and nothing else. */
+    CHECK(fam->accept((const uint8_t *)"\x01\0\0\0\0\0\0\0\0\0", 10));
+    CHECK(!fam->accept((const uint8_t *)"\x30\0\0", 3));
+}
+
 int main(void)
 {
+    test_family();
     test_event();
     test_unwrap();
     test_input_ok();

@@ -38,6 +38,7 @@
 #include "ps4_sysinfo.h"
 #include "ps4_ui.h"
 #include "bt_pad.h"
+#include "bt_proto.h"
 #include "ps4_vpad.h"
 #include "usb_pad.h"
 #include "util.h"
@@ -59,7 +60,7 @@
 #define NO_ICON_FLAG STATE_DIR "/no_icon"          /* do not put AnyPad in the media row */
 #define VPAD_TEST_FLAG STATE_DIR "/vpad_test"      /* one idle virtual pad on slot 0, to test them alone */
 #define RM_ICON_FLAG STATE_DIR "/remove_icon"      /* take it out, once */
-#define BT_FLAG      STATE_DIR "/bt"               /* DualSense over the console's Bluetooth, opt-in */
+#define BT_FLAG      STATE_DIR "/bt"               /* pads over the console's Bluetooth, opt-in */
 
 /* Findable in the binary: strings AnyPad-PS4-*.elf | grep anypad-version */
 /* The commit the ELF was built from, written by tools/build-elf-ps4-docker.sh. */
@@ -128,6 +129,31 @@ static void on_bt_detach(int slot)
  * patch and the driver registrations live only while it runs. A failed start
  * is tried again in a while, not every second (bt_pad_init logs why). */
 #define BT_RETRY_MS 10000
+
+/* The family of pads to ask the driver for: the flag file's own line, or the
+ * default one when it says nothing (the menu just creates it empty). */
+static const bt_family *bt_family_wanted(void)
+{
+    static const bt_family *said_unknown;
+    char name[24] = "";
+    const bt_family *fam;
+    FILE *f = fopen(BT_FLAG, "r");
+
+    if (f) {
+        if (!fgets(name, sizeof name, f)) name[0] = '\0';
+        fclose(f);
+        name[strcspn(name, "\r\n")] = '\0';
+    }
+    fam = bt_family_find(name);
+    if (fam || !name[0]) return fam ? fam : bt_family_default();
+    /* A name this build does not know: say it once, use the default. */
+    if (said_unknown != bt_family_default()) {
+        said_unknown = bt_family_default();
+        log_line("bt_pad: unknown family \"%s\", using %s", name, bt_family_default()->name);
+    }
+    return bt_family_default();
+}
+
 static void bt_apply(void)
 {
     static long next_try;
@@ -147,7 +173,7 @@ static void bt_apply(void)
     }
     if (g_bt_pads || now < next_try) return;
 
-    g_bt_pads = bt_pad_init(on_usb_feed, on_bt_attach, on_bt_detach);
+    g_bt_pads = bt_pad_init(bt_family_wanted(), on_usb_feed, on_bt_attach, on_bt_detach);
     if (g_bt_pads) {
         log_line("bt_pad: on");
         return;
