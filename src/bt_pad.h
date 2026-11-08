@@ -52,6 +52,9 @@ void bt_pad_poll(bt_pad_mgr_t *mgr, long now);
  * only the neutral reports that keep the link come out. */
 void bt_pad_output(bt_pad_mgr_t *mgr, int slot, const pad_output *out);
 
+/* The family the module was started with ("sony", "switch"). */
+const char *bt_pad_family(const bt_pad_mgr_t *mgr);
+
 /* Gives every connected pad its link's capacity back, unregisters, restores
  * the driver's list and closes. The virtual pads are the caller's to remove. */
 void bt_pad_close(bt_pad_mgr_t *mgr);

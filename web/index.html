@@ -116,6 +116,10 @@ pre { margin: 12px 0 0; max-height: 360px; overflow: auto; font-size: 12px; colo
       <h2 data-t="bttitle"></h2>
       <div class="row">
         <label class="btrow"><input type="checkbox" id="bt"> <span data-t="btuse"></span></label>
+        <select id="btfam" aria-label="pads">
+          <option value="sony" data-t="btfamsony"></option>
+          <option value="switch" data-t="btfamswitch"></option>
+        </select>
         <span id="btstate" class="hint"></span>
       </div>
       <div class="hint" style="margin-top:10px" data-t="bthint" data-html="1"></div>
@@ -161,6 +165,8 @@ const TEXT = {
     nopads: "Ninguno. Conecta un mando por USB o abre la página del mando por red.",
     bttitle: "Bluetooth de la consola",
     btuse: "Usar el Bluetooth de la consola",
+    btfamsony: "DualSense",
+    btfamswitch: "Switch Pro",
     bton: "encendido",
     btoff: "apagado",
     bthint: "Para un <b>DualSense</b> (o Edge) emparejado con la consola: enciende esta opción y enciende el mando. AnyPad parchea el driver de Bluetooth mientras está en marcha; al apagarlo lo deja como estaba. No la uses a la vez que OneFamily. Los mandos de Sony por USB siguen siendo de la consola.",
@@ -192,6 +198,8 @@ const TEXT = {
     nopads: "None. Plug a controller in by USB or open the network controller page.",
     bttitle: "Console Bluetooth",
     btuse: "Use the console's Bluetooth",
+    btfamsony: "DualSense",
+    btfamswitch: "Switch Pro",
     bton: "on",
     btoff: "off",
     bthint: "For a <b>DualSense</b> (or Edge) paired to the console: turn this on and turn the controller on. AnyPad patches the Bluetooth driver while it runs and puts it back when turned off. Do not use it together with OneFamily. Sony's controllers over USB stay the console's.",
@@ -497,6 +505,7 @@ async function refresh() {
     $("neturl").textContent = s.net && s.net.url ? s.net.url : "";
     $("netstate").textContent = L.netclients(s.net ? s.net.clients : 0);
     $("bt").checked = !!s.bt;
+    if (s.btfamily) $("btfam").value = s.btfamily;
     $("btstate").textContent = s.bt ? L.bton : L.btoff;
     renderPads(s.pads || []);
   } catch (e) {
@@ -513,7 +522,14 @@ $("exit").onclick = () => {
   setTimeout(() => { $("exithint").textContent = L.exitfail; }, 800);
 };
 $("bt").onchange = async (e) => {
-  try { await api("POST", "/api/bt?on=" + (e.target.checked ? 1 : 0)); } catch (err) { e.target.checked = !e.target.checked; }
+  try { await api("POST", "/api/bt?on=" + (e.target.checked ? 1 : 0) + "&family=" + $("btfam").value); }
+  catch (err) { e.target.checked = !e.target.checked; }
+  refresh();
+};
+$("btfam").onchange = async () => {
+  /* Only means something while the option is on; the module restarts with the new pads. */
+  if (!$("bt").checked) return;
+  try { await api("POST", "/api/bt?on=1&family=" + $("btfam").value); } catch (err) {}
   refresh();
 };
 $("stop").onclick = async () => {

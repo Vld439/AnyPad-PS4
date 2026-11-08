@@ -131,7 +131,10 @@ static void on_bt_detach(int slot)
 #define BT_RETRY_MS 10000
 
 /* The family of pads to ask the driver for: the flag file's own line, or the
- * default one when it says nothing (the menu just creates it empty). */
+ * default one when it says nothing (the menu just creates it empty). The name
+ * is kept in g_bt_family for the page. */
+static char g_bt_family[16] = "sony";
+
 static const bt_family *bt_family_wanted(void)
 {
     static const bt_family *said_unknown;
@@ -145,13 +148,17 @@ static const bt_family *bt_family_wanted(void)
         name[strcspn(name, "\r\n")] = '\0';
     }
     fam = bt_family_find(name);
-    if (fam || !name[0]) return fam ? fam : bt_family_default();
-    /* A name this build does not know: say it once, use the default. */
-    if (said_unknown != bt_family_default()) {
-        said_unknown = bt_family_default();
-        log_line("bt_pad: unknown family \"%s\", using %s", name, bt_family_default()->name);
+    if (fam || !name[0]) fam = fam ? fam : bt_family_default();
+    else {
+        /* A name this build does not know: say it once, use the default. */
+        if (said_unknown != bt_family_default()) {
+            said_unknown = bt_family_default();
+            log_line("bt_pad: unknown family \"%s\", using %s", name, bt_family_default()->name);
+        }
+        fam = bt_family_default();
     }
-    return bt_family_default();
+    snprintf(g_bt_family, sizeof g_bt_family, "%s", fam->name);
+    return fam;
 }
 
 static void bt_apply(void)
@@ -171,9 +178,19 @@ static void bt_apply(void)
         }
         return;
     }
-    if (g_bt_pads || now < next_try) return;
+    /* Another family was picked: stop the one running and start the new one. */
+    {
+        const bt_family *fam = bt_family_wanted();
 
-    g_bt_pads = bt_pad_init(bt_family_wanted(), on_usb_feed, on_bt_attach, on_bt_detach);
+        if (g_bt_pads && strcmp(bt_pad_family(g_bt_pads), fam->name) != 0) {
+            bt_pad_close(g_bt_pads);
+            g_bt_pads = NULL;
+            log_line("bt_pad: family %s, starting over", fam->name);
+        }
+        if (g_bt_pads || now < next_try) return;
+
+        g_bt_pads = bt_pad_init(fam, on_usb_feed, on_bt_attach, on_bt_detach);
+    }
     if (g_bt_pads) {
         log_line("bt_pad: on");
         return;
@@ -191,6 +208,26 @@ static void bt_apply(void)
 static int web_bt_get(void)
 {
     return g_bt_pads != NULL;
+}
+
+static const char *web_bt_family_get(void)
+{
+    return g_bt_family;
+}
+
+static int web_bt_family_set(const char *name)
+{
+    FILE *f;
+
+    if (!bt_family_find(name)) return 0;
+    /* A name only means something while the option is on; the file is what
+     * the main loop reads, so write it there. */
+    if (access(BT_FLAG, F_OK) != 0) return 1;
+    f = fopen(BT_FLAG, "w");
+    if (!f) return 0;
+    fprintf(f, "%s\n", name);
+    fclose(f);
+    return 1;
 }
 
 static int web_bt_set(int on)
@@ -283,6 +320,8 @@ int main(void)
     wc.press_ps = web_press_ps;
     wc.bt_get = web_bt_get;
     wc.bt_set = web_bt_set;
+    wc.bt_family_get = web_bt_family_get;
+    wc.bt_family_set = web_bt_family_set;
     g_web = web_start(&wc, WEB_PORT);
 
     snprintf(url, sizeof url, "http://%s:%d/", ip, WEB_PORT);

@@ -42,6 +42,14 @@ static int fake_net_clients(void) { return g_clients; }
 static int g_bt;
 static int fake_bt_get(void) { return g_bt; }
 static int fake_bt_set(int on) { g_bt = on ? 1 : 0; return 1; }
+static const char *g_fam = "sony";
+static const char *fake_bt_family_get(void) { return g_fam; }
+static int fake_bt_family_set(const char *name)
+{
+    if (strcmp(name, "sony") != 0 && strcmp(name, "switch") != 0) return 0;
+    g_fam = strcmp(name, "switch") == 0 ? "switch" : "sony";
+    return 1;
+}
 
 static int g_ps_calls, g_ps_slot = -1;
 static int fake_press_ps(int slot)
@@ -105,6 +113,8 @@ int main(void)
     wc.press_ps = fake_press_ps;
     wc.bt_get = fake_bt_get;
     wc.bt_set = fake_bt_set;
+    wc.bt_family_get = fake_bt_family_get;
+    wc.bt_family_set = fake_bt_family_set;
     log_open(wc.log_path);
     g_web = web_start(&wc, g_port);
     CHECK(g_web != NULL);
@@ -156,8 +166,18 @@ int main(void)
     CHECK(strstr(out, "\"bt\":1") != NULL);
     call("POST", "/api/bt?on=0", out, sizeof out);
     CHECK(strstr(out, "200") != NULL && g_bt == 0);
+    call("POST", "/api/bt?on=1&family=switch", out, sizeof out);
+    CHECK(strstr(out, "200") != NULL && g_bt == 1 && strcmp(g_fam, "switch") == 0);
+    request("GET /api/state HTTP/1.1\r\nHost: 192.168.1.50:8095\r\n\r\n", out, sizeof out);
+    CHECK(strstr(out, "\"btfamily\":\"switch\"") != NULL);
+    call("POST", "/api/bt?on=1&family=nope", out, sizeof out);
+    CHECK(strstr(out, "400") != NULL && strcmp(g_fam, "switch") == 0);
+    call("POST", "/api/bt?on=0", out, sizeof out);
+    CHECK(strstr(out, "200") != NULL && g_bt == 0);
+    call("POST", "/api/bt?on=1", out, sizeof out);
+    CHECK(strstr(out, "200") != NULL && g_bt == 1);         /* no family: left as it was */
     request("POST /api/bt?on=1 HTTP/1.1\r\nHost: 192.168.1.50:8095\r\n\r\n", out, sizeof out);
-    CHECK(strstr(out, "403") != NULL && g_bt == 0);         /* without X-AnyPad */
+    CHECK(strstr(out, "403") != NULL && g_bt == 1);         /* without X-AnyPad */
 
     printf("stop\n");    CHECK(stop == 0);
     call("POST", "/api/stop", out, sizeof out);

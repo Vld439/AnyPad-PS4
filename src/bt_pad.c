@@ -451,6 +451,11 @@ static void dev_output(bt_pad_mgr_t *m, bt_dev *d, const pad_output *out)
     }
 }
 
+const char *bt_pad_family(const bt_pad_mgr_t *m)
+{
+    return m && m->fam ? m->fam->name : "";
+}
+
 void bt_pad_output(bt_pad_mgr_t *m, int slot, const pad_output *out)
 {
     int i;

@@ -16,6 +16,8 @@ project and in this repository's git history.
 
 ## 0.3.1-beta (8 November 2026 / 8 noviembre de 2026)
 
+- The menu picks which pads the console's Bluetooth is asked for: **DualSense** or **Switch Pro**, next to the option. Changing it while the option is on restarts the module with the new pads.
+  El menú elige qué mandos se le piden al Bluetooth de la consola: **DualSense** o **Switch Pro**, al lado de la opción. Cambiarlo con la opción encendida reinicia el módulo con los nuevos mandos.
 - **A Switch Pro Controller over the console's own Bluetooth**, with the same menu option (firmware 13.52). It shows up as `Switch Pro (Bluetooth)`: sticks, d-pad, buttons and triggers, with the buttons where a PlayStation pad has them (A is the cross). Tried on a PS4. The pads are chosen in families: the driver's list has room for six ids, and one family runs at a time (`/data/anypad/bt` holds its name; `sony` is the default). No rumble or light bar for it yet.
   **Un Switch Pro por el Bluetooth de la propia consola**, con la misma opción del menú (firmware 13.52). Aparece como `Switch Pro (Bluetooth)`: sticks, cruceta, botones y gatillos, con los botones donde los tiene un mando de PlayStation (A es la cruz). Probado en una PS4. Los mandos se eligen por familias: la lista del driver tiene sitio para seis identificadores y solo corre una familia a la vez (`/data/anypad/bt` lleva su nombre; `sony` es la de por defecto). Aún sin rumble ni barra de luz.
 - Fixed: the Bluetooth allowlist was always patched with the DualSense's id, whatever pad had been asked for, so any other pad was dropped by the driver (`register ... No such file or directory`).

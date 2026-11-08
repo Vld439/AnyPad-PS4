@@ -34,6 +34,10 @@ typedef struct {
     int (*bt_get)(void);
     /* Turns it on (1) or off (0). Returns 1 if done. NULL: not available. */
     int (*bt_set)(int on);
+    /* Which pads are asked for ("sony", "switch"). NULL: not available. */
+    const char *(*bt_family_get)(void);
+    /* Picks them; 0 if the name is not known. */
+    int (*bt_family_set)(const char *name);
 } web_cfg;
 
 /* Listens on `port` on every interface. Returns NULL if it cannot. */

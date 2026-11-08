@@ -22,7 +22,7 @@ AnyPad PS4 es un payload que hace que la consola vea mandos de otras marcas como
 
 - **Por USB**, en los puertos de la consola.
 - **Por la red local**: un móvil o un PC abre una página, su navegador lee el mando conectado a *ese* dispositivo (por cable o emparejado por **Bluetooth** con el móvil) y lo envía a la consola. Así se juega sin cable sin usar el Bluetooth de la consola.
-- **Por el Bluetooth de la consola**, un **DualSense** (o Edge) o un **Switch Pro** ya enlazado con ella, y solo si lo enciendes en el menú (*Bluetooth de la consola*). Parchea el driver mientras AnyPad está en marcha y lo deja como estaba al apagarlo. Los mandos van por familias y solo corre una a la vez: el DualSense es la de por defecto; para el Switch Pro, el fichero `/data/anypad/bt` tiene que contener `switch` (por FTP, o desde el explorador de archivos).
+- **Por el Bluetooth de la consola**, un **DualSense** (o Edge) o un **Switch Pro** ya enlazado con ella, y solo si lo enciendes en el menú (*Bluetooth de la consola*). Parchea el driver mientras AnyPad está en marcha y lo deja como estaba al apagarlo. Los mandos se eligen en el propio menú, al lado de la opción (**DualSense** o **Switch Pro**), y solo corre uno a la vez.
 
 Probado en una PS4 con firmware 13.52.
 
@@ -52,7 +52,7 @@ La lista por mando está en [COMPATIBILITY.md](COMPATIBILITY.md).
 3. **Por USB**: conecta el mando. En cuanto envía su primer dato, la consola recibe un DualShock 4 virtual.
 4. **Por red**: abre la dirección del mando por red en el navegador de un móvil o un PC conectado a la **misma red** que la consola. Conecta allí el mando (por cable o emparejado por Bluetooth con el móvil) y **pulsa un botón**. Toca la pantalla una vez: la página la mantiene encendida mientras juegas; baja el brillo para ahorrar batería. Puedes conectar **varios mandos al mismo móvil**: cada uno llega a la consola como un mando distinto, con su nombre.
 5. Cuando la consola pregunte **quién usa el mando**, elige tu usuario. Si el mando no tiene botón PS, usa **Pulsar PS** en el menú.
-6. **Por el Bluetooth de la consola** (DualSense/Edge o Switch Pro ya enlazado con ella): en el menú, enciende **Bluetooth de la consola** y enciende el mando **después** (si ya estaba encendido, apágalo y vuelve a encenderlo). Para el Switch Pro, antes hay que escribir `switch` en `/data/anypad/bt`; para volver al DualSense, `sony`. Al apagar AnyPad o esa opción, el driver vuelve a como estaba. Sin rumble ni luz todavía.
+6. **Por el Bluetooth de la consola** (DualSense/Edge o Switch Pro ya enlazado con ella): en el menú, enciende **Bluetooth de la consola** y enciende el mando **después** (si ya estaba encendido, apágalo y vuelve a encenderlo). Para el Switch Pro, elige **Switch Pro** en el menú; para volver al DualSense, **DualSense**. Al apagar AnyPad o esa opción, el driver vuelve a como estaba. Sin rumble ni luz todavía.
 
 Hasta 4 mandos a la vez, contando los USB, los de red y los de Bluetooth.
 
@@ -125,7 +125,7 @@ AnyPad PS4 is a payload that makes the console see controllers from other brands
 
 - **By USB**, on the console's ports.
 - **Over the local network**: a phone or PC opens a page, its browser reads the controller connected to *that* device (by cable, or paired to the phone by **Bluetooth**) and sends it to the console. That gives wireless play without the console's own Bluetooth.
-- **Over the console's Bluetooth**: a **DualSense** (or Edge) or a **Switch Pro** already linked to it, and only if you turn it on in the menu (*Console Bluetooth*). It patches the driver while AnyPad runs and puts it back when turned off. Pads go by families and only one runs at a time: the DualSense is the default; for the Switch Pro, `/data/anypad/bt` has to say `switch` (by FTP, or from the file manager).
+- **Over the console's Bluetooth**: a **DualSense** (or Edge) or a **Switch Pro** already linked to it, and only if you turn it on in the menu (*Console Bluetooth*). It patches the driver while AnyPad runs and puts it back when turned off. The pads are picked in the menu itself, next to the option (**DualSense** or **Switch Pro**), and only one runs at a time.
 
 Tested on a PS4 with firmware 13.52.
 
@@ -155,7 +155,7 @@ The list, controller by controller, is in [COMPATIBILITY.md](COMPATIBILITY.md).
 3. **By USB**: plug the controller in. As soon as it sends its first report, the console gets a virtual DualShock 4.
 4. **Over the network**: open the network controller's address in the browser of a phone or PC on the **same network** as the console. Connect the controller there (by cable, or paired to the phone by Bluetooth) and **press a button**. Tap the screen once: the page keeps it on while you play; turn the brightness down to save battery. You can connect **several controllers to the same phone**: each one reaches the console as a separate controller, with its name.
 5. When the console asks **who is using the controller**, choose your user. If the controller has no PS button, use **Press PS** in the menu.
-6. **Over the console's Bluetooth** (a DualSense/Edge or Switch Pro already linked to it): in the menu, turn on **Console Bluetooth** and turn the controller on **afterwards** (if it was already on, turn it off and on again). For the Switch Pro, `/data/anypad/bt` has to say `switch` first; `sony` goes back to the DualSense. When AnyPad or that option is turned off, the driver goes back to how it was. No rumble or light bar yet.
+6. **Over the console's Bluetooth** (a DualSense/Edge or Switch Pro already linked to it): in the menu, turn on **Console Bluetooth** and turn the controller on **afterwards** (if it was already on, turn it off and on again). For the Switch Pro, pick **Switch Pro** in the menu; **DualSense** goes back. When AnyPad or that option is turned off, the driver goes back to how it was. No rumble or light bar yet.
 
 Up to 4 controllers at once, counting the USB, network and Bluetooth ones.
 
