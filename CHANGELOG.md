@@ -9,7 +9,7 @@ AnyPad PS4 is a port of [AnyPad PS5](https://codeberg.org/elmonomalva0/Any-Pad-p
 by elmonomalvad0. The history of AnyPad PS5 (0.1 to 0.9.5-beta) is in that
 project and in this repository's git history.
 
-## Sin publicar / Unreleased
+## 0.3.2-beta (16 November 2026 / 16 de noviembre de 2026)
 
 - **The allowlist patch puts one id in all six comparisons.** The list cycled the family's ids through the six sites, so half of the checks asked for an Edge and refused the DualSense (the Switch Pro never broke: its family has one id). Now the id the pad connects with is written in the six sites (`bt_patch_id()`), registration stops at the first id that answers, and the next id is offered every fourth retry. Tried on a 13.52: the DualSense attaches again, and rumble and the light bar go through `/api/bt/test` (`POST /api/bt/test?strong=&weak=&r=&g=&b=&ms=`).
   **El parche del allowlist pone un solo id en las seis comparaciones.** La lista ciclaba los ids de la familia por los seis sitios, así que la mitad de las comprobaciones pedían un Edge y rechazaban el DualSense (el Switch Pro nunca se rompió: su familia tiene un solo id). Ahora el id con el que conecta el mando se escribe en los seis sitios (`bt_patch_id()`), el registro para en el primer id que responde y el siguiente id se ofrece cada cuarto reintento. Probado en 13.52: el DualSense vuelve a enganchar, y rumble y barra de luz pasan por `/api/bt/test` (`POST /api/bt/test?strong=&weak=&r=&g=&b=&ms=`).
