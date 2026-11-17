@@ -42,7 +42,7 @@
 #define TRIGGER_PRESS 0x20
 #define SETTLE_MS 1500               /* the console's own events after the driver is taken */
 #define MAP_DIR "/data/anypad/maps"
-#define REPORT_MAX 64
+#define REPORT_MAX 80             /* a DualShock 4 output report is 78 */
 #define QUEUE_LEN 16
 
 enum { KIND_NONE, KIND_X360, KIND_GIP, KIND_HID };
@@ -76,6 +76,9 @@ typedef struct {
     int thread_on;
     volatile int quit, gone;
     pthread_mutex_t lock;
+    pad_output out_want, out_last;  /* what the console asked, and what went out */
+    int out_dirty;
+    long out_ms;
     uint8_t q[QUEUE_LEN][REPORT_MAX];
     int qlen[QUEUE_LEN];
     int qhead, qcount;
@@ -459,7 +462,9 @@ static void drop(usb_pad_mgr_t *mgr, usb_dev_t *d, const char *why)
                            ((((uint32_t)(r) & 0xFFFFFF00u) == 0x80240000u) && ((r) & 0xFF) == (code)))
 #define USBD_NO_DEVICE 4
 #define USBD_TIMEOUT   7
-#define READ_TIMEOUT_MS 100
+/* Short, so the reader loop comes back often enough to send what the console
+ * asks of the pad (rumble) without waiting up to a tenth of a second. */
+#define READ_TIMEOUT_MS 12
 
 static struct {
     int ok;
@@ -546,6 +551,34 @@ static int hid_report_desc(usb_dev_t *d, int iface, uint8_t *buf, int max)
     return U.ctrl(d->h, 0x81, 0x06, 0x2200, (uint16_t)iface, buf, (uint16_t)max, 500);
 }
 
+/* Sends what the console asked of the pad through its profile's output report:
+ * rumble, and the light bar where the pad has one. Called from the reader
+ * thread, which is also the one that takes the IN endpoint. */
+static void out_flush(usb_dev_t *d, long now)
+{
+    pad_output o;
+    uint8_t buf[REPORT_MAX];
+    int n;
+
+    if (!d->profile || !d->profile->build_output) return;
+    pthread_mutex_lock(&d->lock);
+    if (!d->out_dirty) {
+        pthread_mutex_unlock(&d->lock);
+        return;
+    }
+    o = d->out_want;
+    d->out_dirty = 0;
+    pthread_mutex_unlock(&d->lock);
+
+    n = d->profile->build_output(d->pctx.bytes, &o, buf, sizeof buf);
+    if (n <= 0) return;
+    out_send(d, buf, n);
+    pthread_mutex_lock(&d->lock);
+    d->out_last = o;
+    d->out_ms = now;
+    pthread_mutex_unlock(&d->lock);
+}
+
 /* One per pad: reads (and powers on a GIP pad) and leaves the reports for
  * the main loop. */
 static void *reader(void *arg)
@@ -558,6 +591,7 @@ static void *reader(void *arg)
         int done = 0, r;
 
         wake(d, now_ms());
+        out_flush(d, now_ms());
         r = U.intr(d->h, d->ep_in, buf, sizeof buf, &done, READ_TIMEOUT_MS);
         if (done > 0) {
             pthread_mutex_lock(&d->lock);
@@ -819,4 +853,34 @@ void usb_pad_close(usb_pad_mgr_t *mgr)
     for (i = 0; i < MAX_USB_DEVS; i++)
         if (mgr->devs[i].active) drop(mgr, &mgr->devs[i], "closed");
     free(mgr);
+}
+
+/* What the console asks of the pad in `slot`: passed to its profile's output
+ * report, which the reader thread sends. A pad whose rumble stops by itself
+ * gets it again every rumble_refresh_ms while the motors are on. Returns 1 if
+ * a pad took it. */
+int usb_pad_output(usb_pad_mgr_t *mgr, int slot, const pad_output *out)
+{
+    int i;
+    long now = now_ms();
+
+    if (!mgr || !out) return 0;
+    for (i = 0; i < MAX_USB_DEVS; i++) {
+        usb_dev_t *d = &mgr->devs[i];
+        int due;
+
+        if (!d->h || !d->active || d->slot != slot) continue;
+        if (!d->profile || !d->profile->build_output) return 0;
+        pthread_mutex_lock(&d->lock);
+        due = d->out_dirty || memcmp(&d->out_last, out, sizeof *out) != 0 ||
+              ((out->strong || out->weak) && d->profile->rumble_refresh_ms > 0 &&
+               now - d->out_ms >= d->profile->rumble_refresh_ms);
+        if (due) {
+            d->out_want = *out;
+            d->out_dirty = 1;
+        }
+        pthread_mutex_unlock(&d->lock);
+        return due ? 1 : 0;
+    }
+    return 0;
 }

@@ -38,6 +38,9 @@ typedef struct {
     const char *(*bt_family_get)(void);
     /* Picks them; 0 if the name is not known. */
     int (*bt_family_set)(const char *name);
+    /* Buzzes and lights the Bluetooth pads for `ms`, to check the output.
+     * Returns how many pads were told. NULL: not available. */
+    int (*bt_test)(int strong, int weak, int r, int g, int b, long ms);
 } web_cfg;
 
 /* Listens on `port` on every interface. Returns NULL if it cannot. */

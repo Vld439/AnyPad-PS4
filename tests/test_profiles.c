@@ -248,6 +248,27 @@ static void test_switch(void)
         if (step == 3) CHECK(out[10] == 0x30 && out[11] == 0x02);       /* player 2 LED */
     }
     CHECK(step == 4);
+
+    /* Rumble: report 0x10, packet number, two motors. Silent is the neutral
+     * encoding (00 01 40 40); full left motor is the table's last index. */
+    {
+        pad_output off = { 0, 0, 0, 0, 0, 0 };
+
+        memset(&o, 0, sizeof o);
+        CHECK(p->build_output(ctx, &off, out, sizeof out) == 10);
+        CHECK(out[0] == 0x10 && out[1] == step);    /* packet number carries on */
+        CHECK(out[2] == 0x00 && out[3] == 0x01 && out[4] == 0x40 && out[5] == 0x40);
+        CHECK(out[6] == 0x00 && out[7] == 0x01 && out[8] == 0x40 && out[9] == 0x40);
+        CHECK(p->build_output(ctx, &off, out, 9) == 0);
+
+        o.strong = 255;                     /* left motor, full */
+        o.weak = 0;
+        CHECK(p->build_output(ctx, &o, out, sizeof out) == 10);
+        CHECK(out[1] == step + 1);          /* packet number advanced */
+        CHECK(out[2] == 0x00 && out[3] == 0xC9);    /* 320 Hz, amp 1003 */
+        CHECK(out[4] == 0x40 && out[5] == 0x72);    /* 160 Hz, low word 0x0072 */
+        CHECK(out[6] == 0x00 && out[7] == 0x01 && out[8] == 0x40 && out[9] == 0x40);
+    }
 }
 
 /* A typical Bluetooth gamepad descriptor: report 1 with X, Y, Z, Rz

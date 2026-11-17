@@ -125,6 +125,38 @@ static void on_bt_detach(int slot)
     vpad_remove(slot);
 }
 
+/* ---- what the console asks of each pad ------------------------------------- */
+
+/* Rumble and light bar: the virtual pad is asked every few ms and the answer is
+ * passed to whichever pad drives that slot, USB or Bluetooth. The Bluetooth
+ * side is sent only when it changes (it has its own heartbeat); the USB side
+ * decides for itself, because some pads need their rumble repeated. */
+#define REMOTE_EVERY_MS 10
+
+static void remote_output(long now)
+{
+    static long last;
+    static pad_output sent[MAX_PADS];
+    int slot;
+
+    if (now - last < REMOTE_EVERY_MS) return;
+    last = now;
+    for (slot = 0; slot < MAX_PADS; slot++) {
+        pad_output out;
+        int changed;
+
+        memset(&out, 0, sizeof out);
+        if (!vpad_live(slot) || !vpad_remote(slot, &out)) {
+            memset(&sent[slot], 0, sizeof sent[slot]);
+            continue;
+        }
+        changed = memcmp(&sent[slot], &out, sizeof out) != 0;
+        sent[slot] = out;
+        if (g_usb_pads) usb_pad_output(g_usb_pads, slot, &out);
+        if (changed && g_bt_pads) bt_pad_output(g_bt_pads, slot, &out);
+    }
+}
+
 /* Starts or stops the module to match the flag the menu writes. The kernel
  * patch and the driver registrations live only while it runs. A failed start
  * is tried again in a while, not every second (bt_pad_init logs why). */
@@ -230,6 +262,21 @@ static int web_bt_family_set(const char *name)
     return 1;
 }
 
+/* The menu's test: buzz and light the Bluetooth pads for a moment. */
+static int web_bt_test(int strong, int weak, int r, int g, int b, long ms)
+{
+    pad_output o;
+
+    if (!g_bt_pads) return 0;
+    o.strong = (uint8_t)(strong < 0 ? 0 : strong > 255 ? 255 : strong);
+    o.weak = (uint8_t)(weak < 0 ? 0 : weak > 255 ? 255 : weak);
+    o.r = (uint8_t)(r < 0 ? 0 : r > 255 ? 255 : r);
+    o.g = (uint8_t)(g < 0 ? 0 : g > 255 ? 255 : g);
+    o.b = (uint8_t)(b < 0 ? 0 : b > 255 ? 255 : b);
+    o.player = 0;
+    return bt_pad_test(g_bt_pads, &o, ms);
+}
+
 static int web_bt_set(int on)
 {
     if (on) {
@@ -322,6 +369,7 @@ int main(void)
     wc.bt_set = web_bt_set;
     wc.bt_family_get = web_bt_family_get;
     wc.bt_family_set = web_bt_family_set;
+    wc.bt_test = web_bt_test;
     g_web = web_start(&wc, WEB_PORT);
 
     snprintf(url, sizeof url, "http://%s:%d/", ip, WEB_PORT);
@@ -374,6 +422,7 @@ int main(void)
             vpad_poll(now);
             if (g_usb_pads) usb_pad_poll(g_usb_pads, now);
             if (g_bt_pads) bt_pad_poll(g_bt_pads, now);
+            remote_output(now);
             if (g_vpad_test && vpad_live(0)) {
                 pad_state idle;
 

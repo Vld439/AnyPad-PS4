@@ -30,9 +30,11 @@ Objetivo: (1) DualSense/Edge por BT → DS4 virtual; (2) después, probar Pro Co
    `ioctl(0x80206233, {u64 addr, void *buf, u64 cap=80, u64 0})` devuelve `n`;
    válido si `buf[0]+2 == n && buf[1] == 0x1F`; el informe HID empieza en `buf+2`
    (`0x31` de 78 B con CRC, o `0x01` de 10 B) → **tal cual** a nuestro `ds5_parse` (`r[0]` = id).
-5. Salida (rumble/LED): `ioctl(0x80206232, {addr, buf, 78, 0x31})` con el `0x31` de 78 B sellado
-   (CRC prefijo `0xA2`). El informe BT no es el de USB: se arma en `bt_proto.c` con los offsets de
-   OneFamily.
+5. Salida (rumble/LED): `ioctl(0x80206232, {addr, buf, len, id})`, con el informe que arme la
+   familia: el `0x31` de 78 B sellado (CRC prefijo `0xA2`) para el DualSense, o el `0x10` de 10 B
+   del Switch Pro. El del DualSense no es el de USB: se arma en `bt_proto.c` con los offsets de
+   OneFamily. La capacidad del enlace solo se sube si el informe pasa de 22 B
+   (`bt_family.needs_capacity`).
 
 Limitaciones conocidas (issues de OneFamily): #29 un DualSense por cada `0x8004622B` (para 2+
 mandos, un registro por mando); #39 cortes en 12.00; #25 reconocido sin entrada (sin datos).
@@ -51,7 +53,7 @@ mandos, un registro por mando); #39 cortes en 12.00; #25 reconocido sin entrada 
   `044F/1000`. Dos fallos encontrados y corregidos en la prueba: la comprobación de firma impedía
   restaurar (`0xE3`, la propia firma ya estaba parcheada) y el cierre daba "restored" sin mirar el
   código de retorno del kernel.
-- Pendiente de esa prueba: el rumble de los juegos (AnyPad no recibe salida todavía) y el Edge
+- Pendiente de esa prueba: el Edge
   (`054C:0DF2` se rechaza con ENOENT, sin investigar).
 ## Otros mandos (2026-11-08)
 
@@ -81,7 +83,9 @@ mandos, un registro por mando); #39 cortes en 12.00; #25 reconocido sin entrada 
   `045E:02FD` registró porque quedaba un enlace viejo en la consola, pero no llegó ningún informe.
   Para mandos ajenos, el camino es un modo que use Bluetooth clásico HID (Switch, o el modo PS4 si
   el mando lo tiene, que la consola acepta directamente).
-- Falta: rumble y luz para la familia `switch` (no se manda ningún informe de salida).
+- **Rumble (2026-11-13)**: la familia `switch` manda el informe `0x10` de 10 B (id, número de
+  paquete, dos motores) con la codificación de `hid-nintendo`: dos bandas fijas, 160 Hz y 320 Hz,
+  y la tabla de amplitud 0..1003. No necesita subir la capacidad del enlace. Sin probar en consola.
 
 ## Otros mandos, notas del plan original (2026-11-08, sustituido)
 
@@ -160,9 +164,17 @@ Lo que se sabe y lo que falta:
   salida para pasar a `0x30`: `switch_parse`/`switch_init` ya existen en `src/profiles.c`.
 - Gate: llega algún informe del Pro. Si no, Pro por BT queda fuera.
 
-### F4. Otros firmwares (opcional)
-- Tablas por firmware o escáner por patrón (VID `0x044F` con `cmp` en `[0x4E0000,0x660000)`),
-  solo si hay testers con ese firmware.
+### F4. Otros firmwares (hecho, 2026-11-12)
+- Tabla por firmware en `bt_pad.c` (`k_offsets`): 9.00, 11.00 y 12.50 son de OneFamily
+  (`daemon/src/bt_driver.c`, MIT); 13.52 es de nuestro dump. Se elige por `kernel_get_fw_version()`.
+- Sin tabla **no se escribe nada**: se lee el texto en `[0x4E0000,0x660000)`, se buscan los `cmp`
+  contra `0x044F`/`0x1000` (5 del listado, más una comparación suelta ~85 KB antes en 12.00+), se
+  emparejan por los saltos que deja el compilador (0x30, 0x33, 0xBF2, 0x4E1, 0x4F3) y se anotan en
+  el log. Con esas líneas se añade la tabla. Probado sobre el dump 13.52: encuentra los 6 `cmp`
+  esperados; el 6.º PID de 13.52 está *detrás* de su VID, así que ese emparejamiento solo sirve
+  para informar, no para escribir.
+- La capacidad (link+0x1574) prueba el puntero de contexto conocido y, si no, punteros cercanos
+  (`[0x2612000,0x2613000]`); valida dirección del mando y VID/PID antes de tocar nada.
 
 ---
 

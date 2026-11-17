@@ -229,6 +229,23 @@ static void api_live(int fd, const char *path)
     respond(fd, 200, "text/plain; charset=utf-8", buf + 32 - k, (size_t)k + strlen(buf + 32));
 }
 
+/* The value of `name` in the query string, or `def` when it is not there. */
+static int query_int(const char *path, const char *name, int def)
+{
+    size_t len = strlen(name);
+    const char *p = strchr(path, '?');
+
+    if (!p) return def;
+    p++;
+    for (;;) {
+        if (strncmp(p, name, len) == 0 && p[len] == '=')
+            return atoi(p + len + 1);
+        p = strchr(p, '&');
+        if (!p) return def;
+        p++;
+    }
+}
+
 static void handle(web_t *w, int fd, char *req)
 {
     char method[8], path[256], hostname[64], custom[8];
@@ -297,6 +314,24 @@ static void handle(web_t *w, int fd, char *req)
             respond_text(fd, 400, "{\"error\":\"family\"}");
         } else {
             respond_text(fd, 200, "{\"ok\":true}");
+        }
+    } else if (strcmp(method, "POST") == 0 && strncmp(path, "/api/bt/test", 12) == 0) {
+        /* The menu's test: /api/bt/test?strong=200&weak=100&r=12&g=23&b=29&ms=800 */
+        char body[48];
+        int n = 0;
+
+        if (!w->cfg.bt_test) {
+            respond_text(fd, 404, "{\"error\":\"bt\"}");
+            return;
+        }
+        n = w->cfg.bt_test(query_int(path, "strong", 0), query_int(path, "weak", 0),
+                           query_int(path, "r", 12), query_int(path, "g", 23),
+                           query_int(path, "b", 29), query_int(path, "ms", 800));
+        if (n > 0) {
+            snprintf(body, sizeof body, "{\"ok\":true,\"pads\":%d}", n);
+            respond_text(fd, 200, body);
+        } else {
+            respond_text(fd, 404, "{\"error\":\"no pad\"}");
         }
     } else if (strcmp(method, "POST") == 0 && strcmp(path, "/api/stop") == 0) {        log_line("web: stop requested");
         *w->cfg.stop = 1;

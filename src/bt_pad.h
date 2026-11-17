@@ -11,7 +11,12 @@
  * 22-byte pad, and a DualSense drops the link if a 78-byte report comes
  * through it. The per-link capacity (at link + 0x1574) is raised to 78 for
  * each pad that connects, so rumble, light bar and the extended 0x31 input
- * reports work on 13.52.
+ * reports work (tried on 13.52).
+ *
+ * Where the driver's list is depends on the firmware: bt_pad.c has a table for
+ * 9.00, 11.00, 12.50 and 13.52 (the first three from OneFamily). A firmware
+ * with no table is read once and the comparisons logged, so it can be added,
+ * but nothing is written there.
  *
  * Only runs when asked for: bt_pad_init() is called when the menu's option is
  * on, and bt_pad_close() puts the kernel back. One copy of this at a time
@@ -37,7 +42,7 @@ typedef void (*bt_pad_detach_fn)(int slot);
 /* Opens /dev/bt, patches the driver's list and registers the ids of `family`
  * (NULL: the default one, the DualSense). Only one family at a time: the
  * driver names a device by address only, never by vendor and product id.
- * NULL if the console cannot do it (firmware other than 13.52, no /dev/bt,
+ * NULL if the console cannot do it (no table for the firmware, no /dev/bt,
  * patch refused), with the reason in the log. */
 bt_pad_mgr_t *bt_pad_init(const bt_family *family,
                           bt_pad_feed_fn on_feed,
@@ -51,6 +56,10 @@ void bt_pad_poll(bt_pad_mgr_t *mgr, long now);
  * over Bluetooth. Not available yet: no game output reaches AnyPad's pads, so
  * only the neutral reports that keep the link come out. */
 void bt_pad_output(bt_pad_mgr_t *mgr, int slot, const pad_output *out);
+
+/* Buzzes and lights the pads for `ms` (0: half a second, at most five), to
+ * check the output path without a game. Returns how many pads were told. */
+int bt_pad_test(bt_pad_mgr_t *mgr, const pad_output *out, long ms);
 
 /* The family the module was started with ("sony", "switch"). */
 const char *bt_pad_family(const bt_pad_mgr_t *mgr);

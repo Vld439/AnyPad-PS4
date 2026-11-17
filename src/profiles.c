@@ -553,6 +553,66 @@ static int switch_subcmd(switch_ctx *c, uint8_t id, const uint8_t *arg, int alen
     return 11 + alen;
 }
 
+/* Nintendo's HD rumble, as Linux' hid-nintendo does it
+ * (drivers/hid/hid-nintendo.c): each motor is two bands, 4 bytes each, at
+ * fixed 160 Hz (low) and 320 Hz (high), from this amplitude index table. */
+static const uint16_t k_sw_amp[] = {
+    0, 10, 12, 14, 17, 20, 24, 28, 33, 40,
+    47, 56, 67, 80, 95, 112, 117, 123, 128, 134,
+    140, 146, 152, 159, 166, 173, 181, 189, 198, 206,
+    215, 225, 230, 235, 240, 245, 251, 256, 262, 268,
+    273, 279, 286, 292, 298, 305, 311, 318, 325, 332,
+    340, 347, 355, 362, 370, 378, 387, 395, 404, 413,
+    422, 431, 440, 450, 460, 470, 480, 491, 501, 512,
+    524, 535, 547, 559, 571, 584, 596, 609, 623, 636,
+    650, 665, 679, 694, 709, 725, 741, 757, 773, 790,
+    808, 825, 843, 862, 881, 900, 920, 940, 960, 981,
+    1003,
+};
+
+/* One motor: index i of the table has amp high byte 2*i and low word
+ * 0x40 + i/2, with the top bit set on odd indexes. */
+static void switch_rumble_half(uint8_t *d, int amp)
+{
+    unsigned i = 0, n = sizeof k_sw_amp / sizeof k_sw_amp[0];
+    uint8_t high;
+    uint16_t low;
+
+    if (amp > (int)k_sw_amp[n - 1]) amp = k_sw_amp[n - 1];
+    while (i + 1 < n && (int)k_sw_amp[i] < amp) i++;    /* first entry >= amp */
+    high = (uint8_t)(i * 2);
+    low = (uint16_t)(0x40 + i / 2);
+    if (i & 1) low |= 0x8000;
+
+    d[0] = 0x00;                                    /* 320 Hz band */
+    d[1] = (uint8_t)(0x01 + high);
+    d[2] = (uint8_t)(0x40 + ((low >> 8) & 0xFF));   /* 160 Hz band */
+    d[3] = (uint8_t)(low & 0xFF);
+}
+
+/* Output report 0x10, 10 bytes: id, packet number, then the two motors: left
+ * from the strong magnitude and right from the weak one, the way
+ * hid-nintendo maps them. */
+int switch_rumble_report(uint8_t *seq, const pad_output *o, uint8_t *b, int max)
+{
+    if (!seq || !o || max < 10) return 0;
+    b[0] = 0x10;
+    b[1] = (uint8_t)(*seq & 0x0F);
+    *seq = (uint8_t)((*seq + 1) & 0x0F);
+    switch_rumble_half(b + 2, (int)o->strong * 1003 / 255);
+    switch_rumble_half(b + 6, (int)o->weak * 1003 / 255);
+    return 10;
+}
+
+/* The pad's context keeps the packet number; the tests build with none. */
+static int switch_output(void *ctx, const pad_output *o, uint8_t *b, int max)
+{
+    static uint8_t fallback;
+    switch_ctx *c = ctx;
+
+    return switch_rumble_report(c ? &c->counter : &fallback, o, b, max);
+}
+
 static int switch_init(void *ctx, int step, const pad_output *o, uint8_t *b, int max)
 {
     static const uint8_t full_mode[1] = { 0x30 };
@@ -1045,8 +1105,8 @@ static const pad_profile k_profiles[] = {
     { "DualShock 4", IDS(ds4_ids),    ds4_parse,    ds4_output,  ds4_init,    1, 0, NULL, 0x05, 0 },
     { "DualSense",   IDS(ds5_ids),    ds5_parse,    ds5_output,  ds5_init,    1, 0, NULL, 0, 0 },
     { "Xbox",        IDS(xbox_ids),   xbox_parse,   xbox_output, NULL,        0, 0, xbox_setup, 0, 0 },
-    { "Switch Pro",  IDS(switch_ids), switch_parse, NULL,        switch_init, 1, 0, NULL, 0, 0 },
-    { "Joy-Con",     IDS(joycon_ids), joycon_parse, NULL,        joycon_init, 1, 0, joycon_setup, 0, 0 },
+    { "Switch Pro",  IDS(switch_ids), switch_parse, switch_output, switch_init, 1, 50, NULL, 0, 0 },
+    { "Joy-Con",     IDS(joycon_ids), joycon_parse, switch_output, joycon_init, 1, 50, joycon_setup, 0, 0 },
     { "Wii",         IDS(wii_ids),    wii_parse,    NULL,        wii_init,    1, 0, NULL, 0, 0 },
     { "GameSir",     IDS(gamesir_ids),gamesir_parse,NULL,        NULL,        0, 0, NULL, 0, 0 },
     { "DualShock 3", IDS(ds3_ids),    ds3_parse,    ds3_output,  ds3_init,    0, 0, NULL, 0xF2, 1 },

@@ -86,12 +86,21 @@ int bt_output_build(bt_out *o, const pad_output *out, uint8_t *buf, int max)
     return 78;
 }
 
+/* The Switch Pro and Joy-Con take the same 10-byte rumble report over the
+ * console's radio as over USB; the profile's encoder does the work. The link
+ * already has room for it (the driver sizes reports for a 22-byte pad), and
+ * each report carries the packet number the pad watches. */
+int bt_switch_output(bt_out *o, const pad_output *out, uint8_t *buf, int max)
+{
+    return switch_rumble_report(&o->seq, out, buf, max);
+}
+
 /* ---- families ------------------------------------------------------------- */
 
 /* The DualSense (and the Edge, which the driver still refuses to register). */
 static const bt_family k_sony = {
-    "sony", "DualSense (Bluetooth)", 2, { { 0x054C, 0x0CE6 }, { 0x054C, 0x0DF2 } }, 1,
-    bt_input_ok, ds5_bt_parse,
+    "sony", "DualSense (Bluetooth)", 2, { { 0x054C, 0x0CE6 }, { 0x054C, 0x0DF2 } },
+    bt_output_build, 1, bt_input_ok, ds5_bt_parse,
 };
 
 /* Discovery families: they ask the driver for one other pad's id and accept
@@ -114,13 +123,12 @@ static const bt_family k_xbox = {
     "xbox", "Xbox (Bluetooth)", 6,
     { { 0x045E, 0x0B13 }, { 0x045E, 0x0B20 }, { 0x045E, 0x02E0 },
       { 0x045E, 0x02FD }, { 0x045E, 0x0B05 }, { 0x045E, 0x0B0A } },
-    0, watch_accept, ds5_bt_parse,
+    NULL, 0, watch_accept, ds5_bt_parse,
 };
 
 /* The Switch Pro Controller over the console's radio sends its standard HID
  * report 0x3F (49 bytes), which AnyPad's switch profile already reads: the
- * same one the USB pads send. No output report is sent (there is no game
- * output yet), so the link is kept by the console's own stack. */
+ * same one the USB pads send. Rumble goes back as the 10-byte report 0x10. */
 static uint8_t g_switch_ctx[PROFILE_CTX_MAX];    /* zeroed: 0x3F needs no calibration */
 
 static int switch_accept(const uint8_t *rep, int len)
@@ -150,7 +158,8 @@ static int switch_parse(const uint8_t *rep, int len, pad_state *st)
 }
 
 static const bt_family k_switch = {
-    "switch", "Switch Pro (Bluetooth)", 1, { { 0x057E, 0x2009 } }, 0, switch_accept, switch_parse,
+    "switch", "Switch Pro (Bluetooth)", 1, { { 0x057E, 0x2009 } },
+    bt_switch_output, 0, switch_accept, switch_parse,
 };
 
 static const bt_family *const k_families[] = { &k_sony, &k_xbox, &k_switch };
@@ -158,6 +167,20 @@ static const bt_family *const k_families[] = { &k_sony, &k_xbox, &k_switch };
 const bt_family *bt_family_default(void)
 {
     return &k_sony;
+}
+
+int bt_family_known_ids(uint16_t (*out)[2], int max)
+{
+    size_t f;
+    int i, n = 0;
+
+    for (f = 0; f < sizeof k_families / sizeof k_families[0]; f++)
+        for (i = 0; i < k_families[f]->nids && n < max; i++) {
+            out[n][0] = k_families[f]->ids[i][0];
+            out[n][1] = k_families[f]->ids[i][1];
+            n++;
+        }
+    return n;
 }
 
 const bt_family *bt_family_find(const char *name)

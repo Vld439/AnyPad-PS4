@@ -68,6 +68,10 @@ int32_t scePadInit(void);
 int32_t scePadSetProcessPrivilege(int32_t privilege);
 int32_t scePadVirtualDeviceAddDevice(void *param, int32_t deviceType);
 int32_t scePadVirtualDeviceInsertData(int32_t handle, const void *data);
+/* What the console wants of a virtual pad: [3] strong motor, [4] weak motor,
+ * [5..7] light bar RGB, in a 128-byte buffer (OneFamily's layout, from their
+ * daemon's vpad.c). */
+int32_t scePadVirtualDeviceGetRemoteSetting(int32_t handle, void *setting);
 int32_t scePadVirtualDeviceDeleteDevice(int32_t handle);
 
 /* From the payload SDK (ps4/kernel.h). */
@@ -107,6 +111,7 @@ typedef struct {
     long ps_until;              /* ms; PS is added to the frames until then (0: not held) */
     int ps_active;              /* a frame with PS went out and the release is still to be sent */
     int retries;                /* asked again after no device came */
+    int said_remote;            /* the console's first rumble was logged */
     long retry_at;              /* ms; not before then */
 } vslot;
 
@@ -599,6 +604,31 @@ static void send_frame(int slot, const pad_state *st)
             log_line("slot %d: insertData failed %#x (handle %#x)", slot, (unsigned)ret, (unsigned)g_slot[slot].handle);
         }
     }
+}
+
+int vpad_remote(int slot, pad_output *out)
+{
+    uint8_t set[128];
+    int32_t r;
+
+    if (!out || !vpad_live(slot)) return 0;
+    memset(set, 0, sizeof set);
+    r = scePadVirtualDeviceGetRemoteSetting(g_slot[slot].handle, set);
+    if (r != 0) return 0;
+    out->strong = set[3];
+    out->weak = set[4];
+    out->r = set[5];
+    out->g = set[6];
+    out->b = set[7];
+    /* One line the first time the console says something, to see the layout
+     * and that the call works on this firmware. */
+    if ((out->strong || out->weak || out->r || out->g || out->b) && !g_slot[slot].said_remote) {
+        g_slot[slot].said_remote = 1;
+        log_line("slot %d: console asks rumble %u/%u light %u,%u,%u (raw %02X %02X %02X %02X %02X %02X %02X %02X)",
+                 slot, out->strong, out->weak, out->r, out->g, out->b,
+                 set[0], set[1], set[2], set[3], set[4], set[5], set[6], set[7]);
+    }
+    return 1;
 }
 
 void vpad_update(int slot, const pad_state *st)

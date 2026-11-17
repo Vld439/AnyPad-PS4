@@ -37,6 +37,11 @@ int  vpad_get(int slot, char *label, size_t max, pad_state *st);
 
 void vpad_update(int slot, const pad_state *st);
 
+/* What the console asks of the pad in `slot`: its rumble motors and light bar,
+ * as scePadVirtualDeviceGetRemoteSetting() reports them. 0 if the slot has no
+ * live virtual pad or the console has nothing to say. */
+int  vpad_remote(int slot, pad_output *out);
+
 /* Holds PS on the virtual pad for `ms` milliseconds (the menu's PS button).
  * 0 if the slot has no live virtual pad. */
 int  vpad_press_ps(int slot, int ms);

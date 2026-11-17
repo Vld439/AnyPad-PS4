@@ -113,6 +113,23 @@ static void test_output(void)
     out.player = 4;
     bt_output_build(&o, &out, buf, sizeof buf);
     CHECK(buf[46] == 0x1B && buf[1] == 0x30);
+
+    /* A Nintendo pad takes the same 10-byte rumble report over the radio as
+     * over USB: id, packet number, two motors. */
+    {
+        bt_out so;
+        pad_output on;
+
+        memset(&so, 0, sizeof so);
+        memset(&on, 0, sizeof on);
+        on.strong = 255;
+        CHECK(bt_switch_output(&so, &on, buf, 9) == 0);
+        CHECK(bt_switch_output(&so, &on, buf, sizeof buf) == 10);
+        CHECK(buf[0] == 0x10 && buf[1] == 0);
+        CHECK(buf[2] == 0x00 && buf[3] == 0xC9 && buf[4] == 0x40 && buf[5] == 0x72);
+        CHECK(buf[6] == 0x00 && buf[7] == 0x01 && buf[8] == 0x40 && buf[9] == 0x40);
+        CHECK(bt_switch_output(&so, &on, buf, sizeof buf) == 10 && buf[1] == 1);
+    }
 }
 
 static void test_ds5_bt(void)
@@ -183,7 +200,7 @@ static void test_family(void)
     CHECK(strcmp(fam->name, "sony") == 0);
     CHECK(strcmp(fam->label, "DualSense (Bluetooth)") == 0);
     CHECK(fam->nids == 2);
-    CHECK(fam->has_output);
+    CHECK(fam->build_output == bt_output_build && fam->needs_capacity);
     CHECK(fam->ids[0][0] == 0x054C && fam->ids[0][1] == 0x0CE6);
     CHECK(fam->ids[1][0] == 0x054C && fam->ids[1][1] == 0x0DF2);
     CHECK(bt_family_find("sony") == fam);
@@ -196,10 +213,10 @@ static void test_family(void)
         const bt_family *x = bt_family_find("xbox");
         const bt_family *w = bt_family_find("switch");
 
-        CHECK(x != NULL && x->nids == 6 && !x->has_output);
+        CHECK(x != NULL && x->nids == 6 && !x->build_output);
         CHECK(strcmp(x->label, "Xbox (Bluetooth)") == 0);
         CHECK(x->ids[0][0] == 0x045E && x->ids[0][1] == 0x0B13);
-        CHECK(w != NULL && w->nids == 1);
+        CHECK(w != NULL && w->nids == 1 && w->build_output && !w->needs_capacity);
         CHECK(strcmp(w->label, "Switch Pro (Bluetooth)") == 0);
         CHECK(w->ids[0][0] == 0x057E && w->ids[0][1] == 0x2009);
         CHECK(!x->accept((const uint8_t *)"\x01\0\0\0\0\0\0\0\0\0", 10));

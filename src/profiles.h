@@ -68,6 +68,12 @@ int ds5_bt_parse(const uint8_t *rep, int len, pad_state *st);
 /* Major class 5 (peripheral) with a gamepad or joystick minor class. */
 int profile_class_is_gamepad(uint32_t class_of_device);
 
+/* Nintendo's HD rumble: the 10-byte output report 0x10 (id, packet number,
+ * then a 4-byte motor each) for `out`'s magnitudes. `seq` is the packet
+ * number, advanced by one. Used by the USB profiles and the Bluetooth family
+ * alike. Returns 10, or 0 if `max` is too small. */
+int switch_rumble_report(uint8_t *seq, const pad_output *out, uint8_t *buf, int max);
+
 /* ---- generic HID (generic.c) ---- */
 
 extern const pad_profile generic_profile;
